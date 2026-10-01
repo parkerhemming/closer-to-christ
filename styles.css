@@ -1,0 +1,48 @@
+* {
+	padding: 0;
+	margin: 0;
+}
+
+:root {
+	--storm-dark: #091720;
+	--storm: #1e3440;
+	--storm-light: #536975;
+
+	--ground-dark: #101511;
+	--ground: #292d24;
+	--ground-light: #46513a;
+
+	--wind-speed: 1;
+	--rain-speed: 1;
+	--lightning-speed: 1;
+}
+
+body {
+	height: 100dvh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+	position: relative;
+}
+
+#sky {
+	height: 80%;
+	width: 100%;
+	background-color: var(--storm-dark);
+}
+
+#ground {
+	height: 20%;
+	width: 100%;
+	background-color: var(--ground);
+}
+
+img {
+	pointer-events: none;
+	height: 90%;
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	transform: translateX(-50%);
+}
