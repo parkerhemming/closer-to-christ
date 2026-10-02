@@ -95,6 +95,8 @@ body {
 }
 
 img {
+	image-rendering: pixelated;
+	image-rendering: crisp-edges;
 	pointer-events: none;
 	height: 90%;
 	position: absolute;
