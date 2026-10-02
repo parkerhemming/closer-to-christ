@@ -30,6 +30,62 @@ body {
 	height: 80%;
 	width: 100%;
 	background-color: var(--storm-dark);
+	position: relative;
+	overflow: hidden;
+
+	.star {
+		background-color: white;
+		aspect-ratio: 1/1;
+		border-radius: 50%;
+		position: absolute;
+		filter: drop-shadow(0 0 4px white) drop-shadow(0 0 10px #dcefff)
+			drop-shadow(0 0 20px #8ebce0);
+
+		+ .twinkle {
+			animation-name: twinkle;
+			animation-direction: alternate-reverse;
+			animation-iteration-count: infinite;
+			animation-duration: 1s;
+		}
+
+		+ .big {
+			clip-path: polygon(
+				50% 0%,
+				52% 37%,
+				58% 41%,
+				72% 27%,
+				61% 44%,
+				64% 48%,
+				100% 50%,
+				64% 52%,
+				61% 56%,
+				72% 73%,
+				58% 59%,
+				52% 63%,
+				50% 100%,
+				48% 63%,
+				42% 59%,
+				28% 73%,
+				39% 56%,
+				36% 52%,
+				0% 50%,
+				36% 48%,
+				39% 44%,
+				28% 27%,
+				42% 41%,
+				48% 37%
+			);
+		}
+	}
+}
+
+@keyframes twinkle {
+	80% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
 }
 
 #ground {
