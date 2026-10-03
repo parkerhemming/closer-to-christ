@@ -19,7 +19,7 @@ function createStars(stars) {
 
 		if (size > 0.96) {
 			star.classList.add("big");
-			star.style.width = size * 12.5 + "px";
+			star.style.width = size * 15 + "px";
 		} else {
 			star.style.width = size * 2.5 + "px";
 		}

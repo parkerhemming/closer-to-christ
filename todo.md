@@ -8,6 +8,7 @@
 - [x] Twinkle Stars
 - [x] Star Brightness Differences
 - [x] Outer Glow
+- [] Zooming breaks everything
 
 ### Clouds
 
@@ -19,6 +20,7 @@
 
 - [] Rain
 - [] Moon
+- [] Parallax
 
 <br>
 <br>
