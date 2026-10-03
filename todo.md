@@ -1,3 +1,7 @@
+# Bugs
+
+- [] Zooming breaks everything on mobile
+
 # Sky
 
 <br>
@@ -8,7 +12,6 @@
 - [x] Twinkle Stars
 - [x] Star Brightness Differences
 - [x] Outer Glow
-- [] Zooming breaks everything
 
 ### Clouds
 
@@ -20,7 +23,7 @@
 
 - [] Rain
 - [] Moon
-- [] Parallax
+- [x] Parallax
 
 <br>
 <br>

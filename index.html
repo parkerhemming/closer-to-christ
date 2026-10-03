@@ -7,13 +7,21 @@
 		<link rel="stylesheet" href="./styles.css" />
 	</head>
 	<body>
-		<section id="sky"></section>
-		<section id="ground"></section>
-		<img src="./assets/gifs/christ-wind-120ms-57f.gif" />
+		<section class="layer" data-z_index="1" id="sky"></section>
+
+		<section class="layer" data-z_index="5" id="ground"></section>
+
+		<img
+			class="layer"
+			data-z_index="10"
+			src="./assets/gifs/christ-wind-120ms-57f.gif"
+		/>
+
 		<script src="./app.js"></script>
 	</body>
 
 	<script>
 		createStars(300);
+		parallax();
 	</script>
 </html>
