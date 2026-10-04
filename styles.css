@@ -8,14 +8,9 @@
 	--storm-dark: #091720;
 	--storm: #1e3440;
 	--storm-light: #536975;
-
 	--ground-dark: #101511;
 	--ground: #292d24;
 	--ground-light: #46513a;
-
-	--wind-speed: 1;
-	--rain-speed: 1;
-	--lightning-speed: 1;
 }
 
 body {
@@ -27,11 +22,26 @@ body {
 	position: relative;
 }
 
-#sky {
+.sky {
 	width: 102%;
 	height: 102%;
-	background-color: var(--storm-dark);
+	background:
+		radial-gradient(
+			ellipse 100% 100% at 20% 100%,
+			rgba(239, 174, 112, 0.38) 0%,
+			rgba(166, 111, 98, 0.2) 35%,
+			rgba(58, 61, 76, 0.07) 59%,
+			transparent 75%
+		),
+		linear-gradient(
+			to top,
+			#515565 0%,
+			#303b48 20%,
+			#172834 50%,
+			var(--storm-dark) 100%
+		);
 	position: absolute;
+	z-index: 1;
 	top: 50%;
 	left: 50%;
 	transform: translateX(-50%) translateY(-50%);
@@ -92,61 +102,73 @@ body {
 	}
 }
 
-#ground {
+.scenery {
 	position: absolute;
-	bottom: -1.5%;
 	left: 50%;
+	width: 100%;
+	height: var(--height);
+	bottom: var(--bottom);
+	z-index: var(--stack-order);
 	transform: translateX(-50%);
-	width: 106%;
-	height: 23%;
-	background-color: var(--ground);
-	background-image: url("./assets/ground.avif");
-	filter: brightness(60%);
+	background-color: transparent;
+	background-image: var(--texture);
+	background-position: center bottom;
+	background-repeat: no-repeat;
+	background-size: var(--texture-size, auto 100%);
+	-webkit-mask-image: var(--mask, none);
+	-webkit-mask-position: center bottom;
+	-webkit-mask-repeat: no-repeat;
+	-webkit-mask-size: var(--mask-size, auto 100%);
+	mask-image: var(--mask, none);
+	mask-position: center bottom;
+	mask-repeat: no-repeat;
+	mask-size: var(--mask-size, auto 100%);
+	filter: var(--color-grade);
+	pointer-events: none;
+
+	&[data-scenery="distant-hills"] {
+		--stack-order: 2;
+		--bottom: -100dvh;
+		--height: 180dvh;
+		--texture: url("./assets/israel-hills-cutout-4k.png");
+		--color-grade: brightness(33%) saturate(42%) contrast(80%) sepia(6%);
+	}
+
+	&[data-scenery="distant-jerusalem"] {
+		--stack-order: 4;
+		--bottom: clamp(-3dvh, calc(27dvh - 14vw), 19dvh);
+		--height: 140dvh;
+		--texture: url("./assets/distant-jerusalem-city-only-4k.png");
+		--texture-size: 100% auto;
+		--color-grade: brightness(62%) saturate(58%) contrast(82%);
+	}
+	&[data-scenery="golgotha-ridge"] {
+		--stack-order: 12;
+		--bottom: -19dvh;
+		--height: 120dvh;
+		--texture: url("./assets/desert-scrub-midground-4k.jpg");
+		--mask: url("./assets/golgotha-ridge-4k.png");
+		--color-grade: brightness(46%) saturate(50%) contrast(82%) sepia(7%);
+	}
+
+	&[data-scenery="ground"] {
+		--stack-order: 25;
+		--bottom: -45dvh;
+		--height: 100dvh;
+		--texture: url("./assets/source-dusk-ground-28186470.jpg");
+		--texture-size: cover;
+		--mask: url("./assets/ground-dirt-grass-v2-1280p.png");
+		--color-grade: brightness(58%) saturate(48%) contrast(74%) sepia(6%);
+	}
 }
 
-img {
-	image-rendering: pixelated;
-	image-rendering: crisp-edges;
+#christ {
+	image-rendering: auto;
 	pointer-events: none;
 	height: 92.5%;
 	position: absolute;
+	z-index: 45;
 	bottom: -1.5%;
 	left: 50%;
 	transform: translateX(-50%);
-}
-
-/* Temp Styling */
-
-.square {
-	border: 3px solid white;
-	aspect-ratio: 1/1;
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translateX(-50%) translateY(-50%);
-}
-
-.square:nth-of-type(1) {
-	width: 50px;
-	opacity: 1;
-}
-
-.square:nth-of-type(2) {
-	width: 100px;
-	opacity: 0.85;
-}
-
-.square:nth-of-type(3) {
-	width: 150px;
-	opacity: 0.7;
-}
-
-.square:nth-of-type(4) {
-	width: 200px;
-	opacity: 0.55;
-}
-
-.square:nth-of-type(5) {
-	width: 250px;
-	opacity: 0.4;
 }

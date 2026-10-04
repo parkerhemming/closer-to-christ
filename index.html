@@ -7,21 +7,42 @@
 		<link rel="stylesheet" href="./styles.css" />
 	</head>
 	<body>
-		<section class="layer" data-z_index="1" id="sky"></section>
+		<section id="sky" data-z_index="1"></section>
 
-		<section class="layer" data-z_index="5" id="ground"></section>
+		<section
+			class="scenery"
+			data-scenery="distant-hills"
+			data-z_index="1.5"
+		></section>
+
+		<section
+			class="scenery"
+			data-scenery="distant-jerusalem"
+			data-z_index="2.5"
+		></section>
+
+		<section
+			class="scenery"
+			data-scenery="golgotha-ridge"
+			data-z_index="4.5"
+		></section>
+
+		<section
+			class="scenery"
+			data-scenery="ground"
+			data-z_index="8"
+		></section>
 
 		<img
-			class="layer"
-			data-z_index="10"
+			id="christ"
+			data-z_index="20"
 			src="./assets/gifs/christ-wind-120ms-57f.gif"
 		/>
 
 		<script src="./app.js"></script>
+		<script>
+			createStars(300);
+			parallax();
+		</script>
 	</body>
-
-	<script>
-		createStars(300);
-		parallax();
-	</script>
 </html>

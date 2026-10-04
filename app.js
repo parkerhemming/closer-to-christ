@@ -29,7 +29,7 @@ function createStars(stars) {
 }
 
 function parallax() {
-	const layers = document.getElementsByClassName("layer");
+	const layers = document.querySelectorAll("[data-z_index]");
 
 	document.addEventListener("mousemove", (event) => {
 		const x = event.clientX - window.innerWidth / 2;
