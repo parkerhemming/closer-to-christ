@@ -11,6 +11,7 @@
 	--ground-dark: #101511;
 	--ground: #292d24;
 	--ground-light: #46513a;
+	--parallax-overscan: 1.2;
 }
 
 body {
@@ -23,8 +24,8 @@ body {
 }
 
 #sky {
-	width: 102%;
-	height: 102%;
+	width: 120%;
+	height: 120%;
 	background:
 		radial-gradient(
 			ellipse 100% 100% at 20% 100%,
@@ -109,7 +110,8 @@ body {
 	height: var(--height);
 	bottom: var(--bottom);
 	z-index: var(--stack-order);
-	transform: translateX(-50%);
+	transform: translateX(-50%) scale(var(--parallax-overscan));
+	transform-origin: center bottom;
 	background-color: transparent;
 	background-image: var(--texture);
 	background-position: center bottom;
@@ -128,41 +130,44 @@ body {
 
 	&[data-scenery="distant-hills"] {
 		--stack-order: 2;
-		--bottom: -100dvh;
+		--bottom: -118dvh;
 		--height: 180dvh;
-		--texture: url("./assets/israel-hills-cutout-4k.png");
+		--texture: url("./assets/israel-hills-cutout-4k.avif");
 		--color-grade: brightness(33%) saturate(42%) contrast(80%) sepia(6%);
 	}
 
 	&[data-scenery="distant-jerusalem"] {
 		--stack-order: 4;
-		--bottom: clamp(-3dvh, calc(27dvh - 14vw), 19dvh);
+		--bottom: clamp(-14dvh, calc(16dvh - 14vw), 8dvh);
 		--height: 140dvh;
-		--texture: url("./assets/distant-jerusalem-city-only-4k.png");
+		--texture: url("./assets/distant-jerusalem-city-only-4k.avif");
 		--texture-size: 100% auto;
-		--color-grade: brightness(62%) saturate(58%) contrast(82%);
+		--color-grade: brightness(43%) saturate(28%) contrast(89%) grayscale(32%)
+			sepia(6%);
 	}
 	&[data-scenery="golgotha-ridge"] {
 		--stack-order: 12;
-		--bottom: -19dvh;
+		--bottom: -40dvh;
 		--height: 120dvh;
-		--texture: url("./assets/desert-scrub-midground-4k.jpg");
-		--mask: url("./assets/golgotha-ridge-4k.png");
+		--texture: url("./assets/desert-scrub-midground-4k.avif");
+		--mask: url("./assets/golgotha-ridge-4k.avif");
 		--color-grade: brightness(46%) saturate(50%) contrast(82%) sepia(7%);
 	}
 
 	&[data-scenery="ground"] {
 		--stack-order: 25;
-		--bottom: -45dvh;
+		--bottom: -66dvh;
 		--height: 100dvh;
-		--texture: url("./assets/source-dusk-ground-28186470.jpg");
+		--texture: url("./assets/source-dusk-ground-28186470.avif");
 		--texture-size: cover;
-		--mask: url("./assets/ground-dirt-grass-v2-1280p.png");
+		--mask: url("./assets/ground-dirt-grass-v2-1280p.avif");
 		--color-grade: brightness(58%) saturate(48%) contrast(74%) sepia(6%);
 	}
 }
 
 #christ {
+	--christ-rotate-y: 0deg;
+	--christ-edge-offset: 0px;
 	image-rendering: auto;
 	pointer-events: none;
 	height: 92.5%;
@@ -170,5 +175,93 @@ body {
 	z-index: 45;
 	bottom: -1.5%;
 	left: 50%;
-	transform: translateX(-50%);
+	transform: translateX(-50%) perspective(1100px)
+		rotateY(var(--christ-rotate-y));
+	transform-origin: center center;
+	filter: drop-shadow(
+		var(--christ-edge-offset) 0 1px rgba(24, 14, 10, 0.42)
+	);
+	backface-visibility: hidden;
+}
+
+#motion-trigger {
+	position: fixed;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	box-sizing: border-box;
+	padding: max(24px, env(safe-area-inset-top)) 24px
+		max(24px, env(safe-area-inset-bottom));
+	border: 0;
+	background:
+		radial-gradient(
+			circle at 50% 42%,
+			rgba(231, 180, 119, 0.11),
+			transparent 46%
+		),
+		rgba(5, 15, 22, 0.3);
+	-webkit-backdrop-filter: blur(16px) saturate(70%);
+	backdrop-filter: blur(16px) saturate(70%);
+	color: white;
+	font: inherit;
+	z-index: 100;
+	touch-action: manipulation;
+	cursor: pointer;
+}
+
+#motion-trigger[hidden] {
+	display: none;
+}
+
+.motion-start-card {
+	display: flex;
+	align-items: center;
+	flex-direction: column;
+	box-sizing: border-box;
+	width: min(78vw, 300px);
+	max-width: calc(100vw - 48px);
+	padding: 27px 20px 24px;
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	border-radius: 20px;
+	background: linear-gradient(
+		145deg,
+		rgba(35, 54, 64, 0.82),
+		rgba(12, 28, 37, 0.88)
+	);
+	box-shadow:
+		0 24px 70px rgba(0, 0, 0, 0.42),
+		inset 0 1px rgba(255, 255, 255, 0.08);
+	text-align: center;
+	transition: transform 120ms ease-out;
+}
+
+#motion-trigger:active .motion-start-card {
+	transform: scale(0.985);
+}
+
+.motion-start-eyebrow {
+	margin-bottom: 9px;
+	color: #e7b477;
+	font: 700 0.61rem/1.2 system-ui, sans-serif;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+}
+
+.motion-start-title {
+	font: 500 clamp(1.65rem, 6.8vw, 2rem) / 1.15 Georgia, "Times New Roman",
+		serif;
+	letter-spacing: 0.015em;
+	text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+}
+
+.motion-start-copy {
+	max-width: 225px;
+	margin-top: 10px;
+	color: rgba(235, 240, 239, 0.72);
+	font: 500 0.78rem/1.5 system-ui, sans-serif;
+	letter-spacing: 0.045em;
+}
+
+[data-z_index] {
+	will-change: translate;
 }
