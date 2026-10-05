@@ -15,14 +15,14 @@
 
 ### Clouds
 
-- [] Cloud Texture
-- [] Movement
-- [] Overcast v. Clear Skies
+- [x] Cloud Texture
+- [x] Movement
+- [nvm] Overcast v. Clear Skies
 
 ### Misc
 
-- [] Rain
-- [] Moon
+- [x] Rain
+- [?] Moon
 - [x] Parallax
 
 <br>

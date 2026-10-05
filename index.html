@@ -9,6 +9,61 @@
 	<body>
 		<section id="sky" data-z_index="1"></section>
 
+		<div id="storm" aria-hidden="true">
+			<section
+				class="storm-cloud storm-cloud--far"
+				data-z_index="0.45"
+			>
+				<span class="storm-cloud__texture"></span>
+			</section>
+			<div
+				id="lightning-back"
+				class="lightning-layer lightning-layer--back"
+			></div>
+			<section
+				class="storm-cloud storm-cloud--deep"
+				data-z_index="0.9"
+			>
+				<span class="storm-cloud__texture"></span>
+			</section>
+			<div
+				id="lightning-middle"
+				class="lightning-layer lightning-layer--middle"
+			></div>
+			<section
+				class="storm-cloud storm-cloud--middle"
+				data-z_index="1.55"
+			>
+				<span class="storm-cloud__texture"></span>
+			</section>
+			<section
+				class="storm-cloud storm-cloud--midband"
+				data-z_index="1.95"
+			>
+				<span class="storm-cloud__texture"></span>
+			</section>
+			<section
+				class="storm-cloud storm-cloud--lower"
+				data-z_index="2.45"
+			>
+				<span class="storm-cloud__texture"></span>
+			</section>
+			<div
+				id="lightning-front"
+				class="lightning-layer lightning-layer--front"
+			></div>
+			<section
+				class="storm-cloud storm-cloud--near"
+				data-z_index="3.7"
+			>
+				<span class="storm-cloud__texture"></span>
+			</section>
+
+			<div id="rain-back" class="rain-layer rain-layer--back"></div>
+			<div id="storm-tone" class="storm-tone"></div>
+			<div id="rain-front" class="rain-layer rain-layer--front"></div>
+		</div>
+
 		<section
 			class="scenery"
 			data-scenery="distant-hills"
@@ -19,7 +74,17 @@
 			class="scenery"
 			data-scenery="distant-jerusalem"
 			data-z_index="2.5"
-		></section>
+		>
+			<span class="city-light city-light--architecture"></span>
+			<span class="city-light city-light--home city-light--home-1"></span>
+			<span class="city-light city-light--home city-light--home-2"></span>
+			<span class="city-light city-light--home city-light--home-3"></span>
+			<span class="city-light city-light--home city-light--home-4"></span>
+			<span class="city-light city-light--home city-light--home-5"></span>
+			<span class="city-light city-light--lantern city-light--lantern-common"></span>
+			<span class="city-light city-light--lantern city-light--lantern-variant"></span>
+			<span class="city-flicker-plane"></span>
+		</section>
 
 		<section
 			class="scenery"
@@ -58,6 +123,8 @@
 		<script>
 			createStars(300);
 			createShootingStars();
+			createStorm();
+			createCityLights();
 			parallax();
 		</script>
 	</body>

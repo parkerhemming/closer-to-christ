@@ -47,6 +47,7 @@ body {
 	left: 50%;
 	transform: translateX(-50%) translateY(-50%);
 	overflow: hidden;
+	contain: layout paint;
 
 	.star {
 		background-color: white;
@@ -56,40 +57,51 @@ body {
 		filter: drop-shadow(0 0 4px white) drop-shadow(0 0 10px #dcefff)
 			drop-shadow(0 0 20px #8ebce0);
 
-		+ .twinkle {
+		&.twinkle {
 			animation-name: twinkle;
 			animation-direction: alternate-reverse;
 			animation-iteration-count: infinite;
 			animation-duration: 1s;
 		}
 
-		+ .big {
-			clip-path: polygon(
-				50% 0%,
-				52% 37%,
-				58% 41%,
-				72% 27%,
-				61% 44%,
-				64% 48%,
-				100% 50%,
-				64% 52%,
-				61% 56%,
-				72% 73%,
-				58% 59%,
-				52% 63%,
-				50% 100%,
-				48% 63%,
-				42% 59%,
-				28% 73%,
-				39% 56%,
-				36% 52%,
-				0% 50%,
-				36% 48%,
-				39% 44%,
-				28% 27%,
-				42% 41%,
-				48% 37%
-			);
+		&.big {
+			background-color: transparent;
+			border-radius: 0;
+			filter: blur(0.18px) drop-shadow(0 0 1.5px white)
+				drop-shadow(0 0 4px #dcefff) drop-shadow(0 0 8px #8ebce0);
+
+			&::before {
+				position: absolute;
+				inset: 0;
+				content: "";
+				background-color: white;
+				clip-path: polygon(
+					50% 0%,
+					52% 37%,
+					58% 41%,
+					72% 27%,
+					61% 44%,
+					64% 48%,
+					100% 50%,
+					64% 52%,
+					61% 56%,
+					72% 73%,
+					58% 59%,
+					52% 63%,
+					50% 100%,
+					48% 63%,
+					42% 59%,
+					28% 73%,
+					39% 56%,
+					36% 52%,
+					0% 50%,
+					36% 48%,
+					39% 44%,
+					28% 27%,
+					42% 41%,
+					48% 37%
+				);
+			}
 		}
 	}
 
@@ -97,8 +109,8 @@ body {
 		position: absolute;
 		top: var(--shooting-start-y);
 		left: var(--shooting-start-x);
-		width: clamp(95px, 10vw, 155px);
-		height: 2px;
+		width: var(--shooting-tail-width);
+		height: var(--shooting-thickness);
 		border-radius: 999px;
 		background: linear-gradient(
 			90deg,
@@ -107,11 +119,29 @@ body {
 			rgba(244, 250, 255, 0.92) 88%,
 			white
 		);
-		box-shadow: 5px 0 7px rgba(214, 236, 255, 0.65);
-		filter: drop-shadow(0 0 4px rgba(218, 239, 255, 0.8));
+		filter: blur(var(--shooting-blur))
+			drop-shadow(0 0 3px rgba(218, 239, 255, 0.76));
 		pointer-events: none;
 		transform-origin: right center;
 		animation: shooting-star var(--shooting-duration) ease-out forwards;
+		will-change: transform, opacity;
+
+		&::after {
+			position: absolute;
+			top: 50%;
+			right: 0;
+			width: var(--shooting-head-size);
+			height: var(--shooting-head-size);
+			content: "";
+			border-radius: 50%;
+			background: white;
+			box-shadow: 0 0 5px rgba(218, 239, 255, 0.92);
+			transform: translate(35%, -50%);
+		}
+
+		&.shooting-star--stretch {
+			animation-name: shooting-star-stretch;
+		}
 	}
 }
 
@@ -131,16 +161,424 @@ body {
 			scaleX(0.4);
 	}
 	12% {
-		opacity: 1;
+		opacity: var(--shooting-opacity);
 	}
 	72% {
-		opacity: 0.9;
+		opacity: var(--shooting-opacity);
 	}
 	100% {
 		opacity: 0;
 		transform: rotate(var(--shooting-angle))
 			translate3d(var(--shooting-distance), 0, 0) scaleX(1);
 	}
+}
+
+@keyframes shooting-star-stretch {
+	0% {
+		opacity: 0;
+		transform: rotate(var(--shooting-angle)) translate3d(0, 0, 0)
+			scaleX(0.08);
+	}
+	10% {
+		opacity: var(--shooting-opacity);
+	}
+	68% {
+		opacity: var(--shooting-opacity);
+		transform: rotate(var(--shooting-angle))
+			translate3d(var(--shooting-mid-distance), 0, 0) scaleX(1.65);
+	}
+	100% {
+		opacity: 0;
+		transform: rotate(var(--shooting-angle))
+			translate3d(var(--shooting-distance), 0, 0) scaleX(2.2);
+	}
+}
+
+#storm {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.storm-cloud {
+	position: absolute;
+	top: -20dvh;
+	left: -15vw;
+	width: 130vw;
+	height: 140dvh;
+	overflow: hidden;
+	pointer-events: none;
+	contain: layout paint;
+}
+
+.storm-cloud__texture {
+	display: block;
+	position: absolute;
+	inset: 0 auto 0 -20vw;
+	width: 180vw;
+	height: 100%;
+	background-image: var(--cloud-image);
+	background-position: left var(--cloud-y);
+	background-repeat: repeat-x;
+	background-size: auto var(--cloud-image-height);
+	filter: var(--cloud-grade);
+	-webkit-mask-image: var(--cloud-fade);
+	-webkit-mask-repeat: no-repeat;
+	-webkit-mask-size: 100% 100%;
+	mask-image: var(--cloud-fade);
+	mask-repeat: no-repeat;
+	mask-size: 100% 100%;
+	animation: cloud-drift var(--cloud-speed) linear infinite;
+	will-change: transform;
+}
+
+.storm-cloud--far {
+	--cloud-image: url("./assets/clouds/storm-cloud-map.avif");
+	--cloud-image-height: 110dvh;
+	--cloud-y: 0dvh;
+	--cloud-drift: -13vw;
+	--cloud-speed: 450s;
+	--cloud-grade: brightness(62%) contrast(116%) sepia(16%) saturate(80%)
+		hue-rotate(154deg) blur(0.8px);
+	--cloud-fade: linear-gradient(
+		to bottom,
+		transparent 0%,
+		black 8%,
+		black 46%,
+		transparent 72%
+	);
+	z-index: 2;
+	opacity: 0.28;
+}
+
+.storm-cloud--deep {
+	--cloud-image: url("./assets/clouds/storm-cloud-cumulus.avif");
+	--cloud-image-height: 55dvh;
+	--cloud-y: 5dvh;
+	--cloud-drift: -15vw;
+	--cloud-speed: 360s;
+	--cloud-grade: brightness(54%) contrast(116%) saturate(48%)
+		hue-rotate(158deg) blur(0.7px);
+	--cloud-fade: linear-gradient(
+		to bottom,
+		transparent 0%,
+		black 7%,
+		black 43%,
+		transparent 64%
+	);
+	z-index: 4;
+	opacity: 0.56;
+}
+
+.storm-cloud--middle {
+	--cloud-image: url("./assets/clouds/storm-cloud-alpha.avif");
+	--cloud-image-height: 88dvh;
+	--cloud-y: -2dvh;
+	--cloud-drift: -12vw;
+	--cloud-speed: 286s;
+	--cloud-grade: brightness(64%) contrast(116%) sepia(12%) saturate(70%)
+		hue-rotate(150deg) blur(0.45px);
+	--cloud-fade: linear-gradient(
+		to bottom,
+		transparent 0%,
+		black 6%,
+		black 43%,
+		transparent 68%
+	);
+	z-index: 8;
+	opacity: 0.2;
+}
+
+.storm-cloud--midband {
+	--cloud-image: url("./assets/clouds/storm-cloud-alpha.avif");
+	--cloud-image-height: 64dvh;
+	--cloud-y: 16dvh;
+	--cloud-drift: -11vw;
+	--cloud-speed: 247s;
+	--cloud-grade: brightness(56%) contrast(118%) sepia(10%) saturate(64%)
+		hue-rotate(154deg) blur(0.55px);
+	--cloud-fade: linear-gradient(
+		to bottom,
+		transparent 33%,
+		rgba(0, 0, 0, 0.4) 35%,
+		black 37%,
+		black 43%,
+		rgba(0, 0, 0, 0.42) 45%,
+		transparent 47%
+	);
+	z-index: 12;
+	opacity: 0.3;
+}
+
+.storm-cloud--lower {
+	--cloud-image: url("./assets/clouds/storm-cloud-cumulus.avif");
+	--cloud-image-height: 25dvh;
+	--cloud-y: 58dvh;
+	--cloud-drift: -10vw;
+	--cloud-speed: 226s;
+	--cloud-grade: brightness(72%) contrast(108%) saturate(52%)
+		hue-rotate(154deg) blur(1.2px);
+	--cloud-fade: linear-gradient(
+		to bottom,
+		transparent 38%,
+		black 46%,
+		black 57%,
+		transparent 68%
+	);
+	z-index: 24;
+	opacity: 0.13;
+}
+
+.storm-cloud--near {
+	--cloud-image: url("./assets/clouds/storm-cloud-cumulus.avif");
+	--cloud-image-height: 46dvh;
+	--cloud-y: 9dvh;
+	--cloud-drift: -16vw;
+	--cloud-speed: 90s;
+	--cloud-grade: brightness(50%) contrast(120%) saturate(45%)
+		hue-rotate(160deg) blur(0.4px)
+		drop-shadow(0 16px 24px rgba(14, 24, 31, 0.28));
+	--cloud-fade: linear-gradient(
+		to bottom,
+		transparent 0%,
+		black 8%,
+		black 38%,
+		transparent 60%
+	);
+	z-index: 35;
+	opacity: 0.64;
+}
+
+@keyframes cloud-drift {
+	from {
+		transform: translate3d(var(--cloud-drift), 0, 0);
+	}
+
+	to {
+		transform: translate3d(0, 0, 0);
+	}
+}
+
+.rain-layer,
+.lightning-layer,
+.storm-tone {
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+}
+
+.rain-layer {
+	overflow: hidden;
+}
+
+.rain-layer--back {
+	z-index: 11;
+	filter: blur(0.25px);
+}
+
+.rain-layer--front {
+	z-index: 65;
+}
+
+.rain-drop {
+	position: absolute;
+	top: -22dvh;
+	left: var(--rain-x);
+	width: var(--rain-width);
+	height: var(--rain-length);
+	border-radius: 999px;
+	background: linear-gradient(
+		to bottom,
+		transparent,
+		rgba(203, 222, 233, 0.9)
+	);
+	opacity: var(--rain-opacity);
+	animation: rainfall var(--rain-duration) linear forwards;
+	will-change: transform;
+}
+
+@keyframes rainfall {
+	from {
+		transform: translate3d(0, -12dvh, 0) rotate(-7deg);
+	}
+	to {
+		transform: translate3d(var(--rain-drift), 138dvh, 0) rotate(-7deg);
+	}
+}
+
+.lightning-layer--back {
+	z-index: 1;
+}
+
+.lightning-layer--middle {
+	z-index: 5;
+}
+
+.lightning-layer--front {
+	z-index: 20;
+}
+
+.lightning-bolt {
+	position: absolute;
+	top: var(--bolt-top);
+	left: var(--bolt-left);
+	width: var(--bolt-width-screen);
+	height: var(--bolt-height);
+	overflow: visible;
+	transform: scaleX(var(--bolt-slant));
+	transform-origin: top center;
+	filter: drop-shadow(0 0 3px rgba(224, 240, 255, 0.95))
+		drop-shadow(0 0 11px rgba(134, 180, 229, 0.9))
+		drop-shadow(0 0 26px rgba(93, 135, 196, 0.65));
+	animation: lightning-flicker var(--bolt-duration) steps(1, end) forwards;
+}
+
+.lightning-bolt--far {
+	filter: drop-shadow(0 0 2px rgba(224, 240, 255, 0.82))
+		drop-shadow(0 0 7px rgba(134, 180, 229, 0.7));
+}
+
+.lightning-bolt--middle {
+	filter: drop-shadow(0 0 2px rgba(224, 240, 255, 0.9))
+		drop-shadow(0 0 9px rgba(134, 180, 229, 0.78))
+		drop-shadow(0 0 18px rgba(93, 135, 196, 0.45));
+}
+
+.lightning-bolt path {
+	fill: none;
+	stroke: rgba(244, 249, 255, 0.98);
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: var(--bolt-width);
+	vector-effect: non-scaling-stroke;
+}
+
+.lightning-bolt__branch {
+	opacity: 0.76;
+}
+
+@keyframes lightning-flicker {
+	0%,
+	8% {
+		opacity: 0;
+	}
+	9%,
+	16% {
+		opacity: 0.96;
+	}
+	17%,
+	27% {
+		opacity: 0.08;
+	}
+	28%,
+	46% {
+		opacity: 1;
+	}
+	47%,
+	63% {
+		opacity: 0.2;
+	}
+	64%,
+	78% {
+		opacity: 0.75;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+.storm-tone {
+	z-index: 55;
+	background:
+		radial-gradient(
+			circle at 50% 42%,
+			transparent 20%,
+			rgba(0, 8, 13, 0.2) 92%
+		),
+		linear-gradient(to bottom, rgba(2, 11, 17, 0.08), rgba(2, 9, 12, 0.2));
+	mix-blend-mode: multiply;
+}
+
+.cloud-lightning-flash {
+	position: absolute;
+	top: var(--flash-top);
+	left: var(--flash-x);
+	width: var(--flash-width);
+	height: var(--flash-height);
+	border-radius: 50%;
+	background: radial-gradient(
+		ellipse at center,
+		rgba(221, 237, 255, var(--flash-strength)),
+		rgba(127, 164, 207, 0.16) 28%,
+		transparent 68%
+	);
+	-webkit-mask-image: var(--flash-cloud-mask);
+	-webkit-mask-position: center;
+	-webkit-mask-repeat: no-repeat;
+	-webkit-mask-size: cover;
+	mask-image: var(--flash-cloud-mask);
+	mask-position: center;
+	mask-repeat: no-repeat;
+	mask-size: cover;
+	filter: blur(12px);
+	mix-blend-mode: screen;
+	transform: translateX(-50%);
+	animation: cloud-lightning-flash var(--flash-duration) steps(1, end)
+		forwards;
+}
+
+.lightning-layer--back .cloud-lightning-flash {
+	--flash-cloud-mask: url("./assets/clouds/storm-cloud-map.avif");
+}
+
+.lightning-layer--middle .cloud-lightning-flash {
+	--flash-cloud-mask: url("./assets/clouds/storm-cloud-alpha.avif");
+}
+
+.lightning-layer--front .cloud-lightning-flash {
+	--flash-cloud-mask: url("./assets/clouds/storm-cloud-cumulus.avif");
+}
+
+@keyframes cloud-lightning-flash {
+	0%,
+	10% {
+		opacity: 0;
+	}
+	11%,
+	19% {
+		opacity: 0.48;
+	}
+	20%,
+	31% {
+		opacity: 0.08;
+	}
+	32%,
+	47% {
+		opacity: 1;
+	}
+	48%,
+	66% {
+		opacity: 0.16;
+	}
+	67%,
+	78% {
+		opacity: 0.62;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.storm-cloud__texture {
+		animation: none;
+	}
+}
+
+.is-resizing .storm-cloud__texture,
+.is-resizing .rain-drop,
+.is-resizing .shooting-star {
+	animation-play-state: paused;
 }
 
 .scenery {
@@ -167,6 +605,7 @@ body {
 	mask-size: var(--mask-size, auto 100%);
 	filter: var(--color-grade);
 	pointer-events: none;
+	contain: layout paint style;
 
 	&[data-scenery="distant-hills"] {
 		--stack-order: 2;
@@ -182,8 +621,8 @@ body {
 		--height: 140dvh;
 		--texture: url("./assets/distant-jerusalem-city-only-4k.avif");
 		--texture-size: 100% auto;
-		--color-grade: brightness(43%) saturate(28%) contrast(89%) grayscale(32%)
-			sepia(6%);
+		--color-grade: brightness(43%) saturate(28%) contrast(89%)
+			grayscale(32%) sepia(6%);
 	}
 	&[data-scenery="golgotha-ridge"] {
 		--stack-order: 12;
@@ -205,6 +644,135 @@ body {
 	}
 }
 
+.scenery[data-scenery="distant-jerusalem"] {
+	background-image: none;
+	filter: none;
+	isolation: isolate;
+}
+
+.scenery[data-scenery="distant-jerusalem"]::before {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	content: "";
+	background-image: var(--texture);
+	background-position: center bottom;
+	background-repeat: no-repeat;
+	background-size: var(--texture-size, auto 100%);
+	filter: var(--color-grade);
+}
+
+.city-light {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	background-color: var(--light-color);
+	-webkit-mask-image: var(--light-mask);
+	-webkit-mask-position: center bottom;
+	-webkit-mask-repeat: no-repeat;
+	-webkit-mask-size: 100% auto;
+	mask-image: var(--light-mask);
+	mask-position: center bottom;
+	mask-repeat: no-repeat;
+	mask-size: 100% auto;
+	mix-blend-mode: screen;
+	opacity: var(--light-opacity);
+	filter: var(--light-glow);
+}
+
+.city-light--home {
+	--light-color: #ff9d42;
+	--light-glow: drop-shadow(0 0 1px rgba(255, 220, 151, 0.96))
+		drop-shadow(0 0 4px rgba(255, 126, 35, 0.76))
+		drop-shadow(0 0 9px rgba(214, 72, 16, 0.35));
+}
+
+.city-light--architecture {
+	--light-mask: url("./assets/city-lights/architecture.webp");
+	--light-color: #94735b;
+	--light-opacity: 0.21;
+	--light-glow: none;
+}
+
+.city-light--home-1 {
+	--light-mask: url("./assets/city-lights/home-1.webp");
+	--light-color: #ff9a3d;
+	--light-opacity: 0.62;
+}
+
+.city-light--home-2 {
+	--light-mask: url("./assets/city-lights/home-2.webp");
+	--light-color: #ffb35f;
+	--light-opacity: 0.7;
+}
+
+.city-light--home-3 {
+	--light-mask: url("./assets/city-lights/home-3.webp");
+	--light-color: #f47f2f;
+	--light-opacity: 0.54;
+}
+
+.city-light--home-4 {
+	--light-mask: url("./assets/city-lights/home-4.webp");
+	--light-color: #ffc174;
+	--light-opacity: 0.66;
+}
+
+.city-light--home-5 {
+	--light-mask: url("./assets/city-lights/home-5.webp");
+	--light-color: #df6c28;
+	--light-opacity: 0.48;
+}
+
+.city-light--lantern {
+	--light-color: #ffc968;
+	--light-glow: drop-shadow(0 0 1px rgba(255, 246, 202, 1))
+		drop-shadow(0 0 3px rgba(255, 184, 72, 0.94))
+		drop-shadow(0 0 8px rgba(235, 116, 25, 0.54));
+	z-index: 2;
+}
+
+.city-light--lantern-common {
+	--light-mask: url("./assets/city-lights/lantern-common.webp");
+	--light-color: #ffca69;
+	--light-opacity: 0.86;
+}
+
+.city-light--lantern-variant {
+	--light-mask: url("./assets/city-lights/lantern-variant.webp");
+	--light-color: #ff9f43;
+	--light-opacity: 0.68;
+	--light-glow: drop-shadow(0 0 1px rgba(255, 225, 177, 0.92))
+		drop-shadow(0 0 3px rgba(244, 139, 46, 0.72))
+		drop-shadow(0 0 7px rgba(194, 77, 20, 0.36));
+}
+
+.city-flicker-plane {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	z-index: 3;
+	width: 100%;
+	aspect-ratio: 2 / 1;
+	pointer-events: none;
+}
+
+.city-flicker-light {
+	position: absolute;
+	top: var(--flicker-y);
+	left: var(--flicker-x);
+	width: var(--flicker-width);
+	height: var(--flicker-height);
+	border-radius: 30%;
+	background: var(--flicker-color);
+	box-shadow:
+		0 0 2px rgba(255, 220, 151, 0.95),
+		0 0 6px rgba(255, 126, 35, 0.72);
+	mix-blend-mode: screen;
+	opacity: 0;
+	will-change: opacity;
+}
+
 #christ {
 	--christ-rotate-y: 0deg;
 	--christ-edge-offset: 0px;
@@ -218,9 +786,7 @@ body {
 	transform: translateX(-50%) perspective(1100px)
 		rotateY(var(--christ-rotate-y));
 	transform-origin: center center;
-	filter: drop-shadow(
-		var(--christ-edge-offset) 0 1px rgba(24, 14, 10, 0.42)
-	);
+	filter: drop-shadow(var(--christ-edge-offset) 0 1px rgba(24, 14, 10, 0.42));
 	backface-visibility: hidden;
 }
 
@@ -282,13 +848,17 @@ body {
 .motion-start-eyebrow {
 	margin-bottom: 9px;
 	color: #e7b477;
-	font: 700 0.61rem/1.2 system-ui, sans-serif;
+	font:
+		700 0.61rem/1.2 system-ui,
+		sans-serif;
 	letter-spacing: 0.16em;
 	text-transform: uppercase;
 }
 
 .motion-start-title {
-	font: 500 clamp(1.65rem, 6.8vw, 2rem) / 1.15 Georgia, "Times New Roman",
+	font:
+		500 clamp(1.65rem, 6.8vw, 2rem) / 1.15 Georgia,
+		"Times New Roman",
 		serif;
 	letter-spacing: 0.015em;
 	text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
@@ -298,7 +868,9 @@ body {
 	max-width: 225px;
 	margin-top: 10px;
 	color: rgba(235, 240, 239, 0.72);
-	font: 500 0.78rem/1.5 system-ui, sans-serif;
+	font:
+		500 0.78rem/1.5 system-ui,
+		sans-serif;
 	letter-spacing: 0.045em;
 }
 
