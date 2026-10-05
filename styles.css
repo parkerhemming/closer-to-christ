@@ -92,6 +92,27 @@ body {
 			);
 		}
 	}
+
+	.shooting-star {
+		position: absolute;
+		top: var(--shooting-start-y);
+		left: var(--shooting-start-x);
+		width: clamp(95px, 10vw, 155px);
+		height: 2px;
+		border-radius: 999px;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(218, 235, 247, 0.22) 30%,
+			rgba(244, 250, 255, 0.92) 88%,
+			white
+		);
+		box-shadow: 5px 0 7px rgba(214, 236, 255, 0.65);
+		filter: drop-shadow(0 0 4px rgba(218, 239, 255, 0.8));
+		pointer-events: none;
+		transform-origin: right center;
+		animation: shooting-star var(--shooting-duration) ease-out forwards;
+	}
 }
 
 @keyframes twinkle {
@@ -100,6 +121,25 @@ body {
 	}
 	100% {
 		opacity: 0;
+	}
+}
+
+@keyframes shooting-star {
+	0% {
+		opacity: 0;
+		transform: rotate(var(--shooting-angle)) translate3d(0, 0, 0)
+			scaleX(0.4);
+	}
+	12% {
+		opacity: 1;
+	}
+	72% {
+		opacity: 0.9;
+	}
+	100% {
+		opacity: 0;
+		transform: rotate(var(--shooting-angle))
+			translate3d(var(--shooting-distance), 0, 0) scaleX(1);
 	}
 }
 

@@ -28,6 +28,57 @@ function createStars(stars) {
 	}
 }
 
+function createShootingStars() {
+	const sky = document.getElementById("sky");
+	const reducedMotion = window.matchMedia(
+		"(prefers-reduced-motion: reduce)",
+	).matches;
+
+	if (reducedMotion) return;
+
+	function scheduleShootingStar(firstStar = false) {
+		const minimumDelay = firstStar ? 4500 : 18000;
+		const delayRange = firstStar ? 4500 : 22000;
+
+		window.setTimeout(launchShootingStar, minimumDelay + Math.random() * delayRange);
+	}
+
+	function launchShootingStar() {
+		const shootingStar = document.createElement("span");
+		const movingRight = Math.random() > 0.5;
+		const movingDown = Math.random() > 0.35;
+		const angle = movingRight
+			? movingDown
+				? 12 + Math.random() * 18
+				: -(8 + Math.random() * 16)
+			: movingDown
+				? 150 + Math.random() * 18
+				: 192 + Math.random() * 16;
+		const startX = movingRight
+			? 5 + Math.random() * 40
+			: 55 + Math.random() * 40;
+		const startY = movingDown
+			? 4 + Math.random() * 23
+			: 20 + Math.random() * 18;
+
+		shootingStar.className = "shooting-star";
+		shootingStar.setAttribute("aria-hidden", "true");
+		shootingStar.style.setProperty("--shooting-start-x", `${startX}%`);
+		shootingStar.style.setProperty("--shooting-start-y", `${startY}%`);
+		shootingStar.style.setProperty("--shooting-angle", `${angle}deg`);
+		shootingStar.style.setProperty("--shooting-distance", `${45 + Math.random() * 25}vw`);
+		shootingStar.style.setProperty("--shooting-duration", `${900 + Math.random() * 350}ms`);
+
+		shootingStar.addEventListener("animationend", () => shootingStar.remove(), {
+			once: true,
+		});
+		sky.appendChild(shootingStar);
+		scheduleShootingStar();
+	}
+
+	scheduleShootingStar(true);
+}
+
 function parallax() {
 	const layers = document.querySelectorAll("[data-z_index]");
 	const christ = document.getElementById("christ");
