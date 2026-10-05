@@ -233,7 +233,6 @@ body {
 }
 
 .storm-cloud--far {
-	--cloud-image: url("./assets/clouds/storm-cloud-map.avif");
 	--cloud-image-height: 110dvh;
 	--cloud-y: 0dvh;
 	--cloud-drift: -13vw;
@@ -876,4 +875,122 @@ body {
 
 [data-z_index] {
 	will-change: translate;
+}
+
+@media (min-width: 901px) {
+	.storm-cloud--far {
+		--cloud-image: url("./assets/clouds/storm-cloud-map.avif");
+	}
+}
+
+/* Keep iPhone Safari below its GPU and decoded-image memory limits. */
+@media (max-width: 900px) {
+	.storm-cloud {
+		top: -12dvh;
+		left: -10vw;
+		width: 120vw;
+		height: 124dvh;
+	}
+
+	.storm-cloud__texture {
+		inset: 0 auto 0 -15vw;
+		width: 165vw;
+	}
+
+	.storm-cloud--far {
+		--cloud-image: url("./assets/mobile/storm-cloud-map.avif");
+	}
+
+	.storm-cloud--deep,
+	.storm-cloud--near {
+		--cloud-image: url("./assets/mobile/storm-cloud-cumulus.avif");
+	}
+
+	.storm-cloud--middle {
+		--cloud-image: url("./assets/mobile/storm-cloud-alpha.avif");
+	}
+
+	.lightning-layer--back .cloud-lightning-flash {
+		--flash-cloud-mask: url("./assets/mobile/storm-cloud-map.avif");
+	}
+
+	.lightning-layer--middle .cloud-lightning-flash {
+		--flash-cloud-mask: url("./assets/mobile/storm-cloud-alpha.avif");
+	}
+
+	.lightning-layer--front .cloud-lightning-flash {
+		--flash-cloud-mask: url("./assets/mobile/storm-cloud-cumulus.avif");
+	}
+
+	.storm-cloud--midband,
+	.storm-cloud--lower {
+		display: none;
+	}
+
+	.scenery[data-scenery="distant-hills"] {
+		--texture: url("./assets/mobile/israel-hills-cutout.avif");
+	}
+
+	.scenery[data-scenery="distant-jerusalem"] {
+		--texture: url("./assets/mobile/distant-jerusalem-city-only.avif");
+	}
+
+	.scenery[data-scenery="golgotha-ridge"] {
+		--texture: url("./assets/mobile/desert-scrub-midground.avif");
+		--mask: url("./assets/mobile/golgotha-ridge.avif");
+	}
+
+	.scenery[data-scenery="ground"] {
+		--texture: url("./assets/mobile/source-dusk-ground.avif");
+		--mask: url("./assets/mobile/ground-dirt-grass.avif");
+	}
+
+	.city-light--architecture {
+		--light-mask: url("./assets/mobile/city-lights/architecture.webp");
+	}
+
+	.city-light--home-1 {
+		--light-mask: url("./assets/mobile/city-lights/home-1.webp");
+	}
+
+	.city-light--home-2 {
+		--light-mask: url("./assets/mobile/city-lights/home-2.webp");
+	}
+
+	.city-light--home-3 {
+		--light-mask: url("./assets/mobile/city-lights/home-3.webp");
+	}
+
+	.city-light--home-4 {
+		--light-mask: url("./assets/mobile/city-lights/home-4.webp");
+	}
+
+	.city-light--home-5 {
+		--light-mask: url("./assets/mobile/city-lights/home-5.webp");
+	}
+
+	.city-light--lantern-common {
+		--light-mask: url("./assets/mobile/city-lights/lantern-common.webp");
+	}
+
+	.city-light--lantern-variant {
+		--light-mask: url("./assets/mobile/city-lights/lantern-variant.webp");
+	}
+
+	#motion-trigger {
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+		background:
+			radial-gradient(
+				circle at 50% 42%,
+				rgba(231, 180, 119, 0.11),
+				transparent 46%
+			),
+			rgba(5, 15, 22, 0.82);
+	}
+
+	.rain-drop,
+	.city-flicker-light {
+		will-change: auto;
+	}
 }
