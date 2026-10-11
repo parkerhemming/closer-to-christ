@@ -43,7 +43,9 @@ async function cacheFirst(request) {
 
 async function networkFirst(request) {
 	try {
-		const response = await fetch(request);
+		// Always check with the server: without this the browser's own cache
+		// could hand back an old page or stylesheet after an edit.
+		const response = await fetch(request, { cache: "no-cache" });
 		if (response.ok) (await caches.open(CACHE)).put(request, response.clone());
 		return response;
 	} catch {

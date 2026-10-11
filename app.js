@@ -101,9 +101,9 @@ const hourCurves = {
 };
 
 // How much stormier (or calmer) than usual the weather is: random for each
-// visit and each jump in the timeline, and set by the Weather slider. As the
-// clock runs, the weather follows the hour plus this lean, so the storm
-// builds into the noon darkness.
+// visit, set by the Weather slider, and none after a jump to an event (each
+// event has its hour's usual weather). As the clock runs, the weather follows
+// the hour plus this lean, so the storm builds into the noon darkness.
 let weatherLean = randomBetween(-0.2, 0.2);
 
 function weatherForHour(hour) {
@@ -1647,7 +1647,11 @@ function settingsPanel() {
 		}
 	});
 
-	form.addEventListener("input", () => {
+	form.addEventListener("input", (event) => {
+		// Setting the time or weather by hand pauses the clock, so it stays.
+		if (event.target === hour || event.target === weatherIntensity) {
+			document.dispatchEvent(new Event("pauseclock"));
+		}
 		sceneSettings.hour = Number(hour.value);
 		sceneSettings.weatherIntensity = Number(weatherIntensity.value);
 		weatherLean = sceneSettings.weatherIntensity - alongCurve(hourCurves.weather, sceneSettings.hour);
@@ -1786,6 +1790,13 @@ function timelineClock() {
 		return created;
 	}
 
+	// "10:47 AM" with the digits in their own span, so they can be drawn a
+	// touch heavier to match Georgia's letters (see .time-digits).
+	function timeParts(hour) {
+		const [digits, period] = clockTime(hour).split(" ");
+		return [element("span", "time-digits", digits), ` ${period}`];
+	}
+
 	// The latest event at or before an hour.
 	function eventIndex(hour) {
 		return timeline.findLastIndex((event) => event.hour <= hour + 0.001);
@@ -1800,29 +1811,17 @@ function timelineClock() {
 			element("span", "timeline-event-text", event.text),
 			element("cite", "timeline-event-references", event.references),
 		);
-		choice.addEventListener("click", () => goToHour(event.hour));
+		// Picking one closes the list; the caption shows that event for a few
+		// seconds before folding, like any other.
+		choice.addEventListener("click", () => {
+			goToHour(event.hour);
+			setOpen(false, { foldNow: false });
+		});
 		const item = document.createElement("li");
 		item.append(choice);
 		return item;
 	});
 	list.querySelector(".timeline-events").replaceChildren(...choices);
-
-	// The time in fixed-width slots: [h][h]:[m][m] AM. A one-digit hour
-	// leaves the first slot empty.
-	clock.innerHTML =
-		'<span class="clock-digit"></span><span class="clock-digit"></span>' +
-		'<span class="clock-colon">:</span>' +
-		'<span class="clock-digit"></span><span class="clock-digit"></span>' +
-		'<span class="clock-period"></span>';
-	const clockSlots = [...clock.children].filter((slot) => slot.className !== "clock-colon");
-	function showClock(hour) {
-		const [time, period] = clockTime(hour).split(" ");
-		const characters = [...time.replace(":", "").padStart(4, " "), period];
-		clockSlots.forEach((slot, i) => {
-			const text = characters[i].trim();
-			if (slot.textContent !== text) slot.textContent = text;
-		});
-	}
 
 	// Where the clock is heading while it eases, so quick arrow presses
 	// keep stepping from there.
@@ -1830,7 +1829,7 @@ function timelineClock() {
 
 	function showTime() {
 		const hour = sceneSettings.hour;
-		showClock(hour);
+		clock.replaceChildren(...timeParts(hour));
 		const index = eventIndex(hour);
 		choices.forEach((item, i) => {
 			if (i === index) item.firstChild.setAttribute("aria-current", "true");
@@ -1851,14 +1850,74 @@ function timelineClock() {
 		caption.classList.add("is-changing");
 		clearTimeout(captionTimer);
 		captionTimer = setTimeout(() => {
-			title.replaceChildren(
-				element("span", "caption-time", `${clockTime(event.hour)} • `),
-				event.title,
-			);
-			text.textContent = event.text;
-			caption.classList.remove("is-changing");
+			resizeSmoothly(() => {
+				const time = element("span", "caption-time", "");
+				time.append(...timeParts(event.hour), " • ");
+				title.replaceChildren(time, event.title);
+				text.textContent = event.text;
+				caption.classList.remove("is-changing");
+				caption.classList.remove("is-folded");
+			});
+			holding = true;
+			foldLater(6);
 		}, captioned && title.textContent ? 400 : 0);
 	}
+
+	// Whenever the caption changes height (a new event, folding, opening), it
+	// glides from the old height to the new one instead of snapping: measure,
+	// make the change, measure again, then animate between the two.
+	let resizing = null;
+	function resizeSmoothly(change) {
+		const from = toggle.getBoundingClientRect().height;
+		resizing?.cancel();
+		change();
+		const to = toggle.getBoundingClientRect().height;
+		if (reducedMotion || Math.abs(to - from) < 1) return;
+		resizing = toggle.animate(
+			[
+				{ height: `${from}px`, overflow: "hidden" },
+				{ height: `${to}px`, overflow: "hidden" },
+			],
+			{ duration: 350, easing: "cubic-bezier(0.2, 0.7, 0.3, 1)" },
+		);
+	}
+
+	// The caption folds to one line (ending "...") a few seconds after each
+	// event appears, so it covers less of the scene. With a mouse it opens while
+	// the pointer is over it; on a touchscreen a tap opens it for a while. A
+	// click or tap anywhere else folds it straight away. A new event's first
+	// seconds always show in full, whatever the pointer does.
+	let foldTimer;
+	let hovered = false;
+	let holding = false;
+	function setFolded(folded) {
+		if (folded === caption.classList.contains("is-folded") || (folded && holding)) return;
+		clearTimeout(foldTimer);
+		resizeSmoothly(() => caption.classList.toggle("is-folded", folded));
+	}
+	// Not while the pointer is over it or the list of events is open, and the
+	// first caption's seconds start once the loading screen goes.
+	function foldLater(seconds) {
+		clearTimeout(foldTimer);
+		if (document.querySelector("#loading:not(.is-done)")) {
+			foldTimer = setTimeout(() => foldLater(seconds), 250);
+			return;
+		}
+		foldTimer = setTimeout(() => {
+			holding = false;
+			if (!hovered && list.hidden) setFolded(true);
+		}, seconds * 1000);
+	}
+	caption.addEventListener("pointerenter", (event) => {
+		if (event.pointerType !== "mouse") return;
+		hovered = true;
+		setFolded(false);
+	});
+	caption.addEventListener("pointerleave", (event) => {
+		if (event.pointerType !== "mouse") return;
+		hovered = false;
+		if (!holding) foldLater(1); // a moment's grace, in case the pointer comes back
+	});
 
 	showTime();
 	document.addEventListener("scenesettings", showTime);
@@ -1876,10 +1935,16 @@ function timelineClock() {
 	}
 	showPlaying();
 
-	// Play at 3 PM starts the day over.
+	document.addEventListener("pauseclock", () => {
+		playing = false;
+		showPlaying();
+	});
+
+	// Play returns the weather to its hour's usual (it may have been set by
+	// hand while paused), or at 3 PM starts the day over.
 	playButton.addEventListener("click", () => {
 		playing = !playing;
-		if (playing && sceneSettings.hour >= dayEnd - 0.001) goToHour(dayStart);
+		if (playing) goToHour(sceneSettings.hour >= dayEnd - 0.001 ? dayStart : sceneSettings.hour);
 		showPlaying();
 	});
 
@@ -1905,19 +1970,35 @@ function timelineClock() {
 
 	// The list opens upward from the caption, as far as just under the time
 	// at the top, and opens at the current event.
-	function setOpen(open) {
+	function setOpen(open, { foldNow = true } = {}) {
 		toggle.setAttribute("aria-expanded", open);
 		list.hidden = !open;
-		if (!open) return;
+		// The caption stays open while the list is.
+		if (!open) {
+			if (foldNow && !hovered) setFolded(true);
+			else foldLater(6);
+			return;
+		}
+		setFolded(false);
 		const above = caption.getBoundingClientRect().top - clock.getBoundingClientRect().bottom - 30;
 		list.style.maxHeight = `${above}px`;
 		const current = list.querySelector("[aria-current]");
 		list.scrollTop = current.offsetTop - (list.clientHeight - current.offsetHeight) / 2;
 	}
-	toggle.addEventListener("click", () => setOpen(list.hidden));
-	// A click anywhere else, or Escape, closes it.
+	// Folded (a tap), it opens the caption; open, it opens the list of events.
+	toggle.addEventListener("click", () => {
+		if (caption.classList.contains("is-folded")) {
+			setFolded(false);
+			foldLater(8);
+		} else {
+			setOpen(list.hidden);
+		}
+	});
+	// A click anywhere else, or Escape, closes the list and folds the caption.
 	document.addEventListener("pointerdown", (event) => {
-		if (!list.hidden && !caption.contains(event.target)) setOpen(false);
+		if (caption.contains(event.target)) return;
+		if (list.hidden) setFolded(true);
+		else setOpen(false);
 	});
 	document.addEventListener("keydown", (event) => {
 		if (event.key === "Escape" && !list.hidden) {
@@ -1930,7 +2011,7 @@ function timelineClock() {
 	let lastSceneUpdate = 0;
 	function goToHour(hour) {
 		const from = { hour: sceneSettings.hour, weather: sceneSettings.weatherIntensity };
-		weatherLean = randomBetween(-0.2, 0.2);
+		weatherLean = 0; // the event's own weather: its hour's usual
 		const to = { hour, weather: weatherForHour(hour) };
 		const seconds = reducedMotion ? 0 : 1.6;
 		const start = performance.now();

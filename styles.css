@@ -1,3 +1,18 @@
+/* Georgia's numbers are "old-style" (short, some dropping below the line),
+   so the times take only their digits and colon from Times New Roman, whose
+   numbers stand level at full height; the letters stay Georgia. */
+@font-face {
+	font-family: "Clock Digits";
+	src: local("Times New Roman"), local("TimesNewRomanPSMT");
+	unicode-range: U+0030-003A;
+}
+
+/* Times New Roman's regular digits are a little lighter than Georgia's
+   letters; a hairline outline evens them up. */
+.time-digits {
+	-webkit-text-stroke: 0.02em currentColor;
+}
+
 * {
 	padding: 0;
 	margin: 0;
@@ -17,23 +32,20 @@ body {
 	--ground: #292d24;
 	--ground-light: #46513a;
 	--parallax-overscan: 1.2;
-	/* Type sizes shared by the settings panel, the time, the caption and the
-	   timeline. Computers' are half what they were tuned at (in a browser at
-	   50% zoom); phones have their own, below. */
-	--text-title: 1.35rem;
-	--text-clock: 1.45rem;
-	--text-label: 0.725rem;
-	--text-body: 0.575rem;
-	--text-eyebrow: 0.46rem;
+	/* Type sizes shared by every panel, the time, the caption and the loading
+	   screen. 12px (the small caps) is the smallest text anywhere; the rest
+	   scale up from it. Phones differ only in the title and the time. */
+	--text-title: 2.2rem;
+	--text-clock: 1.9rem;
+	--text-label: 1.125rem;
+	--text-body: 0.9375rem;
+	--text-eyebrow: 0.75rem;
 }
 
 @media (max-width: 600px) {
 	:root {
-		--text-title: 1.8rem;
-		--text-clock: 1.95rem;
-		--text-label: 1.05rem;
-		--text-body: 0.88rem;
-		--text-eyebrow: 0.7rem;
+		--text-title: 1.9rem;
+		--text-clock: 1.6rem;
 	}
 }
 
@@ -847,11 +859,12 @@ body {
 	z-index: 45;
 	bottom: -1.5%;
 	left: 50%;
-	/* -52%, not -50%: the cross in the artwork leans, its beam sitting right
-	   of the image's centre (the sign 0.3%, the foot of the beam 3%), so this
-	   centres the cross on the screen and under the caption. */
-	transform: translateX(-52%) perspective(1100px)
-		rotateY(var(--christ-rotate-y));
+	/* The cross in the artwork is turned about 0.8deg anticlockwise (its
+	   crossbar's right end higher, its upright drifting right toward the
+	   foot), so it's turned back level, then shifted so the crossbar and the
+	   upright both sit within a few pixels of the screen's centre. */
+	transform: translateX(-51.25%) perspective(1100px)
+		rotateY(var(--christ-rotate-y)) rotate(0.8deg);
 	transform-origin: center center;
 	filter: drop-shadow(var(--christ-edge-offset) 0 1px rgba(24, 14, 10, 0.42))
 		brightness(var(--figure-light, 1));
@@ -956,7 +969,7 @@ body {
 	margin-bottom: 9px;
 	color: #e7b477;
 	font:
-		700 0.61rem/1.2 system-ui,
+		700 var(--text-eyebrow)/1.2 system-ui,
 		sans-serif;
 	letter-spacing: 0.16em;
 	text-transform: uppercase;
@@ -997,27 +1010,42 @@ body {
 	visibility: hidden;
 }
 
+/* The card matches the caption box (narrower): the same background,
+   corners, padding (the caption's plus its text's), fonts and sizes, and the
+   same small even gaps. */
 #loading .overlay-card {
-	width: min(88vw, 400px);
-	max-width: calc(100vw - 32px);
-	padding: 40px 40px 34px;
+	gap: 6px;
+	width: min(440px, calc(100vw - 32px));
+	max-width: none;
+	padding: 20px 28px 22px;
+	border: 0;
+	border-radius: 20px;
+	background: rgba(8, 16, 22, 0.62);
+	box-shadow: none;
 }
 
 #loading .overlay-eyebrow {
-	margin-bottom: 12px;
+	margin: 0;
+	font:
+		700 var(--text-eyebrow)/1.2 system-ui,
+		sans-serif;
 }
 
 #loading .overlay-title {
-	font-size: clamp(1.35rem, 5.6vw, 1.6rem);
+	font:
+		500 var(--text-label)/1.25 Georgia,
+		"Times New Roman",
+		serif;
+	text-shadow: none;
 }
 
 .loading-emblem {
 	position: relative;
 	display: grid;
 	place-items: center;
-	width: 84px;
-	height: 84px;
-	margin-bottom: 24px;
+	width: 52px;
+	height: 52px;
+	margin-bottom: 4px;
 }
 
 /* Spinner: a thin golden arc circling the cross. */
@@ -1038,8 +1066,8 @@ body {
 }
 
 .loading-cross {
-	width: 34px;
-	height: 48px;
+	width: 21px;
+	height: 30px;
 	overflow: visible;
 }
 
@@ -1073,9 +1101,9 @@ body {
 }
 
 .loading-progress {
-	width: 180px;
+	width: 140px;
 	height: 2px;
-	margin-top: 22px;
+	margin: 4px 0;
 	overflow: hidden;
 	border-radius: 2px;
 	background: rgba(255, 255, 255, 0.12);
@@ -1092,28 +1120,84 @@ body {
 }
 
 .loading-verse {
-	max-width: 290px;
 	text-wrap: balance;
-	margin-top: 28px;
-	padding-top: 22px;
-	border-top: 1px solid rgba(255, 255, 255, 0.08);
-	color: rgba(235, 240, 239, 0.66);
+	color: rgba(235, 240, 239, 0.85);
 	font:
-		italic 0.88rem/1.6 Georgia,
-		"Times New Roman",
-		serif;
+		italic 500 var(--text-body)/1.5 system-ui,
+		sans-serif;
 }
 
 .loading-verse cite {
 	display: block;
-	margin-top: 10px;
+	margin-top: 6px;
 	color: #e7b477;
 	font:
-		700 0.58rem/1.2 system-ui,
+		700 var(--text-eyebrow)/1.2 system-ui,
 		sans-serif;
 	font-style: normal;
-	letter-spacing: 0.16em;
+	letter-spacing: 0.14em;
 	text-transform: uppercase;
+}
+
+/* Phones and computers: the caption's sizes there. */
+@media (max-width: 600px) {
+	#loading .overlay-card {
+		width: min(300px, calc(100vw - 24px));
+		padding: 16px 14px 18px;
+		border-radius: 16px;
+	}
+
+	.loading-emblem {
+		width: 44px;
+		height: 44px;
+	}
+
+	.loading-cross {
+		width: 18px;
+		height: 25px;
+	}
+
+	.loading-progress {
+		width: 120px;
+	}
+}
+
+@media (min-width: 601px) {
+	#loading .overlay-card {
+		gap: 4px;
+		width: min(440px, calc(100vw - 32px));
+		padding: 14px 18px 15px;
+		border-radius: 10px;
+	}
+
+	/* A little under the sizes of "Scene Settings" and the settings' labels. */
+	#loading .overlay-title {
+		font-size: calc(var(--text-title) * 0.9);
+	}
+
+	.loading-verse {
+		font-size: 1rem;
+	}
+
+	.loading-emblem {
+		width: 32px;
+		height: 32px;
+		margin-bottom: 3px;
+	}
+
+	.loading-cross {
+		width: 13px;
+		height: 18px;
+	}
+
+	.loading-progress {
+		width: 90px;
+		margin: 3px 0;
+	}
+
+	.loading-verse cite {
+		margin-top: 3px;
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1216,6 +1300,10 @@ body {
 	flex-direction: column;
 	gap: inherit;
 	min-height: 0;
+	/* Reaches into the card's right padding (the text stays put), so the
+	   scrollbar runs down that empty strip instead of over the text. */
+	margin-right: -18px;
+	padding-right: 18px;
 	overflow-y: auto;
 	overscroll-behavior: contain;
 	touch-action: pan-y;
@@ -1322,7 +1410,7 @@ body {
 	margin-top: -8px;
 	color: rgba(235, 240, 239, 0.45);
 	font:
-		600 0.82rem/1.2 system-ui,
+		600 var(--text-eyebrow)/1.2 system-ui,
 		sans-serif;
 	letter-spacing: 0.04em;
 }
@@ -1372,7 +1460,7 @@ body {
 /* Phones: the panel fills the screen. */
 @media (max-width: 600px) {
 	.settings {
-		inset: calc(max(20px, env(safe-area-inset-top)) + 64px) 12px auto;
+		inset: calc(max(20px, env(safe-area-inset-top)) + 48px) 12px auto;
 		width: auto;
 		border-radius: 20px;
 	}
@@ -1388,19 +1476,16 @@ body {
 		padding-top: 24px;
 	}
 
-	/* (.settings prefix: the base details rule comes later in the file.) */
-	.settings .settings-details {
-		font-size: 0.8rem;
-	}
 
+	/* The same size as the caption's arrows. */
 	.settings-button {
-		width: 54px;
-		height: 54px;
+		width: 38px;
+		height: 38px;
 	}
 
 	.settings-button svg {
-		width: 28px;
-		height: 28px;
+		width: 22px;
+		height: 22px;
 	}
 }
 
@@ -1421,10 +1506,18 @@ body {
 	font-size: var(--text-clock);
 }
 
+/* Nothing here is clipped (the page clips everything by default), so the
+   time's soft shadow shows in full. */
+.clock-bar,
+.clock-bar * {
+	overflow: visible;
+}
+
 .clock-time {
 	color: white;
 	font:
-		500 1em/1 Georgia,
+		500 1em/1 "Clock Digits",
+		Georgia,
 		"Times New Roman",
 		serif;
 	letter-spacing: 0.01em;
@@ -1481,34 +1574,10 @@ body {
 	display: block;
 }
 
-/* Every digit sits in a slot of the same width (Georgia's digits differ),
-   so AM/PM doesn't shift as the minutes change. A one-digit hour has no
-   first slot, so the time stays the same distance from the button. */
-.clock-digit {
-	display: inline-block;
-	width: 0.6em;
-	text-align: center;
-}
-
-.clock-digit:empty {
-	display: none;
-}
-
-.clock-colon {
-	display: inline-block;
-	width: 0.3em;
-	text-align: center;
-}
-
-.clock-period {
-	display: inline-block;
-	width: 1.55em;
-	margin-left: 0.22em;
-}
-
 /* The caption, bottom centre: what is happening, like a film subtitle, with
-   arrows to step between events and a ^ that opens the list of them all
-   upward. */
+   arrows to step between events; clicking it opens the list of them all
+   upward. It folds to one line a few seconds after each event and opens
+   again on hover or a tap (timelineClock in app.js). */
 .caption {
 	position: fixed;
 	bottom: max(28px, env(safe-area-inset-bottom));
@@ -1516,30 +1585,27 @@ body {
 	z-index: 80;
 	display: grid;
 	grid-template-columns: auto 1fr auto;
-	align-items: center;
+	align-items: end; /* the arrows stay put as the box grows upward */
 	gap: 14px;
 	width: min(760px, calc(100vw - 32px));
 	box-sizing: border-box;
-	padding: 10px 14px;
-	border-radius: 20px;
-	background: rgba(8, 16, 22, 0.62);
 	color: white;
 	translate: -50% 0;
 	overflow: visible;
 }
 
-/* The title and text are one button that opens the list; hovering shows
-   its box. */
+/* The title and text are one button (the dark box; the arrows sit outside
+   it) that opens the list. */
 .caption-content {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	gap: 6px;
 	min-width: 0;
-	padding: 10px 14px 12px;
+	padding: 18px 24px 20px;
 	border: 1px solid transparent;
-	border-radius: 14px;
-	background: none;
+	border-radius: 20px;
+	background: rgba(8, 16, 22, 0.62);
 	color: inherit;
 	text-align: center;
 	text-wrap: balance;
@@ -1553,7 +1619,7 @@ body {
 .caption-content:hover,
 .caption-content[aria-expanded="true"] {
 	border-color: rgba(255, 255, 255, 0.14);
-	background: rgba(255, 255, 255, 0.07);
+	background: rgba(24, 33, 39, 0.66);
 }
 
 .caption-title,
@@ -1574,6 +1640,41 @@ body {
 
 .caption-time {
 	opacity: 0.6;
+	font-family: "Clock Digits", Georgia, "Times New Roman", serif;
+}
+
+@keyframes caption-appear {
+	from {
+		opacity: 0;
+	}
+}
+
+/* Folded (a few seconds after each event, or a click elsewhere): one line,
+   cut off with an ellipsis. */
+.caption.is-folded .caption-content {
+	flex-direction: row;
+	justify-content: center;
+	gap: 8px;
+}
+
+.caption.is-folded .caption-title {
+	min-width: 0;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+/* Always ends in "...", even when the whole title fits (when it doesn't,
+   this is cut off and the ellipsis above shows instead). */
+.caption.is-folded .caption-title::after {
+	content: "…";
+}
+
+.caption.is-folded .caption-text {
+	display: none;
+}
+
+.caption:not(.is-folded) .caption-text {
+	animation: caption-appear 300ms ease;
 }
 
 .caption-text {
@@ -1583,12 +1684,13 @@ body {
 		sans-serif;
 }
 
+/* Round buttons of their own, like the pause and settings buttons. */
 .caption-step {
 	display: grid;
 	place-items: center;
-	border: 1px solid rgba(255, 255, 255, 0.16);
+	border: 1px solid rgba(255, 255, 255, 0.22);
 	border-radius: 50%;
-	background: rgba(255, 255, 255, 0.04);
+	background: rgba(12, 28, 37, 0.5);
 	color: #e7b477;
 	cursor: pointer;
 	touch-action: manipulation;
@@ -1610,7 +1712,7 @@ body {
 }
 
 .caption-step:hover:not(:disabled) {
-	background: rgba(231, 180, 119, 0.14);
+	background: rgba(231, 180, 119, 0.25);
 }
 
 .caption-step:disabled {
@@ -1727,29 +1829,38 @@ body {
 
 @media (max-width: 600px) {
 	.clock-play {
-		width: 54px;
-		height: 54px;
+		width: 38px;
+		height: 38px;
 	}
 
 	.clock-play svg {
-		width: 26px;
-		height: 26px;
+		width: 18px;
+		height: 18px;
 	}
 
+	/* The time a little closer to the button than the button is to the edge. */
+	.clock-bar {
+		gap: 12px;
+	}
+
+	/* As far from the bottom and sides as the top buttons are from theirs. */
 	.caption {
+		bottom: max(20px, env(safe-area-inset-bottom));
 		gap: 6px;
-		width: calc(100vw - 24px);
-		padding: 8px;
-		border-radius: 16px;
+		width: calc(100vw - 40px);
 	}
 
 	.caption-content {
-		padding: 8px 6px 10px;
+		padding: 12px 12px 14px;
+		border-radius: 16px;
 	}
 
+	/* Centred on the folded box: its padding (12px + 14px), border and one
+	   line of title. */
 	.caption-step {
 		width: 38px;
 		height: 38px;
+		margin-bottom: calc((12px + 14px + 2px + var(--text-label) * 1.25 - 38px) / 2);
 	}
 
 	.caption-step svg {
@@ -1779,7 +1890,7 @@ body {
 	gap: 12px 18px;
 	color: rgba(235, 240, 239, 0.6);
 	font:
-		500 1.05rem/1.4 ui-monospace,
+		500 0.8rem/1.4 ui-monospace,
 		SFMono-Regular,
 		Menlo,
 		monospace;
@@ -1795,10 +1906,10 @@ body {
 	overflow-wrap: anywhere;
 }
 
-/* Computers: every interface size above at half (except the loading
-   screen). They were tuned by eye in a browser zoomed to 50%, so at normal
-   (100%) zoom this matches what was approved. Phones keep the sizes above
-   (tuned at real size); borders stay 1px. */
+/* Computers: every interface size above at half. They were tuned by eye in
+   a browser zoomed to 50%, so at normal (100%) zoom this matches what was
+   approved. Phones keep the sizes above (tuned at real size); borders stay
+   1px. */
 @media (min-width: 601px) {
 	.overlay {
 		padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
@@ -1822,33 +1933,23 @@ body {
 	.overlay-button {
 		padding: 6px 8px;
 		border-radius: 6px;
-		font: 600 0.43rem/1.2 system-ui, sans-serif;
-	}
-
-	/* The loading screen keeps its full sizes, so it reads easily. */
-	#loading .overlay-eyebrow {
-		font-size: 0.61rem;
 	}
 
 	.overlay-eyebrow {
 		margin-bottom: 4.5px;
-		font: 700 0.305rem/1.2 system-ui, sans-serif;
 	}
 
 	.overlay-title {
-		font: 500 clamp(0.825rem, 6.8vw, 1rem) / 1.15 Georgia, "Times New Roman", serif;
 		text-shadow: 0 1px 9px rgba(0, 0, 0, 0.55);
 	}
 
 	.overlay-copy {
 		max-width: 112.5px;
 		margin-top: 5px;
-		font: 500 0.39rem/1.5 system-ui, sans-serif;
 	}
 
+	/* The same distances from the screen's edges as on phones. */
 	.settings-button {
-		top: max(10px, env(safe-area-inset-top));
-		right: max(10px, env(safe-area-inset-right));
 		width: 38px;
 		height: 38px;
 		-webkit-backdrop-filter: blur(5px);
@@ -1861,9 +1962,9 @@ body {
 	}
 
 	.settings {
-		inset: calc(max(10px, env(safe-area-inset-top)) + 44px) max(10px, env(safe-area-inset-right)) auto auto;
-		width: min(290px, calc(100vw - 20px));
-		max-height: calc(100dvh - 70px);
+		inset: calc(max(20px, env(safe-area-inset-top)) + 48px) max(20px, env(safe-area-inset-right)) auto auto;
+		width: min(440px, calc(100vw - 40px));
+		max-height: calc(100dvh - 88px);
 		border-radius: 12px;
 	}
 
@@ -1906,7 +2007,6 @@ body {
 
 	.settings-scale {
 		margin-top: -4px;
-		font: 600 0.41rem/1.2 system-ui, sans-serif;
 	}
 
 	.settings-switch {
@@ -1928,7 +2028,7 @@ body {
 	}
 
 	.clock-bar {
-		--edge: 10px;
+		gap: 12px;
 	}
 
 	.clock-play {
@@ -1946,27 +2046,28 @@ body {
 	}
 
 	.caption {
-		bottom: max(14px, env(safe-area-inset-bottom));
+		bottom: max(12px, env(safe-area-inset-bottom));
 		gap: 7px;
-		width: min(380px, calc(100vw - 16px));
-		padding: 5px 7px;
-		border-radius: 10px;
+		width: min(600px, calc(100vw - 32px));
 	}
 
 	.caption-content {
 		gap: 3px;
-		padding: 5px 7px 6px;
-		border-radius: 7px;
+		padding: 10px 14px 11px;
+		border-radius: 10px;
 	}
 
+	/* The same size as the pause and settings buttons. */
 	.caption-step {
-		width: 26px;
-		height: 26px;
+		width: 38px;
+		height: 38px;
+		/* Centred on the folded box (10px + 11px padding, border, a line). */
+		margin-bottom: calc((10px + 11px + 2px + var(--text-label) * 1.25 - 38px) / 2);
 	}
 
 	.caption-step svg {
-		width: 15px;
-		height: 15px;
+		width: 20px;
+		height: 20px;
 	}
 
 	.timeline {
@@ -1996,7 +2097,6 @@ body {
 
 	.settings-details {
 		gap: 6px 9px;
-		font: 500 0.525rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
 	}
 
 }

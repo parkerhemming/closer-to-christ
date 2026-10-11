@@ -62,6 +62,7 @@
 - [x] Stars and city lights fade out as it gets light
 - [x] Every layer's lighting and color follows the time of day
 - [x] Mountain shadows at sunrise that shift with the parallax
+- [] The near ground's sunrise shadow shows as a grey box behind the caption (shrinks as the morning goes on)
 - [x] Time of day slider in Scene Settings
 - [x] Time of day runs 6 AM to 3 PM (the day of the Crucifixion), starting at 6 AM; darkness from noon
 - [x] Time in the top-left; caption at the bottom with < > to step between events and ^ to open the list of them all
