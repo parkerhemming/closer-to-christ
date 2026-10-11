@@ -103,9 +103,9 @@
 				<span class="storm-cloud__texture"></span>
 			</section>
 
-			<div id="rain-back" class="rain-layer rain-layer--back"></div>
+			<canvas id="rain-back" class="rain-layer rain-layer--back"></canvas>
 			<div id="storm-tone" class="storm-tone"></div>
-			<div id="rain-front" class="rain-layer rain-layer--front"></div>
+			<canvas id="rain-front" class="rain-layer rain-layer--front"></canvas>
 		</div>
 
 		<section
@@ -174,6 +174,22 @@
 						</svg>
 					</button>
 				</header>
+
+				<fieldset class="settings-group">
+					<legend>Scene</legend>
+					<label class="settings-row settings-row--stacked">
+						<span class="settings-label">
+							Weather
+							<output name="weatherValue"></output>
+							<small>From clear skies to a full storm</small>
+						</span>
+						<input type="range" name="weatherIntensity" min="0" max="1" step="0.01" />
+						<span class="settings-scale" aria-hidden="true">
+							<span>Clear</span>
+							<span>Storm</span>
+						</span>
+					</label>
+				</fieldset>
 
 				<fieldset class="settings-group">
 					<legend>Motion</legend>

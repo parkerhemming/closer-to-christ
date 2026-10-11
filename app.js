@@ -2,6 +2,9 @@
 // savedSettingNames can also be changed in the settings panel, and a
 // visitor's choices there are saved on their device and win over these.
 const sceneSettings = {
+	// 0 is a clear sky, 1 a full storm; 0.7 is the original storm.
+	// Rain, lightning, clouds and wind all follow it (see weatherCurves).
+	weatherIntensity: 0.7,
 	// Whether the scene follows the mouse or phone tilt at all.
 	parallax: true,
 	// Seconds the parallax takes to catch up to the mouse or tilt.
@@ -17,7 +20,7 @@ const reducedMotion = window.matchMedia(
 	"(prefers-reduced-motion: reduce)",
 ).matches;
 
-const savedSettingNames = ["parallax", "parallaxSmoothing"];
+const savedSettingNames = ["weatherIntensity", "parallax", "parallaxSmoothing"];
 
 try {
 	const saved = JSON.parse(localStorage.getItem("sceneSettings")) ?? {};
@@ -35,6 +38,51 @@ function saveSettings() {
 		localStorage.setItem("sceneSettings", JSON.stringify(saved));
 	} catch {}
 	document.dispatchEvent(new Event("scenesettings"));
+}
+
+// How each part of the weather follows weatherIntensity, as [weather, value]
+// points joined by straight lines. Every curve has value 1 at weather 0.7, so
+// 0.7 is exactly the original storm.
+const weatherCurves = {
+	// Amount of rain: none until 0.35, a downpour (14x the original) at 1.
+	rain: [[0, 0], [0.35, 0], [0.7, 1], [1, 14]],
+	// Streak length: long streaks in heavy rain read as sheets of water.
+	rainLength: [[0, 1], [0.7, 1], [1, 1.9]],
+	// Streak brightness.
+	rainBrightness: [[0, 1], [0.7, 1], [1, 1.25]],
+	// How often lightning strikes: none until 0.55, 2.5x as often at 1.
+	lightning: [[0, 0], [0.55, 0], [0.7, 1], [1, 2.5]],
+	// Cloud opacity: faint wisps when clear, thin at partly cloudy, much
+	// thicker than the original at 1.
+	clouds: [[0, 0.08], [0.4, 0.38], [0.7, 1], [1, 1.7]],
+	// Cloud brightness: light, fair-weather clouds when clear; dark at 1.
+	cloudShade: [[0, 1.45], [0.4, 1.2], [0.7, 1], [1, 0.72]],
+	// Wind: how fast the clouds drift and how far the rain slants.
+	wind: [[0, 0.35], [0.7, 1], [1, 1.9]],
+	// The dark storm wash over the whole scene (its opacity: the wash is
+	// twice the original strength, so 0.5 is the original and 1 is double).
+	gloom: [[0, 0], [0.4, 0.22], [0.7, 0.5], [1, 1]],
+};
+
+function byWeather(points) {
+	const weather = clamp(sceneSettings.weatherIntensity, 0, 1);
+	for (let i = 1; i < points.length; i++) {
+		const [fromWeather, fromValue] = points[i - 1];
+		const [toWeather, toValue] = points[i];
+		if (weather <= toWeather) {
+			const along = (weather - fromWeather) / (toWeather - fromWeather);
+			return fromValue + (toValue - fromValue) * along;
+		}
+	}
+	return points.at(-1)[1];
+}
+
+function weatherName(weather) {
+	if (weather < 0.15) return "Clear";
+	if (weather < 0.35) return "Partly cloudy";
+	if (weather < 0.55) return "Overcast";
+	if (weather < 0.85) return "Storm";
+	return "Heavy storm";
 }
 
 function randomBetween(minimum, maximum) {
@@ -56,7 +104,7 @@ function setStyleProperties(element, properties) {
 // be slow. CSS reacts to data-quality right away (including the image size).
 const qualityLevels = ["low", "medium", "high"];
 // Filled in as the scene loads; shown in the settings panel's details.
-const renderStats = { loadSeconds: null, connectionTestMs: null };
+const renderStats = { loadSeconds: null, connectionTestMs: null, raindrops: 0 };
 // A small image every lower-quality scene uses; timing it tells a fast
 // connection from a slow one before the large images start downloading.
 const connectionTestImage = "./assets/mobile/storm-cloud-cumulus.avif"; // 48KB
@@ -342,59 +390,132 @@ function createStorm() {
 	];
 	const svgNamespace = "http://www.w3.org/2000/svg";
 
-	function startRainEmitter(elementId, settings) {
-		const rainLayer = document.getElementById(elementId);
+	// Rain is drawn on two full-screen canvases (behind and in front of the
+	// storm wash) rather than as an element per drop: each frame redraws every
+	// drop as a slanted streak, and a drop that falls off the bottom starts
+	// again above the top. Drops are grouped into a few brightness/width bands
+	// and each band is drawn in one go, so a downpour of hundreds of drops costs
+	// about as much as a drizzle. Nothing runs while the tab is hidden.
+	function startRain(layers) {
+		const fallSlant = Math.tan((7 * Math.PI) / 180); // the original 7deg lean
+		const brightnessBands = 4;
+		const widthBands = 2;
+		let width = 0;
+		let height = 0;
+		let lastTime = 0;
+		let firstFrame = true;
 
-		function createRainDrop(initialDrop = false) {
-			const drop = document.createElement("span");
-			const duration = randomBetween(...settings.duration);
-
-			drop.className = "rain-drop";
-			setStyleProperties(drop, {
-				"--rain-x": `${randomBetween(-8, 104)}%`,
-				"--rain-length": `${randomBetween(...settings.length)}px`,
-				"--rain-duration": `${duration}ms`,
-				"--rain-opacity": randomBetween(...settings.opacity),
-				"--rain-drift": `${randomBetween(...settings.drift)}px`,
-				"--rain-width": `${randomBetween(...settings.width)}px`,
-			});
-			// Drops present at page load start mid-fall so the rain is already going.
-			if (initialDrop) {
-				drop.style.animationDelay = `${-randomBetween(0, duration * 0.85)}ms`;
-			}
-			drop.addEventListener("animationend", () => drop.remove(), {
-				once: true,
-			});
-			rainLayer.appendChild(drop);
+		for (const layer of layers) {
+			layer.canvas = document.getElementById(layer.id);
+			layer.context = layer.canvas.getContext("2d");
+			layer.drops = [];
 		}
 
-		function scheduleDrop() {
-			const burstSize =
-				Math.random() < settings.burstChance
-					? Math.floor(randomBetween(2, settings.maximumBurst + 1))
-					: 1;
+		function resize() {
+			width = window.innerWidth;
+			height = window.innerHeight;
+			for (const layer of layers) {
+				// Soft rain doesn't need full retina sharpness; fewer pixels to clear.
+				const scale = Math.min(window.devicePixelRatio, layer.maximumScale);
+				layer.canvas.width = Math.round(width * scale);
+				layer.canvas.height = Math.round(height * scale);
+				layer.context.setTransform(scale, 0, 0, scale, 0, 0);
+				layer.context.lineCap = "round";
+			}
+		}
 
-			// Hidden tabs pause CSS animations, so drops would never end and pile up.
-			// Low quality thins the rain (lowQualityDensity is the share kept).
-			const density =
-				getQuality() === "low" ? settings.lowQualityDensity : 1;
-			if (!document.hidden && Math.random() < density) {
-				for (let i = 0; i < burstSize; i++) {
-					window.setTimeout(createRainDrop, randomBetween(0, 90));
+		// A drop starts somewhere above the top edge (or anywhere on screen when
+		// the rain first appears, so it doesn't arrive as one sheet).
+		function newDrop(layer, anywhere) {
+			const fallSeconds = randomBetween(...layer.fallSeconds);
+			return {
+				x: randomBetween(-0.08, 1.04) * width,
+				y: anywhere ? randomBetween(-0.4, 1) * height : randomBetween(-0.4, 0) * height,
+				// The original drops fell 150% of the screen height in fallSeconds.
+				speed: (1.5 * height) / fallSeconds,
+				drift: randomBetween(...layer.drift) / (1.5 * height), // sideways per px fallen
+				length: randomBetween(...layer.length),
+				band: Math.floor(Math.random() * brightnessBands * widthBands),
+			};
+		}
+
+		function frame(now) {
+			const elapsed = Math.min((now - lastTime) / 1000, 0.05);
+			lastTime = now;
+			const seconds = now / 1000;
+			const wind = byWeather(weatherCurves.wind);
+			const lengthScale = byWeather(weatherCurves.rainLength);
+			const brightness = byWeather(weatherCurves.rainBrightness);
+			// Gusts: the amount of rain swells and eases a little over time.
+			const gust = 1 + 0.18 * Math.sin(seconds * 0.7) + 0.1 * Math.sin(seconds * 1.9 + 1);
+			let total = 0;
+
+			for (const layer of layers) {
+				const share = getQuality() === "low" ? layer.lowQualityShare : 1;
+				const target = Math.round(
+					layer.count * byWeather(weatherCurves.rain) * share * gust,
+				);
+				while (layer.drops.length < target) {
+					layer.drops.push(newDrop(layer, firstFrame));
 				}
+
+				// One faint tail path and one brighter head path per band.
+				const tails = Array.from({ length: brightnessBands * widthBands }, () => new Path2D());
+				const heads = Array.from({ length: brightnessBands * widthBands }, () => new Path2D());
+				for (let i = layer.drops.length - 1; i >= 0; i--) {
+					const drop = layer.drops[i];
+					drop.y += drop.speed * elapsed;
+					drop.x += drop.speed * elapsed * drop.drift * wind;
+					const length = drop.length * lengthScale;
+					if (drop.y - length > height) {
+						// Fallen off the bottom: start again at the top, or stop
+						// if the rain has eased off.
+						if (layer.drops.length > target) layer.drops.splice(i, 1);
+						else layer.drops[i] = newDrop(layer, false);
+						continue;
+					}
+					// A streak along the fall direction (the 7deg lean plus its
+					// wind drift): a faint upper tail and a brighter lower end,
+					// like the original gradient drops.
+					const dx = (fallSlant + drop.drift * wind) * length;
+					const midX = drop.x - dx * 0.45;
+					const midY = drop.y - length * 0.45;
+					tails[drop.band].moveTo(drop.x - dx, drop.y - length);
+					tails[drop.band].lineTo(midX, midY);
+					heads[drop.band].moveTo(midX, midY);
+					heads[drop.band].lineTo(drop.x, drop.y);
+				}
+
+				const context = layer.context;
+				context.clearRect(0, 0, width, height);
+				for (let band = 0; band < tails.length; band++) {
+					const brightnessStep = (band % brightnessBands + 0.5) / brightnessBands;
+					const widthStep = (Math.floor(band / brightnessBands) + 0.5) / widthBands;
+					const [lowOpacity, highOpacity] = layer.opacity;
+					const [thin, thick] = layer.width;
+					const alpha = Math.min(
+						1,
+						(lowOpacity + (highOpacity - lowOpacity) * brightnessStep) * brightness,
+					);
+					context.lineWidth = thin + (thick - thin) * widthStep;
+					context.strokeStyle = `rgba(203, 222, 233, ${alpha * 0.3})`;
+					context.stroke(tails[band]);
+					context.strokeStyle = `rgba(203, 222, 233, ${alpha * 0.9})`;
+					context.stroke(heads[band]);
+				}
+				total += layer.drops.length;
 			}
-
-			const pause =
-				Math.random() < settings.pauseChance
-					? randomBetween(...settings.pause)
-					: 0;
-			window.setTimeout(scheduleDrop, randomBetween(...settings.gap) + pause);
+			firstFrame = false;
+			renderStats.raindrops = total;
+			requestAnimationFrame(frame);
 		}
 
-		for (let i = 0; i < settings.initialDrops; i++) {
-			createRainDrop(true);
-		}
-		scheduleDrop();
+		resize();
+		window.addEventListener("resize", resize, { passive: true });
+		requestAnimationFrame((now) => {
+			lastTime = now;
+			frame(now);
+		});
 	}
 
 	function createBoltPath() {
@@ -553,6 +674,11 @@ function createStorm() {
 	}
 
 	function triggerLightning() {
+		// The weather may have calmed since this strike was scheduled.
+		if (byWeather(weatherCurves.lightning) === 0) {
+			scheduleLightning();
+			return;
+		}
 		const distanceRoll = Math.random();
 		const distanceIndex =
 			distanceRoll < 0.52 ? 0 : distanceRoll < 0.86 ? 1 : 2;
@@ -576,43 +702,67 @@ function createStorm() {
 	function scheduleLightning(firstStrike = false) {
 		const minimumDelay = firstStrike ? 1600 : 3200;
 		const delayRange = firstStrike ? 2800 : 6800;
+		const frequency = byWeather(weatherCurves.lightning);
+		// No lightning in calm weather; look again in a few seconds.
+		if (frequency === 0) {
+			window.setTimeout(scheduleLightning, 3000);
+			return;
+		}
 		window.setTimeout(
 			triggerLightning,
-			minimumDelay + Math.random() * delayRange,
+			(minimumDelay + Math.random() * delayRange) / frequency,
 		);
 	}
 
+	// Clouds and the storm wash follow the weather through CSS variables; the
+	// wind sets the clouds' drift speed through their animation playback rate,
+	// which changes smoothly instead of jumping like a new duration would.
+	function applyWeather() {
+		const storm = document.getElementById("storm");
+		setStyleProperties(storm, {
+			"--cloud-amount": byWeather(weatherCurves.clouds),
+			"--cloud-shade": byWeather(weatherCurves.cloudShade),
+			"--gloom": byWeather(weatherCurves.gloom),
+		});
+		const wind = byWeather(weatherCurves.wind);
+		for (const texture of storm.querySelectorAll(".storm-cloud__texture")) {
+			for (const animation of texture.getAnimations()) {
+				animation.updatePlaybackRate(wind);
+			}
+		}
+	}
+
+	applyWeather();
+	document.addEventListener("scenesettings", applyWeather);
+
 	if (reducedMotion) return;
 
-	// Each [min, max] pair is a random range. Gap and pause are in ms.
-	startRainEmitter("rain-back", {
-		length: [8, 20],
-		duration: [720, 1120],
-		opacity: [0.12, 0.34],
-		drift: [50, 105],
-		width: [0.28, 0.62],
-		gap: [14, 58],
-		burstChance: 0.38,
-		maximumBurst: 5,
-		pauseChance: 0.04,
-		pause: [250, 700],
-		initialDrops: 16,
-		lowQualityDensity: 0,
-	});
-	startRainEmitter("rain-front", {
-		length: [18, 44],
-		duration: [430, 760],
-		opacity: [0.24, 0.62],
-		drift: [90, 180],
-		width: [0.42, 0.88],
-		gap: [30, 105],
-		burstChance: 0.3,
-		maximumBurst: 4,
-		pauseChance: 0.06,
-		pause: [350, 950],
-		initialDrops: 6,
-		lowQualityDensity: 0.5,
-	});
+	// Each [min, max] pair is a random range. count is the number of drops in
+	// the original storm (weather 0.7); the weather scales it.
+	startRain([
+		{
+			id: "rain-back",
+			count: 34,
+			length: [8, 20],
+			fallSeconds: [0.72, 1.12],
+			opacity: [0.12, 0.34],
+			drift: [50, 105], // px sideways over a full fall
+			width: [0.28, 0.62],
+			maximumScale: 1, // soft, distant rain
+			lowQualityShare: 0,
+		},
+		{
+			id: "rain-front",
+			count: 10,
+			length: [18, 44],
+			fallSeconds: [0.43, 0.76],
+			opacity: [0.24, 0.62],
+			drift: [90, 180],
+			width: [0.42, 0.88],
+			maximumScale: 2,
+			lowQualityShare: 0.5,
+		},
+	]);
 	scheduleLightning(true);
 }
 
@@ -1019,9 +1169,17 @@ function settingsPanel() {
 	const dialog = document.getElementById("settings");
 	const form = dialog.querySelector("form");
 	const details = dialog.querySelector(".settings-details");
-	const { parallax, parallaxSmoothing, smoothingValue } = form.elements;
+	const {
+		weatherIntensity,
+		weatherValue,
+		parallax,
+		parallaxSmoothing,
+		smoothingValue,
+	} = form.elements;
 
 	function showCurrentValues() {
+		weatherIntensity.value = sceneSettings.weatherIntensity;
+		weatherValue.value = `${weatherName(sceneSettings.weatherIntensity)}, ${Math.round(sceneSettings.weatherIntensity * 100)}%`;
 		parallax.checked = sceneSettings.parallax;
 		parallaxSmoothing.value = sceneSettings.parallaxSmoothing;
 		parallaxSmoothing.disabled = !sceneSettings.parallax;
@@ -1073,7 +1231,7 @@ function settingsPanel() {
 			[
 				"Effects",
 				`${document.querySelectorAll(".star").length} stars, ` +
-					`${document.querySelectorAll(".rain-drop").length} raindrops`,
+					`${renderStats.raindrops} raindrops`,
 			],
 			[
 				"Offline cache",
@@ -1113,6 +1271,7 @@ function settingsPanel() {
 	});
 
 	form.addEventListener("input", () => {
+		sceneSettings.weatherIntensity = Number(weatherIntensity.value);
 		sceneSettings.parallax = parallax.checked;
 		sceneSettings.parallaxSmoothing = Number(parallaxSmoothing.value);
 		saveSettings();
