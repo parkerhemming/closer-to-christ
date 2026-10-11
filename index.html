@@ -219,8 +219,6 @@
 
 		<dialog id="settings" class="settings" aria-labelledby="settings-title">
 			<form method="dialog" class="settings-card">
-				<!-- The settings scroll; the render details below stay put, since a
-				     change inside a scrolling area stalled the scroll in Chrome. -->
 				<div class="settings-scroll">
 					<header class="settings-header">
 						<span class="overlay-eyebrow">Closer to Christ</span>
@@ -274,12 +272,12 @@
 							<input type="range" name="parallaxSmoothing" min="0" max="0.5" step="0.01" />
 						</label>
 					</fieldset>
-				</div>
 
-				<section class="settings-group" aria-labelledby="settings-details-title">
-					<h3 id="settings-details-title" class="settings-group-title">Render details</h3>
-					<dl class="settings-details"></dl>
-				</section>
+					<section class="settings-group" aria-labelledby="settings-details-title">
+						<h3 id="settings-details-title" class="settings-group-title">Render details</h3>
+						<dl class="settings-details"></dl>
+					</section>
+				</div>
 			</form>
 		</dialog>
 

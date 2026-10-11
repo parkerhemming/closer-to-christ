@@ -1204,9 +1204,7 @@ body {
 	overflow: visible;
 }
 
-/* The card fits the panel's height: the settings scroll inside it and the
-   render details stay pinned at the bottom (a change inside a scrolling
-   area, like the details' live numbers, stalled the scroll in Chrome). */
+/* The card fits the panel's height and everything in it scrolls. */
 .settings .settings-card {
 	min-height: 0;
 	overflow: hidden;
@@ -1797,10 +1795,10 @@ body {
 	overflow-wrap: anywhere;
 }
 
-/* Computers: every interface size above at half. They were tuned by eye in
-   a browser zoomed to 50%, so at normal (100%) zoom this matches what was
-   approved. Phones keep the sizes above (tuned at real size); borders stay
-   1px. */
+/* Computers: every interface size above at half (except the loading
+   screen). They were tuned by eye in a browser zoomed to 50%, so at normal
+   (100%) zoom this matches what was approved. Phones keep the sizes above
+   (tuned at real size); borders stay 1px. */
 @media (min-width: 601px) {
 	.overlay {
 		padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
@@ -1827,6 +1825,11 @@ body {
 		font: 600 0.43rem/1.2 system-ui, sans-serif;
 	}
 
+	/* The loading screen keeps its full sizes, so it reads easily. */
+	#loading .overlay-eyebrow {
+		font-size: 0.61rem;
+	}
+
 	.overlay-eyebrow {
 		margin-bottom: 4.5px;
 		font: 700 0.305rem/1.2 system-ui, sans-serif;
@@ -1841,58 +1844,6 @@ body {
 		max-width: 112.5px;
 		margin-top: 5px;
 		font: 500 0.39rem/1.5 system-ui, sans-serif;
-	}
-
-	#loading .overlay-card {
-		width: min(88vw, 200px);
-		max-width: calc(100vw - 16px);
-		padding: 20px 20px 17px;
-	}
-
-	#loading .overlay-eyebrow {
-		margin-bottom: 6px;
-	}
-
-	#loading .overlay-title {
-		font-size: clamp(0.675rem, 5.6vw, 0.8rem);
-	}
-
-	.loading-emblem {
-		width: 42px;
-		height: 42px;
-		margin-bottom: 12px;
-	}
-
-	.loading-cross {
-		width: 17px;
-		height: 24px;
-	}
-
-	.loading-cross__fill {
-		transform: translateY(calc(28px * (1 - var(--progress))));
-	}
-
-	.loading-cross__glint {
-		filter: drop-shadow(0 0 2px rgba(243, 207, 157, 0.9));
-	}
-
-	.loading-progress {
-		width: 90px;
-		height: 1px;
-		margin-top: 11px;
-		border-radius: 1px;
-	}
-
-	.loading-verse {
-		max-width: 145px;
-		margin-top: 14px;
-		padding-top: 11px;
-		font: italic 0.44rem/1.6 Georgia, "Times New Roman", serif;
-	}
-
-	.loading-verse cite {
-		margin-top: 5px;
-		font: 700 0.29rem/1.2 system-ui, sans-serif;
 	}
 
 	.settings-button {
