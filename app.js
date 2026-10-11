@@ -1,13 +1,19 @@
-// Scene settings. Change these to tune the scene. The ones in
-// savedSettingNames can also be changed in the settings panel, and a
-// visitor's choices there are saved on their device and win over these.
+// Scene settings. Change these to tune the scene. Most can also be changed
+// in the settings panel; the ones in savedSettingNames are saved on the
+// visitor's device and win over these.
 const sceneSettings = {
-	// 0 is night, 1 full day; 0.3 is the original pre-dawn scene and sunrise
-	// (on the left horizon) is around 0.45. See timeCurves.
-	timeOfDay: 0.4,
+	// The scene's clock in hours, from 6 (6:00 AM, when Jesus was led to
+	// Pilate "early in the morning") to 15 (3:00 PM, the ninth hour, when he
+	// died). Each visit starts here. See hourCurves and the timeline.
+	hour: 6,
+	// How fast the clock runs on its own, a minute at a time: minutes of the
+	// day per real second (1.5 = the 9 hours pass in 6 minutes). 0 starts it
+	// paused. It stops at 3 PM; the button by the time pauses and plays it.
+	clockSpeed: 1.5,
 	// 0 is a clear sky, 1 a full storm; 0.7 is the original storm.
 	// Rain, lightning, clouds and wind all follow it (see weatherCurves).
-	weatherIntensity: 0.9,
+	// null picks a random weather that follows the hour (see weatherForHour).
+	weatherIntensity: null,
 	// Whether the scene follows the mouse or phone tilt at all.
 	parallax: true,
 	// Seconds the parallax takes to catch up to the mouse or tilt.
@@ -23,12 +29,7 @@ const reducedMotion = window.matchMedia(
 	"(prefers-reduced-motion: reduce)",
 ).matches;
 
-const savedSettingNames = [
-	"timeOfDay",
-	"weatherIntensity",
-	"parallax",
-	"parallaxSmoothing",
-];
+const savedSettingNames = ["parallax", "parallaxSmoothing"];
 
 try {
 	const saved = JSON.parse(localStorage.getItem("sceneSettings")) ?? {};
@@ -79,9 +80,70 @@ function byWeather(points) {
 	return alongCurve(points, sceneSettings.weatherIntensity);
 }
 
-// How the light follows timeOfDay, as [time, value] points like weatherCurves.
+// How the clock sets the light and the weather, as [hour, value] points
+// like weatherCurves.
+const hourCurves = {
+	// The daylight level the timeCurves read: 0 night, 1 full day. The sun is
+	// rising at 6 and high by noon.
+	daylight: [[6, 0.4], [7, 0.55], [9, 0.78], [11.5, 1], [15, 1]],
+	// From noon "there was darkness over the whole land until the ninth hour"
+	// (Mark 15:33) and "the sun was darkened" (Luke 23:45): an unnatural dimming
+	// of the day, not night. It falls fast just before noon, so it's already
+	// dark at 12, and deepens to its darkest at 3 PM. 0 is none; at 1 the
+	// light reaches darkLight.
+	darkness: [[6, 0], [11.75, 0], [12, 0.65], [15, 1]],
+	// The usual weather: often stormy in the dim early morning (sometimes
+	// clear enough for the stars) and in the darkness, calmer through the
+	// bright morning, then building from 2:30 to the fiercest storm at 3 PM,
+	// when he died and the earth quaked (past 1, so even a calm lean reaches
+	// a full storm). weatherForHour adds the visit's random lean.
+	weather: [[6, 0.55], [7.5, 0.45], [9, 0.3], [11.5, 0.25], [12, 0.7], [14.5, 0.8], [15, 1.2]],
+};
+
+// How much stormier (or calmer) than usual the weather is: random for each
+// visit and each jump in the timeline, and set by the Weather slider. As the
+// clock runs, the weather follows the hour plus this lean, so the storm
+// builds into the noon darkness.
+let weatherLean = randomBetween(-0.2, 0.2);
+
+function weatherForHour(hour) {
+	return clamp(alongCurve(hourCurves.weather, hour) + weatherLean, 0, 1);
+}
+
+sceneSettings.weatherIntensity ??= weatherForHour(sceneSettings.hour);
+
+function daylight() {
+	return alongCurve(hourCurves.daylight, sceneSettings.hour);
+}
+
+function darkness() {
+	return alongCurve(hourCurves.darkness, sceneSettings.hour);
+}
+
+// What the noon darkness dims each light toward: a dull grey-blue sky, dim
+// land and clouds, a faint sun, stars showing through, and lamps lit in the
+// city.
+const darkLight = {
+	starlight: 0.5,
+	sky: [58, 64, 72],
+	landLight: 0.85,
+	landSaturation: 0.65,
+	cloudLight: 0.8,
+	figureLight: 0.88,
+	sunOpacity: 0.25,
+	cityGlow: 0.6,
+};
+
+// A light's value for the hour, dimmed by the noon darkness.
+function lightFor(name) {
+	const value = byTime(timeCurves[name]);
+	return name in darkLight ? value + (darkLight[name] - value) * darkness() : value;
+}
+
+// How the light follows the daylight level, as [daylight, value] points.
 // Every curve gives the original look at 0.3 (multipliers 1, tints 0), so
-// 0.3 is exactly the original scene.
+// 0.3 is exactly the original pre-dawn scene; sunrise (on the left horizon)
+// is around 0.45.
 const timeCurves = {
 	// Brightness, colour and sunrise warmth of the land layers. At sunrise the
 	// sun is behind the hills, so the land stays dim (backlit) a while longer.
@@ -91,8 +153,9 @@ const timeCurves = {
 	// Clouds: dark at night, glowing warm at sunrise, bright by day.
 	cloudLight: [[0, 0.55], [0.3, 1], [0.45, 1.3], [0.6, 1.6], [1, 1.9]],
 	cloudWarmth: [[0, 0], [0.3, 0], [0.42, 0.45], [0.6, 0.15], [1, 0]],
-	// Stars (and shooting stars) fade as the sky lightens.
-	starlight: [[0, 1], [0.3, 1], [0.45, 0.25], [0.55, 0], [1, 0]],
+	// Stars (and shooting stars) fade as the sky lightens; they're still out
+	// at 6 AM (0.4) and gone by about 7.
+	starlight: [[0, 1], [0.3, 1], [0.4, 0.85], [0.5, 0.2], [0.6, 0], [1, 0]],
 	// The city's window and lantern lights go out in daylight.
 	cityGlow: [[0, 1], [0.3, 1], [0.5, 0.35], [0.65, 0], [1, 0]],
 	// The figure's brightness.
@@ -141,42 +204,75 @@ function alongCurve(points, at) {
 }
 
 function byTime(points) {
-	return alongCurve(points, sceneSettings.timeOfDay);
+	return alongCurve(points, daylight());
 }
 
-function skyColor(points) {
-	const [r, g, b, a] = alongCurve(points, sceneSettings.timeOfDay);
+// Sky colours dim toward darkLight.sky; the sunrise glows fade out.
+function skyColor(points, glow = false) {
+	const dark = darkness();
+	const [r, g, b, a] = alongCurve(points, daylight()).map((value, i) =>
+		i < 3 ? value + (darkLight.sky[i] - value) * dark : glow ? value * (1 - dark) : value,
+	);
 	return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a.toFixed(3)})`;
 }
 
-function timeName(time) {
-	if (time < 0.2) return "Night";
-	if (time < 0.38) return "Dawn";
-	if (time < 0.5) return "Sunrise";
-	if (time < 0.75) return "Morning";
-	return "Day";
+// 9.5 -> "9:30 AM", to the minute.
+function clockTime(hour) {
+	const minutes = Math.round(hour * 60);
+	const hours = Math.floor(minutes / 60);
+	return `${((hours + 11) % 12) + 1}:${String(minutes % 60).padStart(2, "0")} ${hours < 12 ? "AM" : "PM"}`;
 }
 
-// Sets the light for the current time of day as CSS variables on <html>;
-// the sky, land, clouds, city lights, stars and figure all read them.
+// The hour as the Gospels count it, from sunrise at 6: 9 AM ends the third
+// hour (Mark 15:25), noon the sixth and 3 PM the ninth (Mark 15:33-34).
+function gospelHour(hour) {
+	const ordinals = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth"];
+	return `${ordinals[clamp(Math.ceil(hour - 6 - 0.001), 1, 9) - 1]} hour`;
+}
+
+// Paints the sky's small canvas: the gradient from the horizon up, and the
+// sunrise glow, an ellipse as wide and tall as the sky centred low on the
+// left.
+function drawSky() {
+	const canvas = document.querySelector(".sky-gradient");
+	const context = canvas.getContext("2d");
+	const { width, height } = canvas;
+	const sky = context.createLinearGradient(0, height, 0, 0);
+	sky.addColorStop(0, skyColor(skyColors.horizon));
+	sky.addColorStop(0.2, skyColor(skyColors.low));
+	sky.addColorStop(0.5, skyColor(skyColors.middle));
+	sky.addColorStop(1, skyColor(skyColors.zenith));
+	context.fillStyle = sky;
+	context.fillRect(0, 0, width, height);
+
+	const edge = skyColor(skyColors.glowEdge, true);
+	context.save();
+	context.translate(width * 0.2, height);
+	context.scale(width, height);
+	const glow = context.createRadialGradient(0, 0, 0, 0, 0, 1);
+	glow.addColorStop(0, skyColor(skyColors.glowCore, true));
+	glow.addColorStop(0.35, skyColor(skyColors.glowMiddle, true));
+	glow.addColorStop(0.59, edge);
+	glow.addColorStop(0.75, edge.replace(/[\d.]+\)$/, "0)")); // fades out
+	context.fillStyle = glow;
+	context.fillRect(-0.2, -1, 1, 1);
+	context.restore();
+}
+
+// Sets the light for the clock's hour as CSS variables on <html>; the land,
+// clouds, city lights, stars, sun and figure read them. The sky is painted.
 function applyTimeOfDay() {
+	drawSky();
 	setStyleProperties(document.documentElement, {
-		"--sky-horizon": skyColor(skyColors.horizon),
-		"--sky-low": skyColor(skyColors.low),
-		"--sky-middle": skyColor(skyColors.middle),
-		"--sky-zenith": skyColor(skyColors.zenith),
-		"--glow-core": skyColor(skyColors.glowCore),
-		"--glow-middle": skyColor(skyColors.glowMiddle),
-		"--glow-edge": skyColor(skyColors.glowEdge),
-		"--land-light": byTime(timeCurves.landLight),
-		"--land-saturation": byTime(timeCurves.landSaturation),
+		"--land-light": lightFor("landLight"),
+		"--land-saturation": lightFor("landSaturation"),
 		"--land-warmth": byTime(timeCurves.landWarmth),
-		"--cloud-light": byTime(timeCurves.cloudLight),
+		"--cloud-light": lightFor("cloudLight"),
 		"--cloud-warmth": byTime(timeCurves.cloudWarmth),
-		"--starlight": byTime(timeCurves.starlight),
-		"--city-glow": byTime(timeCurves.cityGlow),
-		"--figure-light": byTime(timeCurves.figureLight),
-		"--sun-opacity": byTime(timeCurves.sunOpacity),
+		"--starlight": lightFor("starlight"),
+		"--city-glow": lightFor("cityGlow"),
+		"--figure-light": lightFor("figureLight"),
+		"--sun-opacity": lightFor("sunOpacity"),
 		"--sun-top": `${byTime(timeCurves.sunHeight) * 100}vh`,
 		"--sun-left": `${byTime(timeCurves.sunLeft) * 100}vw`,
 	});
@@ -398,7 +494,6 @@ function createShootingStars() {
 			duration: [1450, 2350],
 			travel: [28, 48],
 			opacity: [0.42, 0.66],
-			blur: [0.45, 0.8],
 			head: [1.4, 2.1],
 		},
 		{
@@ -408,7 +503,6 @@ function createShootingStars() {
 			duration: [920, 1650],
 			travel: [40, 66],
 			opacity: [0.62, 0.86],
-			blur: [0.25, 0.55],
 			head: [1.9, 2.8],
 		},
 		{
@@ -418,7 +512,6 @@ function createShootingStars() {
 			duration: [580, 1120],
 			travel: [55, 88],
 			opacity: [0.82, 1],
-			blur: [0.08, 0.3],
 			head: [2.6, 4.2],
 		},
 	];
@@ -469,7 +562,6 @@ function createShootingStars() {
 			"--shooting-tail-width": `${randomBetween(...profile.width)}px`,
 			"--shooting-thickness": `${randomBetween(...profile.thickness)}px`,
 			"--shooting-opacity": randomBetween(...profile.opacity),
-			"--shooting-blur": `${randomBetween(...profile.blur)}px`,
 			"--shooting-head-size": `${randomBetween(...profile.head)}px`,
 		});
 
@@ -495,132 +587,49 @@ function createStorm() {
 	];
 	const svgNamespace = "http://www.w3.org/2000/svg";
 
-	// Rain is drawn on two full-screen canvases (behind and in front of the
-	// storm wash) rather than as an element per drop: each frame redraws every
-	// drop as a slanted streak, and a drop that falls off the bottom starts
-	// again above the top. Drops are grouped into a few brightness/width bands
-	// and each band is drawn in one go, so a downpour of hundreds of drops costs
-	// about as much as a drizzle. Nothing runs while the tab is hidden.
+	// The rain (rain.js) runs in a worker where the browser can hand it the
+	// canvases, so it keeps falling while the page's own frames are held up
+	// (Chrome holds them while the settings panel scrolls). Elsewhere it runs
+	// here. Either way this sends it the weather and the window size.
 	function startRain(layers) {
-		const fallSlant = Math.tan((7 * Math.PI) / 180); // the original 7deg lean
-		const brightnessBands = 4;
-		const widthBands = 2;
-		let width = 0;
-		let height = 0;
-		let lastTime = 0;
-		let firstFrame = true;
-
-		for (const layer of layers) {
-			layer.canvas = document.getElementById(layer.id);
-			layer.context = layer.canvas.getContext("2d");
-			layer.drops = [];
-		}
-
-		function resize() {
-			width = window.innerWidth;
-			height = window.innerHeight;
-			for (const layer of layers) {
-				// Soft rain doesn't need full retina sharpness; fewer pixels to clear.
-				const scale = Math.min(window.devicePixelRatio, layer.maximumScale);
-				layer.canvas.width = Math.round(width * scale);
-				layer.canvas.height = Math.round(height * scale);
-				layer.context.setTransform(scale, 0, 0, scale, 0, 0);
-				layer.context.lineCap = "round";
-			}
-		}
-
-		// A drop starts somewhere above the top edge (or anywhere on screen when
-		// the rain first appears, so it doesn't arrive as one sheet).
-		function newDrop(layer, anywhere) {
-			const fallSeconds = randomBetween(...layer.fallSeconds);
-			return {
-				x: randomBetween(-0.08, 1.04) * width,
-				y: anywhere ? randomBetween(-0.4, 1) * height : randomBetween(-0.4, 0) * height,
-				// The original drops fell 150% of the screen height in fallSeconds.
-				speed: (1.5 * height) / fallSeconds,
-				drift: randomBetween(...layer.drift) / (1.5 * height), // sideways per px fallen
-				length: randomBetween(...layer.length),
-				band: Math.floor(Math.random() * brightnessBands * widthBands),
-			};
-		}
-
-		function frame(now) {
-			const elapsed = Math.min((now - lastTime) / 1000, 0.05);
-			lastTime = now;
-			const seconds = now / 1000;
-			const wind = byWeather(weatherCurves.wind);
-			const lengthScale = byWeather(weatherCurves.rainLength);
-			const brightness = byWeather(weatherCurves.rainBrightness);
-			// Gusts: the amount of rain swells and eases a little over time.
-			const gust = 1 + 0.18 * Math.sin(seconds * 0.7) + 0.1 * Math.sin(seconds * 1.9 + 1);
-			let total = 0;
-
-			for (const layer of layers) {
-				const share = getQuality() === "low" ? layer.lowQualityShare : 1;
-				const target = Math.round(
-					layer.count * byWeather(weatherCurves.rain) * share * gust,
-				);
-				while (layer.drops.length < target) {
-					layer.drops.push(newDrop(layer, firstFrame));
-				}
-
-				// One faint tail path and one brighter head path per band.
-				const tails = Array.from({ length: brightnessBands * widthBands }, () => new Path2D());
-				const heads = Array.from({ length: brightnessBands * widthBands }, () => new Path2D());
-				for (let i = layer.drops.length - 1; i >= 0; i--) {
-					const drop = layer.drops[i];
-					drop.y += drop.speed * elapsed;
-					drop.x += drop.speed * elapsed * drop.drift * wind;
-					const length = drop.length * lengthScale;
-					if (drop.y - length > height) {
-						// Fallen off the bottom: start again at the top, or stop
-						// if the rain has eased off.
-						if (layer.drops.length > target) layer.drops.splice(i, 1);
-						else layer.drops[i] = newDrop(layer, false);
-						continue;
-					}
-					// A streak along the fall direction (the 7deg lean plus its
-					// wind drift): a faint upper tail and a brighter lower end,
-					// like the original gradient drops.
-					const dx = (fallSlant + drop.drift * wind) * length;
-					const midX = drop.x - dx * 0.45;
-					const midY = drop.y - length * 0.45;
-					tails[drop.band].moveTo(drop.x - dx, drop.y - length);
-					tails[drop.band].lineTo(midX, midY);
-					heads[drop.band].moveTo(midX, midY);
-					heads[drop.band].lineTo(drop.x, drop.y);
-				}
-
-				const context = layer.context;
-				context.clearRect(0, 0, width, height);
-				for (let band = 0; band < tails.length; band++) {
-					const brightnessStep = (band % brightnessBands + 0.5) / brightnessBands;
-					const widthStep = (Math.floor(band / brightnessBands) + 0.5) / widthBands;
-					const [lowOpacity, highOpacity] = layer.opacity;
-					const [thin, thick] = layer.width;
-					const alpha = Math.min(
-						1,
-						(lowOpacity + (highOpacity - lowOpacity) * brightnessStep) * brightness,
-					);
-					context.lineWidth = thin + (thick - thin) * widthStep;
-					context.strokeStyle = `rgba(203, 222, 233, ${alpha * 0.3})`;
-					context.stroke(tails[band]);
-					context.strokeStyle = `rgba(203, 222, 233, ${alpha * 0.9})`;
-					context.stroke(heads[band]);
-				}
-				total += layer.drops.length;
-			}
-			firstFrame = false;
-			renderStats.raindrops = total;
-			requestAnimationFrame(frame);
-		}
-
-		resize();
-		window.addEventListener("resize", resize, { passive: true });
-		requestAnimationFrame((now) => {
-			lastTime = now;
-			frame(now);
+		const canvases = layers.map((layer) => document.getElementById(layer.id));
+		const conditions = () => ({
+			rain: byWeather(weatherCurves.rain),
+			wind: byWeather(weatherCurves.wind),
+			lengthScale: byWeather(weatherCurves.rainLength),
+			brightness: byWeather(weatherCurves.rainBrightness),
+			low: getQuality() === "low",
 		});
+		const size = () => [window.innerWidth, window.innerHeight, window.devicePixelRatio];
+		const countDrops = (total) => (renderStats.raindrops = total);
+
+		if ("transferControlToOffscreen" in HTMLCanvasElement.prototype) {
+			const worker = new Worker("./rain.js");
+			const offscreen = canvases.map((canvas) => canvas.transferControlToOffscreen());
+			worker.postMessage(
+				{
+					layers: layers.map((layer, i) => ({ ...layer, canvas: offscreen[i] })),
+					size: size(),
+					conditions: conditions(),
+				},
+				offscreen,
+			);
+			worker.onmessage = ({ data }) => countDrops(data);
+			const sendConditions = () => worker.postMessage({ conditions: conditions() });
+			document.addEventListener("scenesettings", sendConditions);
+			setInterval(sendConditions, 2000); // picks up a change of quality too
+			window.addEventListener("resize", () => worker.postMessage({ size: size() }), { passive: true });
+			document.addEventListener("visibilitychange", () => worker.postMessage({ hidden: document.hidden }));
+		} else {
+			const rain = createRain(
+				layers.map((layer, i) => ({ ...layer, canvas: canvases[i] })),
+				conditions,
+				countDrops,
+			);
+			rain.resize(...size());
+			window.addEventListener("resize", () => rain.resize(...size()), { passive: true });
+			document.addEventListener("visibilitychange", () => rain.pause(document.hidden));
+		}
 	}
 
 	function createBoltPath() {
@@ -822,6 +831,12 @@ function createStorm() {
 	// Clouds and the storm wash follow the weather through CSS variables; the
 	// wind sets the clouds' drift speed through their animation playback rate,
 	// which changes smoothly instead of jumping like a new duration would.
+	// Each rate change restarts the huge cloud layers' animations on the GPU,
+	// so it's only set once the weather stops changing (not every frame while
+	// dragging the slider or easing the clock), and only when the wind has
+	// changed noticeably (not every second as the running clock nudges it).
+	let windTimer;
+	let appliedWind = 1;
 	function applyWeather() {
 		const storm = document.getElementById("storm");
 		setStyleProperties(storm, {
@@ -829,16 +844,65 @@ function createStorm() {
 			"--cloud-shade": byWeather(weatherCurves.cloudShade),
 			"--gloom": byWeather(weatherCurves.gloom),
 		});
-		const wind = byWeather(weatherCurves.wind);
-		for (const texture of storm.querySelectorAll(".storm-cloud__texture")) {
-			for (const animation of texture.getAnimations()) {
-				animation.updatePlaybackRate(wind);
+		clearTimeout(windTimer);
+		windTimer = setTimeout(() => {
+			const wind = byWeather(weatherCurves.wind);
+			if (Math.abs(wind - appliedWind) < appliedWind * 0.05) return;
+			appliedWind = wind;
+			for (const texture of storm.querySelectorAll(".storm-cloud__texture")) {
+				for (const animation of texture.getAnimations()) {
+					animation.updatePlaybackRate(wind);
+				}
 			}
-		}
+		}, 250);
 	}
 
 	applyWeather();
 	document.addEventListener("scenesettings", applyWeather);
+
+	// Each cloud layer is painted once into a canvas at CSS-pixel resolution,
+	// from the image and positions its CSS background describes, and the
+	// background is then dropped. As a background the browser kept every layer
+	// at full Retina resolution (about 28MB each), though the cloud images are
+	// soft and half-size anyway; that crowded out other drawing, so scrolling
+	// the settings panel stalled the whole scene in Chrome. The drift
+	// animation and the colour filter stay on the layer, so nothing changes.
+	function paintClouds() {
+		for (const texture of document.querySelectorAll(".storm-cloud__texture")) {
+			if (!texture.getClientRects().length) continue; // hidden at this quality
+			// Read the CSS background as it is now (it differs on phones).
+			texture.classList.remove("is-painted");
+			const style = getComputedStyle(texture);
+			const source = style.backgroundImage.match(/url\("?(.*?)"?\)/)?.[1];
+			const imageHeight = parseFloat(style.backgroundSize.split(" ")[1]);
+			const x = parseFloat(style.backgroundPositionX);
+			const y = parseFloat(style.backgroundPositionY);
+			if (!source) continue;
+			const image = new Image();
+			image.src = source;
+			image.decode().then(() => {
+				const canvas = texture.querySelector("canvas") ?? texture.appendChild(document.createElement("canvas"));
+				const width = texture.offsetWidth;
+				const height = texture.offsetHeight;
+				const imageWidth = (imageHeight * image.naturalWidth) / image.naturalHeight;
+				canvas.width = Math.ceil(width);
+				canvas.height = Math.ceil(height);
+				const context = canvas.getContext("2d");
+				// repeat-x: tiles from the first one left of the edge to the right.
+				for (let left = x - Math.ceil(x / imageWidth) * imageWidth; left < width; left += imageWidth) {
+					context.drawImage(image, left, y, imageWidth, imageHeight);
+				}
+				texture.classList.add("is-painted");
+			}, () => {}); // if it can't load, the CSS background stays
+		}
+	}
+
+	paintClouds();
+	let paintTimer;
+	window.addEventListener("resize", () => {
+		clearTimeout(paintTimer);
+		paintTimer = setTimeout(paintClouds, 300);
+	});
 
 	if (reducedMotion) return;
 
@@ -968,9 +1032,11 @@ let updateLandShadows = null;
 // Ridges cast shadows on the land in front of them once the sun is up (it
 // rises behind them, on the left). Each shadow is the ridge's own outline,
 // flipped down from where the ridge meets the land in front, stretched by the
-// sun's angle and leaned right, inside a catcher clipped to the receiving
-// land's outline. Its far end moves with the ridge and its near end with the
-// land, so it changes angle as the parallax moves them apart.
+// sun's angle and leaned right, and clipped to the receiving land's outline.
+// Its far end moves with the ridge and its near end with the land, so it
+// changes angle as the parallax moves them apart. It's drawn into a small
+// canvas over the land (the outlines are small, pre-blurred silhouettes), so
+// each change is a quick redraw rather than work for the GPU's layers.
 function landShadows() {
 	const rootStyle = getComputedStyle(document.documentElement);
 	// Image rows measured from the artwork's transparency (fraction of the
@@ -979,35 +1045,38 @@ function landShadows() {
 	const pairs = [
 		{
 			ridge: '[data-scenery="distant-hills"]',
-			ridgeShape: "--texture",
-			skyline: 0.294,
+			ridgeShape: "./assets/shadows/hills-shape.webp",
+			skyline: 0.0709,
 			land: '[data-scenery="distant-jerusalem"]',
-			landEdge: 0.697, // the image is sized by width (2:1), anchored at the bottom
+			landShape: "./assets/shadows/jerusalem-land.webp",
+			canvas: ".land-shadow--city",
+			landEdge: 0.1235, // the image is sized by width, anchored at the bottom
+			landAspect: 708 / 4096, // its height over its width
 			landSizedByWidth: true,
 			// The land is visible down to where the Golgotha ridge covers it.
 			coveredBy: '[data-scenery="golgotha-ridge"]',
-			coveredBySkyline: 0.241,
+			coveredBySkyline: 0.3058,
 		},
 		{
 			ridge: '[data-scenery="golgotha-ridge"]',
-			ridgeShape: "--texture",
-			skyline: 0.204,
+			ridgeShape: "./assets/shadows/golgotha-ridge-shape.webp",
+			skyline: 0.1251,
 			land: '[data-scenery="ground"]',
-			landEdge: 0.111, // the image is sized by height
+			landShape: "./assets/shadows/near-ground-land.webp",
+			canvas: ".land-shadow--ground",
+			landEdge: 0.4126, // the image is sized by height
 			landSizedByWidth: false,
 			coveredBy: null, // visible down to the bottom of the screen
 		},
 	].map((pair) => {
 		const ridge = document.querySelector(pair.ridge);
 		const land = document.querySelector(pair.land);
-		const shadow = land.querySelector(".land-shadow > span");
-		shadow.style.setProperty(
-			"--shadow-shape",
-			getComputedStyle(ridge).getPropertyValue(pair.ridgeShape),
-		);
+		const image = (src) => Object.assign(new Image(), { src });
 		return {
 			...pair,
-			shadow,
+			canvas: document.querySelector(pair.canvas),
+			ridgeShape: image(pair.ridgeShape),
+			landShape: image(pair.landShape),
 			ridgeDepth: Number(ridge.dataset.z_index),
 			landDepth: Number(land.dataset.z_index),
 			ridge,
@@ -1015,6 +1084,7 @@ function landShadows() {
 		};
 	});
 	const landScale = Number(rootStyle.getPropertyValue("--parallax-overscan")) || 1.2;
+	const canvasWidth = 640; // the shadows are soft; this is plenty
 	let lastX = 0;
 	let lastDepthScale = 0;
 
@@ -1027,15 +1097,16 @@ function landShadows() {
 		return { left: rect.left - dx, top: rect.top - dy, width: rect.width, height: rect.height, bottom: rect.bottom - dy };
 	}
 
-	// Lays each shadow over its ridge, in the land layer's own (unscaled)
-	// coordinates, and remembers the ground line and the ridge's height.
+	// Measures each ridge against its land, in the land layer's own (unscaled)
+	// coordinates: where the ridge's outline goes, the ground line it's
+	// flipped about, the ridge's height and how much land shows in front.
 	function measure() {
 		for (const pair of pairs) {
 			const ridge = restingRect(pair.ridge);
 			const land = restingRect(pair.land);
 			const toLand = (screen, landStart) => (screen - landStart) / landScale;
 			const groundLine = pair.landSizedByWidth
-				? land.bottom - (1 - pair.landEdge) * (land.width / 2)
+				? land.bottom - (1 - pair.landEdge) * land.width * pair.landAspect
 				: land.top + land.height * pair.landEdge;
 			const skylineTop = ridge.top + ridge.height * pair.skyline;
 			const visibleUntil = pair.coveredBy
@@ -1044,43 +1115,82 @@ function landShadows() {
 						return cover.top + cover.height * pair.coveredBySkyline;
 					})()
 				: window.innerHeight;
-			pair.base = toLand(groundLine, ridge.top);
+			pair.box = { width: land.width / landScale, height: land.height / landScale };
+			pair.outline = {
+				left: toLand(ridge.left, land.left),
+				top: toLand(ridge.top, land.top),
+				width: ridge.width / landScale,
+				height: ridge.height / landScale,
+			};
+			pair.groundLine = toLand(groundLine, land.top);
 			pair.ridgeHeight = Math.max(1, (groundLine - skylineTop) / landScale);
 			// How much land is visible in front of the ridge.
 			pair.visibleLand = Math.max(1, (visibleUntil - groundLine) / landScale);
-			setStyleProperties(pair.shadow, {
-				left: `${toLand(ridge.left, land.left)}px`,
-				top: `${toLand(ridge.top, land.top)}px`,
-				width: `${ridge.width / landScale}px`,
-				height: `${ridge.height / landScale}px`,
-				"transform-origin": `50% ${pair.base}px`,
-			});
+			pair.canvas.width = canvasWidth;
+			pair.canvas.height = Math.max(1, Math.round((canvasWidth * pair.box.height) / pair.box.width));
 		}
 	}
 
+	// An image drawn like CSS background-size `auto 100%` (or `100% auto`),
+	// anchored at the bottom centre of a box.
+	function drawAnchored(context, image, box, byWidth) {
+		const aspect = image.naturalWidth / image.naturalHeight;
+		const width = byWidth ? box.width : box.height * aspect;
+		const height = byWidth ? box.width / aspect : box.height;
+		context.drawImage(image, box.left + (box.width - width) / 2, box.top + box.height - height, width, height);
+	}
+
+	function draw(pair, x, depthScale) {
+		const context = pair.canvas.getContext("2d");
+		const { box, outline } = pair;
+		context.setTransform(1, 0, 0, 1, 0, 0);
+		context.clearRect(0, 0, pair.canvas.width, pair.canvas.height);
+		if (pair.canvas.hidden || !pair.ridgeShape.complete || !pair.landShape.complete) return;
+		const scale = pair.canvas.width / box.width;
+
+		// How far the ridge has moved relative to the land (in land units).
+		const shift = (x * depthScale * (pair.ridgeDepth - pair.landDepth)) / landScale;
+		// The shadow's reach across the visible land, and the stretch of the
+		// ridge's outline that gives it.
+		const reach = byTime(timeCurves.shadowReach) * pair.visibleLand;
+		const length = reach / pair.ridgeHeight;
+		// The base follows the ridge; the tip stays put on the land.
+		const slant = lean - shift / reach;
+
+		// The ridge's outline, flipped about the ground line, stretched, leaned
+		// and shifted (centred on the ridge, on the ground line).
+		const originX = outline.left + outline.width / 2;
+		context.setTransform(scale, 0, 0, scale, 0, 0);
+		context.translate(originX + shift, pair.groundLine);
+		context.transform(1, 0, slant, 1, 0, 0);
+		context.scale(1, -length);
+		context.translate(-originX, -pair.groundLine);
+		drawAnchored(context, pair.ridgeShape, outline, false);
+
+		// Shade it, then keep only what falls on the land.
+		context.setTransform(1, 0, 0, 1, 0, 0);
+		context.globalCompositeOperation = "source-in";
+		context.fillStyle = "rgb(24, 28, 42)";
+		context.fillRect(0, 0, pair.canvas.width, pair.canvas.height);
+		context.setTransform(scale, 0, 0, scale, 0, 0);
+		context.globalCompositeOperation = "destination-in";
+		drawAnchored(context, pair.landShape, { left: 0, top: 0, ...box }, pair.landSizedByWidth);
+		context.globalCompositeOperation = "source-over";
+	}
+
+	let lean = 0;
 	function place(x = lastX, depthScale = lastDepthScale) {
 		lastX = x;
 		lastDepthScale = depthScale;
-		const lean = byTime(timeCurves.shadowLean);
-		for (const pair of pairs) {
-			// How far the ridge has moved relative to the land (in land units).
-			const shift = (x * depthScale * (pair.ridgeDepth - pair.landDepth)) / landScale;
-			// The shadow's reach across the visible land, and the stretch of the
-			// ridge's outline that gives it.
-			const reach = byTime(timeCurves.shadowReach) * pair.visibleLand;
-			const length = reach / pair.ridgeHeight;
-			// The base follows the ridge; the tip stays put on the land.
-			const slant = Math.atan(lean - shift / reach);
-			pair.shadow.style.transform =
-				`translateX(${shift}px) skewX(${slant}rad) scaleY(${-length})`;
-		}
+		lean = byTime(timeCurves.shadowLean);
+		for (const pair of pairs) draw(pair, x, depthScale);
 	}
 
 	function applyLight() {
-		document.documentElement.style.setProperty(
-			"--shadow-strength",
-			byTime(timeCurves.shadowStrength) * byWeather(weatherCurves.sunlight),
-		);
+		const strength = byTime(timeCurves.shadowStrength) * byWeather(weatherCurves.sunlight);
+		document.documentElement.style.setProperty("--shadow-strength", strength);
+		// No shadow (most of the day): hide the canvases and skip drawing.
+		for (const pair of pairs) pair.canvas.hidden = strength < 0.01;
 		place();
 	}
 
@@ -1092,6 +1202,10 @@ function landShadows() {
 		measure();
 		place();
 	});
+	for (const pair of pairs) {
+		pair.ridgeShape.addEventListener("load", () => place());
+		pair.landShape.addEventListener("load", () => place());
+	}
 }
 
 function parallax() {
@@ -1409,7 +1523,7 @@ function settingsPanel() {
 	const form = dialog.querySelector("form");
 	const details = dialog.querySelector(".settings-details");
 	const {
-		timeOfDay,
+		hour,
 		timeValue,
 		weatherIntensity,
 		weatherValue,
@@ -1419,8 +1533,8 @@ function settingsPanel() {
 	} = form.elements;
 
 	function showCurrentValues() {
-		timeOfDay.value = sceneSettings.timeOfDay;
-		timeValue.value = timeName(sceneSettings.timeOfDay);
+		hour.value = sceneSettings.hour;
+		timeValue.value = `${clockTime(sceneSettings.hour)}, ${gospelHour(sceneSettings.hour).toLowerCase()}`;
 		weatherIntensity.value = sceneSettings.weatherIntensity;
 		weatherValue.value = `${weatherName(sceneSettings.weatherIntensity)}, ${Math.round(sceneSettings.weatherIntensity * 100)}%`;
 		parallax.checked = sceneSettings.parallax;
@@ -1481,22 +1595,37 @@ function settingsPanel() {
 				navigator.serviceWorker?.controller ? "on" : "off until next visit",
 			],
 		].filter(Boolean);
-		details.replaceChildren(
-			...rows.flatMap(([name, value]) => {
+		// Changes only the values that differ: rebuilding the whole list each
+		// second made scrolling the panel stall in Chrome.
+		for (const [name, value] of rows) {
+			let description = detailValues.get(name);
+			if (!description) {
 				const term = document.createElement("dt");
-				const description = document.createElement("dd");
+				description = document.createElement("dd");
 				term.textContent = name;
-				description.textContent = value;
-				return [term, description];
-			}),
-		);
+				details.append(term, description);
+				detailValues.set(name, description);
+			}
+			if (description.textContent !== value) description.textContent = value;
+		}
 	}
+	const detailValues = new Map();
 
+	// The panel drops from the gear without covering the rest of the page
+	// (a non-modal dialog). The gear (an x while open) or Escape closes it. It stops
+	// above the caption so the caption stays readable.
 	let detailsTimer;
 	button.addEventListener("click", () => {
+		if (dialog.open) {
+			dialog.close();
+			return;
+		}
 		showCurrentValues();
 		showDetails();
-		dialog.showModal();
+		dialog.show();
+		button.setAttribute("aria-expanded", "true");
+		const caption = document.querySelector(".caption");
+		dialog.style.maxHeight = `${caption.getBoundingClientRect().top - dialog.getBoundingClientRect().top - 12}px`;
 		framesThisSecond = 0;
 		requestAnimationFrame(countFrames);
 		detailsTimer = setInterval(() => {
@@ -1506,19 +1635,323 @@ function settingsPanel() {
 		}, 1000);
 	});
 
-	dialog.addEventListener("close", () => clearInterval(detailsTimer));
+	dialog.addEventListener("close", () => {
+		clearInterval(detailsTimer);
+		button.setAttribute("aria-expanded", "false");
+	});
 
-	// A click on the backdrop (outside the card) closes the panel.
-	dialog.addEventListener("click", (event) => {
-		if (event.target === dialog) dialog.close();
+	document.addEventListener("keydown", (event) => {
+		if (event.key === "Escape" && dialog.open) {
+			dialog.close();
+			button.focus();
+		}
 	});
 
 	form.addEventListener("input", () => {
-		sceneSettings.timeOfDay = Number(timeOfDay.value);
+		sceneSettings.hour = Number(hour.value);
 		sceneSettings.weatherIntensity = Number(weatherIntensity.value);
+		weatherLean = sceneSettings.weatherIntensity - alongCurve(hourCurves.weather, sceneSettings.hour);
 		sceneSettings.parallax = parallax.checked;
 		sceneSettings.parallaxSmoothing = Number(parallaxSmoothing.value);
 		saveSettings();
 		showCurrentValues();
 	});
+}
+
+// The day of the Crucifixion, in order. hour is on the scene's clock;
+// "about" marks times the scriptures don't give exactly. Latter-day
+// scriptures are listed before the Bible.
+const timeline = [
+	{
+		hour: 6,
+		about: true,
+		title: "Bound and led to Pilate",
+		text: "As soon as it was day, the chief priests held a council, bound Jesus and delivered him to Pontius Pilate.",
+		references: "Mark 15:1; Luke 22:66; John 18:28",
+	},
+	{
+		hour: 6.5,
+		about: true,
+		title: "Sent to Herod",
+		text: "Pilate found no fault in him and sent him to Herod. Jesus answered him nothing, and Herod mocked him and sent him back in a gorgeous robe.",
+		references: "Mosiah 14:7; Luke 23:4-12",
+	},
+	{
+		hour: 7,
+		about: true,
+		title: "Barabbas is released",
+		text: "The crowd asked for Barabbas and cried, \"Let him be crucified.\" Pilate washed his hands before them.",
+		references: "Matthew 27:15-26",
+	},
+	{
+		hour: 7.5,
+		about: true,
+		title: "Scourged and crowned with thorns",
+		text: "Soldiers scourged him, clothed him in purple, pressed a crown of thorns on his head and mocked him as a king.",
+		references: "1 Nephi 19:9; Mark 15:15-20; John 19:1-3",
+	},
+	{
+		hour: 8,
+		about: true,
+		title: "\"Behold the man!\"",
+		text: "Pilate brought him out wearing the crown of thorns and the purple robe, then delivered him to be crucified.",
+		references: "John 19:4-16",
+	},
+	{
+		hour: 8.5,
+		about: true,
+		title: "The road to Golgotha",
+		text: "Bearing his cross, he went out to Golgotha. Simon of Cyrene was made to carry it, and Jesus told the women weeping for him, \"Weep not for me.\"",
+		references: "Mark 15:20-22; Luke 23:26-31; John 19:17",
+	},
+	{
+		hour: 9,
+		title: "Crucified at the third hour",
+		text: "He was nailed to the cross between two thieves, and prayed, \"Father, forgive them; for they know not what they do.\"",
+		references: "1 Nephi 11:33; 3 Nephi 27:14; Mark 15:25-28; Luke 23:33-34",
+	},
+	{
+		hour: 9.5,
+		about: true,
+		title: "His garments divided",
+		text: "Soldiers cast lots for his coat. Above him hung Pilate's title in Hebrew, Greek and Latin: Jesus of Nazareth the King of the Jews.",
+		references: "Psalm 22:18; John 19:19-24",
+	},
+	{
+		hour: 10.25,
+		about: true,
+		title: "Mocked on the cross",
+		text: "Passersby, chief priests and scribes railed on him: \"He saved others; himself he cannot save.\"",
+		references: "Mark 15:29-32; Luke 23:35-37",
+	},
+	{
+		hour: 10.75,
+		about: true,
+		title: "\"To day shalt thou be with me in paradise\"",
+		text: "One of the thieves asked Jesus to remember him. Jesus promised he would be with him that day in paradise, the world of spirits.",
+		references: "Alma 40:11-12; D&C 138:18-19; Luke 23:39-43",
+	},
+	{
+		hour: 11.25,
+		about: true,
+		title: "\"Behold thy mother!\"",
+		text: "Seeing his mother and the disciple whom he loved by the cross, he gave her into that disciple's care.",
+		references: "John 19:25-27",
+	},
+	{
+		hour: 12,
+		title: "Darkness at the sixth hour",
+		text: "From noon there was darkness over the whole land until the ninth hour, and the sun was darkened.",
+		references: "Mark 15:33; Luke 23:44-45",
+	},
+	{
+		hour: 14.75,
+		about: true,
+		title: "\"Why hast thou forsaken me?\"",
+		text: "About the ninth hour he cried with a loud voice, \"My God, my God, why hast thou forsaken me?\" He trod the winepress alone.",
+		references: "D&C 76:107; D&C 133:50; Matthew 27:46; Mark 15:34",
+	},
+	{
+		hour: 14.92,
+		about: true,
+		title: "\"It is finished\"",
+		text: "After a sponge of vinegar he said, \"It is finished,\" and, \"Father, into thy hands I commend my spirit,\" and gave up the ghost.",
+		references: "D&C 19:18-19; Luke 23:46; John 19:28-30",
+	},
+	{
+		hour: 15,
+		title: "The earth quakes, the veil is torn",
+		text: "The temple veil tore from top to bottom and the earth shook. The centurion said, \"Truly this was the Son of God.\" In the Americas, storms, earthquakes and three days of darkness marked his death, as Samuel the Lamanite had prophesied.",
+		references: "Helaman 14:20-27; 3 Nephi 8:5-23; Matthew 27:51-54",
+	},
+];
+
+// The time in the top-left corner and the caption at the bottom, which
+// says what is happening, steps between events with its arrows, and opens a
+// list of the whole day upward. Moving to an event eases the clock to its
+// time, with fresh weather to suit the hour.
+function timelineClock() {
+	const clock = document.querySelector(".clock-time");
+	const caption = document.querySelector(".caption");
+	const toggle = document.getElementById("timeline-button");
+	const list = document.getElementById("timeline");
+	const [previous, next] = caption.querySelectorAll(".caption-step");
+	const title = caption.querySelector(".caption-title");
+	const text = caption.querySelector(".caption-text");
+
+	function element(tag, className, text) {
+		const created = document.createElement(tag);
+		created.className = className;
+		created.textContent = text;
+		return created;
+	}
+
+	// The latest event at or before an hour.
+	function eventIndex(hour) {
+		return timeline.findLastIndex((event) => event.hour <= hour + 0.001);
+	}
+
+	const choices = timeline.map((event) => {
+		const choice = document.createElement("button");
+		choice.type = "button";
+		choice.append(
+			element("span", "timeline-event-time", `${event.about ? "About " : ""}${clockTime(event.hour)}`),
+			element("strong", "timeline-event-title", event.title),
+			element("span", "timeline-event-text", event.text),
+			element("cite", "timeline-event-references", event.references),
+		);
+		choice.addEventListener("click", () => goToHour(event.hour));
+		const item = document.createElement("li");
+		item.append(choice);
+		return item;
+	});
+	list.querySelector(".timeline-events").replaceChildren(...choices);
+
+	// The time in fixed-width slots: [h][h]:[m][m] AM. A one-digit hour
+	// leaves the first slot empty.
+	clock.innerHTML =
+		'<span class="clock-digit"></span><span class="clock-digit"></span>' +
+		'<span class="clock-colon">:</span>' +
+		'<span class="clock-digit"></span><span class="clock-digit"></span>' +
+		'<span class="clock-period"></span>';
+	const clockSlots = [...clock.children].filter((slot) => slot.className !== "clock-colon");
+	function showClock(hour) {
+		const [time, period] = clockTime(hour).split(" ");
+		const characters = [...time.replace(":", "").padStart(4, " "), period];
+		clockSlots.forEach((slot, i) => {
+			const text = characters[i].trim();
+			if (slot.textContent !== text) slot.textContent = text;
+		});
+	}
+
+	// Where the clock is heading while it eases, so quick arrow presses
+	// keep stepping from there.
+	let heading = null;
+
+	function showTime() {
+		const hour = sceneSettings.hour;
+		showClock(hour);
+		const index = eventIndex(hour);
+		choices.forEach((item, i) => {
+			if (i === index) item.firstChild.setAttribute("aria-current", "true");
+			else item.firstChild.removeAttribute("aria-current");
+		});
+		showCaption(timeline[index]);
+		const target = eventIndex(heading ?? hour);
+		previous.disabled = target === 0;
+		next.disabled = target === timeline.length - 1;
+	}
+	// The caption fades between events: "9:00 AM • Crucified at the third
+	// hour", then what happened.
+	let captioned = null;
+	let captionTimer;
+	function showCaption(event) {
+		if (event === captioned) return;
+		captioned = event;
+		caption.classList.add("is-changing");
+		clearTimeout(captionTimer);
+		captionTimer = setTimeout(() => {
+			title.replaceChildren(
+				element("span", "caption-time", `${clockTime(event.hour)} • `),
+				event.title,
+			);
+			text.textContent = event.text;
+			caption.classList.remove("is-changing");
+		}, captioned && title.textContent ? 400 : 0);
+	}
+
+	showTime();
+	document.addEventListener("scenesettings", showTime);
+
+	// The clock runs on its own a minute at a time (clockSpeed minutes a
+	// second), with the weather following the hour, until 3 PM or a pause.
+	const playButton = document.querySelector(".clock-play");
+	const dayStart = timeline[0].hour;
+	const dayEnd = timeline.at(-1).hour;
+	let playing = sceneSettings.clockSpeed > 0;
+
+	function showPlaying() {
+		playButton.toggleAttribute("data-paused", !playing);
+		playButton.setAttribute("aria-label", playing ? "Pause time" : "Play time");
+	}
+	showPlaying();
+
+	// Play at 3 PM starts the day over.
+	playButton.addEventListener("click", () => {
+		playing = !playing;
+		if (playing && sceneSettings.hour >= dayEnd - 0.001) goToHour(dayStart);
+		showPlaying();
+	});
+
+	setInterval(() => {
+		if (!playing || document.hidden || heading !== null) return;
+		sceneSettings.hour = Math.min(dayEnd, Math.round(sceneSettings.hour * 60 + 1) / 60);
+		sceneSettings.weatherIntensity = weatherForHour(sceneSettings.hour);
+		document.dispatchEvent(new Event("scenesettings"));
+		if (sceneSettings.hour >= dayEnd) {
+			playing = false;
+			showPlaying();
+		}
+	}, 1000 / (sceneSettings.clockSpeed || 1.5));
+
+	// The arrows go a whole event back or forward, however far the clock has
+	// run into the current one.
+	function step(direction) {
+		const to = timeline[eventIndex(heading ?? sceneSettings.hour) + direction];
+		if (to) goToHour(to.hour);
+	}
+	previous.addEventListener("click", () => step(-1));
+	next.addEventListener("click", () => step(1));
+
+	// The list opens upward from the caption, as far as just under the time
+	// at the top, and opens at the current event.
+	function setOpen(open) {
+		toggle.setAttribute("aria-expanded", open);
+		list.hidden = !open;
+		if (!open) return;
+		const above = caption.getBoundingClientRect().top - clock.getBoundingClientRect().bottom - 30;
+		list.style.maxHeight = `${above}px`;
+		const current = list.querySelector("[aria-current]");
+		list.scrollTop = current.offsetTop - (list.clientHeight - current.offsetHeight) / 2;
+	}
+	toggle.addEventListener("click", () => setOpen(list.hidden));
+	// A click anywhere else, or Escape, closes it.
+	document.addEventListener("pointerdown", (event) => {
+		if (!list.hidden && !caption.contains(event.target)) setOpen(false);
+	});
+	document.addEventListener("keydown", (event) => {
+		if (event.key === "Escape" && !list.hidden) {
+			setOpen(false);
+			toggle.focus();
+		}
+	});
+
+	let easing = 0;
+	let lastSceneUpdate = 0;
+	function goToHour(hour) {
+		const from = { hour: sceneSettings.hour, weather: sceneSettings.weatherIntensity };
+		weatherLean = randomBetween(-0.2, 0.2);
+		const to = { hour, weather: weatherForHour(hour) };
+		const seconds = reducedMotion ? 0 : 1.6;
+		const start = performance.now();
+		heading = hour;
+		cancelAnimationFrame(easing);
+		function frame(now) {
+			const along = seconds ? Math.min((now - start) / 1000 / seconds, 1) : 1;
+			const eased = along < 0.5 ? 2 * along ** 2 : 1 - (2 - 2 * along) ** 2 / 2;
+			sceneSettings.hour = from.hour + (to.hour - from.hour) * eased;
+			sceneSettings.weatherIntensity = from.weather + (to.weather - from.weather) * eased;
+			if (along === 1) heading = null;
+			// The clock moves every frame; the scene's light (which repaints
+			// the sky) changes 15 times a second, which still looks smooth.
+			if (along === 1 || now - lastSceneUpdate >= 66) {
+				lastSceneUpdate = now;
+				document.dispatchEvent(new Event("scenesettings"));
+			} else {
+				showTime();
+			}
+			if (along < 1) easing = requestAnimationFrame(frame);
+		}
+		easing = requestAnimationFrame(frame);
+	}
 }

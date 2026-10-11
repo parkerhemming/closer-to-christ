@@ -52,6 +52,7 @@
 	</head>
 	<body>
 		<section id="sky" data-z_index="1">
+			<canvas class="sky-gradient" width="256" height="160"></canvas>
 			<div class="stars"></div>
 			<div class="sun"></div>
 		</section>
@@ -122,7 +123,6 @@
 			data-scenery="distant-jerusalem"
 			data-z_index="2.5"
 		>
-			<span class="land-shadow" aria-hidden="true"><span></span></span>
 			<span class="city-light city-light--architecture"></span>
 			<span class="city-light city-light--home city-light--home-1"></span>
 			<span class="city-light city-light--home city-light--home-2"></span>
@@ -133,6 +133,9 @@
 			<span class="city-light city-light--lantern city-light--lantern-variant"></span>
 			<span class="city-flicker-plane"></span>
 		</section>
+		<!-- The hills' shadow on the city's land, drawn by landShadows in
+		     app.js; it lies exactly over the city layer and moves with it. -->
+		<canvas class="land-shadow land-shadow--city" data-z_index="2.5" aria-hidden="true"></canvas>
 
 		<section
 			class="scenery"
@@ -144,9 +147,8 @@
 			class="scenery"
 			data-scenery="ground"
 			data-z_index="8"
-		>
-			<span class="land-shadow" aria-hidden="true"><span></span></span>
-		</section>
+		></section>
+		<canvas class="land-shadow land-shadow--ground" data-z_index="8" aria-hidden="true"></canvas>
 
 		<img
 			id="christ"
@@ -155,79 +157,124 @@
 			alt=""
 		/>
 
+		<!-- A button to pause and play the scene's time, and the time itself
+		     (timelineClock keeps it current). -->
+		<div class="clock-bar">
+			<button class="clock-play" type="button" aria-label="Pause time">
+				<svg class="clock-play__pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13M16 5.5v13" /></svg>
+				<svg class="clock-play__play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" /></svg>
+			</button>
+			<time class="clock-time"></time>
+		</div>
+
+		<!-- The caption: what is happening at the clock's time, with arrows to
+		     step between the day's events; clicking it opens a list of them all
+		     upward. -->
+		<section class="caption" aria-label="The day of the Crucifixion">
+			<button class="caption-step" type="button" aria-label="Previous event">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5" /></svg>
+			</button>
+			<!-- The caption itself is the button that opens the list. -->
+			<button
+				id="timeline-button"
+				class="caption-content"
+				type="button"
+				aria-expanded="false"
+				aria-controls="timeline"
+				aria-live="polite"
+			>
+				<strong class="caption-title"></strong>
+				<span class="caption-text"></span>
+			</button>
+			<button class="caption-step" type="button" aria-label="Next event">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5" /></svg>
+			</button>
+			<div id="timeline" class="timeline" hidden>
+				<p class="timeline-note">
+					Mark gives the third, sixth and ninth hours (9 AM, noon and 3 PM);
+					the other times are approximate.
+				</p>
+				<ol class="timeline-events"></ol>
+			</div>
+		</section>
+
 		<button
 			id="settings-button"
 			class="settings-button"
 			type="button"
 			aria-label="Scene Settings"
-			aria-haspopup="dialog"
+			aria-expanded="false"
+			aria-controls="settings"
 		>
-			<!-- Gear drawn symmetric around (12, 12) so it spins in place. -->
-			<svg viewBox="0 0 24 24" aria-hidden="true">
+			<!-- Gear drawn symmetric around (12, 12) so it spins in place; it
+			     turns into an x while the panel is open. -->
+			<svg class="settings-gear" viewBox="0 0 24 24" aria-hidden="true">
 				<path d="M9.78 4.73 L9.88 2.02 L14.12 2.02 L14.22 4.73 L15.57 5.29 L17.56 3.45 L20.55 6.44 L18.71 8.43 L19.27 9.78 L21.98 9.88 L21.98 14.12 L19.27 14.22 L18.71 15.57 L20.55 17.56 L17.56 20.55 L15.57 18.71 L14.22 19.27 L14.12 21.98 L9.88 21.98 L9.78 19.27 L8.43 18.71 L6.44 20.55 L3.45 17.56 L5.29 15.57 L4.73 14.22 L2.02 14.12 L2.02 9.88 L4.73 9.78 L5.29 8.43 L3.45 6.44 L6.44 3.45 L8.43 5.29 Z" />
 				<circle cx="12" cy="12" r="3.2" />
+			</svg>
+			<svg class="settings-x" viewBox="0 0 24 24" aria-hidden="true">
+				<path d="M6 6l12 12M18 6L6 18" />
 			</svg>
 		</button>
 
 		<dialog id="settings" class="settings" aria-labelledby="settings-title">
 			<form method="dialog" class="settings-card">
-				<header class="settings-header">
-					<span class="overlay-eyebrow">Closer to Christ</span>
-					<h2 id="settings-title" class="settings-title">Scene Settings</h2>
-					<button class="settings-close" aria-label="Close settings">
-						<svg viewBox="0 0 24 24" aria-hidden="true">
-							<path d="M6 6l12 12M18 6L6 18" />
-						</svg>
-					</button>
-				</header>
+				<!-- The settings scroll; the render details below stay put, since a
+				     change inside a scrolling area stalled the scroll in Chrome. -->
+				<div class="settings-scroll">
+					<header class="settings-header">
+						<span class="overlay-eyebrow">Closer to Christ</span>
+						<h2 id="settings-title" class="settings-title">Scene Settings</h2>
+					</header>
 
-				<fieldset class="settings-group">
-					<legend>Scene</legend>
-					<label class="settings-row settings-row--stacked">
-						<span class="settings-label">
-							Time of day
-							<output name="timeValue"></output>
-							<small>From deep night through sunrise to full day</small>
-						</span>
-						<input type="range" name="timeOfDay" min="0" max="1" step="0.01" />
-						<span class="settings-scale" aria-hidden="true">
-							<span>Night</span>
-							<span>Day</span>
-						</span>
-					</label>
-					<label class="settings-row settings-row--stacked">
-						<span class="settings-label">
-							Weather
-							<output name="weatherValue"></output>
-							<small>From clear skies to a full storm</small>
-						</span>
-						<input type="range" name="weatherIntensity" min="0" max="1" step="0.01" />
-						<span class="settings-scale" aria-hidden="true">
-							<span>Clear</span>
-							<span>Storm</span>
-						</span>
-					</label>
-				</fieldset>
+					<fieldset class="settings-group">
+						<legend>Scene</legend>
+						<label class="settings-row settings-row--stacked">
+							<span class="settings-label">
+								Time of day
+								<output name="timeValue"></output>
+								<small>From early morning, when he was led to Pilate, to 3 PM, when he died. Darkness falls at noon.</small>
+							</span>
+							<input type="range" name="hour" min="6" max="15" step="0.05" />
+							<span class="settings-scale" aria-hidden="true">
+								<span>6 AM</span>
+								<span>3 PM</span>
+							</span>
+						</label>
+						<label class="settings-row settings-row--stacked">
+							<span class="settings-label">
+								Weather
+								<output name="weatherValue"></output>
+								<small>From clear skies to a full storm</small>
+							</span>
+							<input type="range" name="weatherIntensity" min="0" max="1" step="0.01" />
+							<span class="settings-scale" aria-hidden="true">
+								<span>Clear</span>
+								<span>Storm</span>
+							</span>
+						</label>
+					</fieldset>
 
-				<fieldset class="settings-group">
-					<legend>Motion</legend>
-					<label class="settings-row">
-						<span class="settings-label">
-							Parallax
-							<small>The scene follows your mouse or phone tilt</small>
-						</span>
-						<input class="settings-switch-input" type="checkbox" name="parallax" role="switch" />
-						<span class="settings-switch" aria-hidden="true"></span>
-					</label>
-					<label class="settings-row settings-row--stacked">
-						<span class="settings-label">
-							Smoothness
-							<output name="smoothingValue"></output>
-							<small>Higher eases the scene, and fast flicks swing a little past and settle</small>
-						</span>
-						<input type="range" name="parallaxSmoothing" min="0" max="0.5" step="0.01" />
-					</label>
-				</fieldset>
+					<fieldset class="settings-group">
+						<legend>Motion</legend>
+						<label class="settings-row">
+							<span class="settings-label">
+								Parallax
+								<small>The scene follows your mouse or phone tilt</small>
+							</span>
+							<input class="settings-switch-input" type="checkbox" name="parallax" role="switch" />
+							<span class="settings-switch" aria-hidden="true"></span>
+						</label>
+						<label class="settings-row settings-row--stacked">
+							<span class="settings-label">
+								Smoothness
+								<output name="smoothingValue"></output>
+								<small>Higher eases the scene, and fast flicks swing a little past and settle</small>
+							</span>
+							<input type="range" name="parallaxSmoothing" min="0" max="0.5" step="0.01" />
+						</label>
+					</fieldset>
+				</div>
 
 				<section class="settings-group" aria-labelledby="settings-details-title">
 					<h3 id="settings-details-title" class="settings-group-title">Render details</h3>
@@ -279,10 +326,12 @@
 			</span>
 		</div>
 
+		<script src="./rain.js"></script>
 		<script src="./app.js"></script>
 		<script>
 			applyTimeOfDay();
 			document.addEventListener("scenesettings", applyTimeOfDay);
+			timelineClock();
 			loadScene().then(() => {
 				createStars({ high: 300, medium: 150, low: 90 }[getQuality()]);
 				createShootingStars();

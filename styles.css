@@ -17,6 +17,30 @@ body {
 	--ground: #292d24;
 	--ground-light: #46513a;
 	--parallax-overscan: 1.2;
+	/* Type sizes shared by the settings panel, the time, the caption and the
+	   timeline. Computers' are half what they were tuned at (in a browser at
+	   50% zoom); phones have their own, below. */
+	--text-title: 1.35rem;
+	--text-clock: 1.45rem;
+	--text-label: 0.725rem;
+	--text-body: 0.575rem;
+	--text-eyebrow: 0.46rem;
+}
+
+@media (max-width: 600px) {
+	:root {
+		--text-title: 1.8rem;
+		--text-clock: 1.95rem;
+		--text-label: 1.05rem;
+		--text-body: 0.88rem;
+		--text-eyebrow: 0.7rem;
+	}
+}
+
+/* Dark behind everything, so nothing can ever flash white. */
+html,
+body {
+	background: #091720;
 }
 
 body {
@@ -31,23 +55,6 @@ body {
 #sky {
 	width: 120%;
 	height: 120%;
-	/* Colours come from the time of day (applyTimeOfDay in app.js); the
-	   fallbacks are the original pre-dawn sky. */
-	background:
-		radial-gradient(
-			ellipse 100% 100% at 20% 100%,
-			var(--glow-core, rgba(239, 174, 112, 0.38)) 0%,
-			var(--glow-middle, rgba(166, 111, 98, 0.2)) 35%,
-			var(--glow-edge, rgba(58, 61, 76, 0.07)) 59%,
-			transparent 75%
-		),
-		linear-gradient(
-			to top,
-			var(--sky-horizon, #515565) 0%,
-			var(--sky-low, #303b48) 20%,
-			var(--sky-middle, #172834) 50%,
-			var(--sky-zenith, var(--storm-dark)) 100%
-		);
 	position: absolute;
 	z-index: 1;
 	top: 50%;
@@ -56,19 +63,36 @@ body {
 	overflow: hidden;
 	contain: layout paint;
 
-	/* All stars and shooting stars, faded together as the sky lightens. */
+	/* The sky's colours: a small canvas, stretched (a smooth gradient looks
+	   the same), that drawSky in app.js repaints as the light changes. A CSS
+	   gradient this size had to be repainted in full each second, and that
+	   spike in graphics memory made Chrome drop every layer for a frame. */
+	.sky-gradient {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+	}
+
+	/* All stars and shooting stars, faded together as the sky lightens. Its
+	   own GPU layer, so a sky colour change doesn't repaint every star. */
 	.stars {
 		position: absolute;
 		inset: 0;
 		opacity: var(--starlight, 1);
+		/* The clock updates the light once a second; glide between (a little
+		   longer than that, so a late update never leaves a pause). */
+		transition: opacity 1.2s linear;
+		will-change: opacity;
 	}
 
 	/* The sun rises from behind the hills on the left (#sky is 120% of the
 	   screen, so the screen-unit position is offset by its 10% overhang). */
+	/* Moved by translate on its own GPU layer, so it never repaints the sky. */
 	.sun {
 		position: absolute;
-		top: calc(var(--sun-top, 80vh) + 10vh);
-		left: calc(var(--sun-left, 20vw) + 10vw);
+		top: 0;
+		left: 0;
 		width: 14vmin;
 		height: 14vmin;
 		border-radius: 50%;
@@ -81,7 +105,15 @@ body {
 			transparent 72%
 		);
 		opacity: var(--sun-opacity, 0);
-		translate: -50% -50%;
+		translate: calc(var(--sun-left, 20vw) + 10vw - 50%)
+			calc(var(--sun-top, 80vh) + 10vh - 50%);
+		/* The running clock moves it once a second; glide between (a little
+		   longer than that, so a late update never leaves a pause), so it
+		   climbs smoothly. On the GPU, so it costs nothing. */
+		transition:
+			translate 1.2s linear,
+			opacity 1.2s linear;
+		will-change: translate, opacity;
 	}
 
 	.star {
@@ -89,8 +121,11 @@ body {
 		aspect-ratio: 1/1;
 		border-radius: 50%;
 		position: absolute;
-		filter: drop-shadow(0 0 4px white) drop-shadow(0 0 10px #dcefff)
-			drop-shadow(0 0 20px #8ebce0);
+		/* A painted glow: Safari stutters on hundreds of filtered layers. */
+		box-shadow:
+			0 0 4px white,
+			0 0 10px #dcefff,
+			0 0 20px #8ebce0;
 
 		&.twinkle {
 			animation-name: twinkle;
@@ -102,6 +137,7 @@ body {
 		&.big {
 			background-color: transparent;
 			border-radius: 0;
+			box-shadow: none;
 			filter: blur(0.18px) drop-shadow(0 0 1.5px white)
 				drop-shadow(0 0 4px #dcefff) drop-shadow(0 0 8px #8ebce0);
 
@@ -156,8 +192,7 @@ body {
 			rgba(244, 250, 255, 0.92) 88%,
 			white
 		);
-		filter: blur(var(--shooting-blur))
-			drop-shadow(0 0 3px rgba(218, 239, 255, 0.76));
+		filter: drop-shadow(0 0 3px rgba(218, 239, 255, 0.76));
 		pointer-events: none;
 		transform-origin: right center;
 		animation: shooting-star var(--shooting-duration) ease-out forwards;
@@ -254,9 +289,11 @@ body {
 }
 
 /* Each texture is only as wide as the frame plus its drift, and only as tall as
-   the band its fade mask shows (--cloud-top to --cloud-bottom). The background
-   and mask are shifted by the same amounts, so the clouds land exactly where a
-   full-size layer would put them, with a fraction of the GPU memory. */
+   the band its clouds show in (--cloud-top to --cloud-bottom), shifted so the
+   clouds land exactly where a full-size layer would put them, with a fraction
+   of the GPU memory. Each layer's top and bottom fade is baked into its image
+   (tools/bake-cloud-fades.py): a CSS mask here was a second full-size GPU
+   layer per cloud in Chrome. */
 .storm-cloud__texture {
 	display: block;
 	position: absolute;
@@ -272,140 +309,101 @@ body {
 	/* Each layer's own grade, lightened or darkened by the weather. */
 	filter: var(--cloud-grade) brightness(var(--cloud-shade, 1))
 		brightness(var(--cloud-light, 1)) sepia(var(--cloud-warmth, 0));
-	-webkit-mask-image: var(--cloud-fade);
-	-webkit-mask-position: 0 calc(-1 * var(--cloud-top));
-	-webkit-mask-repeat: no-repeat;
-	-webkit-mask-size: 100% var(--cloud-frame);
-	mask-image: var(--cloud-fade);
-	mask-position: 0 calc(-1 * var(--cloud-top));
-	mask-repeat: no-repeat;
-	mask-size: 100% var(--cloud-frame);
 	animation: cloud-drift var(--cloud-speed) linear infinite;
 	will-change: transform;
 }
 
 .storm-cloud--far {
+	--cloud-image: url("./assets/clouds/baked/far.avif");
 	--cloud-bottom: calc(var(--cloud-frame) * 0.74);
 	--cloud-image-height: 110dvh;
 	--cloud-y: 0dvh;
 	--cloud-drift: -13vw;
 	--cloud-speed: 450s;
 	--cloud-grade: brightness(62%) contrast(116%) sepia(16%) saturate(80%)
-		hue-rotate(154deg) blur(0.8px);
-	--cloud-fade: linear-gradient(
-		to bottom,
-		transparent 0%,
-		black 8%,
-		black 46%,
-		transparent 72%
-	);
+		hue-rotate(154deg);
 	z-index: 2;
 	--cloud-opacity: 0.28;
 }
 
 .storm-cloud--deep {
+	--cloud-image: url("./assets/clouds/baked/deep.avif");
 	--cloud-bottom: calc(var(--cloud-frame) * 0.66);
-	--cloud-image: url("./assets/clouds/storm-cloud-cumulus.avif");
 	--cloud-image-height: 55dvh;
 	--cloud-y: 5dvh;
 	--cloud-drift: -15vw;
 	--cloud-speed: 360s;
 	--cloud-grade: brightness(54%) contrast(116%) saturate(48%)
-		hue-rotate(158deg) blur(0.7px);
-	--cloud-fade: linear-gradient(
-		to bottom,
-		transparent 0%,
-		black 7%,
-		black 43%,
-		transparent 64%
-	);
+		hue-rotate(158deg);
 	z-index: 4;
 	--cloud-opacity: 0.56;
 }
 
 .storm-cloud--middle {
+	--cloud-image: url("./assets/clouds/baked/middle.avif");
 	--cloud-bottom: calc(var(--cloud-frame) * 0.7);
-	--cloud-image: url("./assets/clouds/storm-cloud-alpha.avif");
 	--cloud-image-height: 88dvh;
 	--cloud-y: -2dvh;
 	--cloud-drift: -12vw;
 	--cloud-speed: 286s;
 	--cloud-grade: brightness(64%) contrast(116%) sepia(12%) saturate(70%)
-		hue-rotate(150deg) blur(0.45px);
-	--cloud-fade: linear-gradient(
-		to bottom,
-		transparent 0%,
-		black 6%,
-		black 43%,
-		transparent 68%
-	);
+		hue-rotate(150deg);
 	z-index: 8;
 	--cloud-opacity: 0.2;
 }
 
 .storm-cloud--midband {
+	--cloud-image: url("./assets/clouds/baked/midband.avif");
 	--cloud-top: calc(var(--cloud-frame) * 0.31);
 	--cloud-bottom: calc(var(--cloud-frame) * 0.49);
-	--cloud-image: url("./assets/clouds/storm-cloud-alpha.avif");
 	--cloud-image-height: 64dvh;
 	--cloud-y: 16dvh;
 	--cloud-drift: -11vw;
 	--cloud-speed: 247s;
 	--cloud-grade: brightness(56%) contrast(118%) sepia(10%) saturate(64%)
-		hue-rotate(154deg) blur(0.55px);
-	--cloud-fade: linear-gradient(
-		to bottom,
-		transparent 33%,
-		rgba(0, 0, 0, 0.4) 35%,
-		black 37%,
-		black 43%,
-		rgba(0, 0, 0, 0.42) 45%,
-		transparent 47%
-	);
+		hue-rotate(154deg);
 	z-index: 12;
 	--cloud-opacity: 0.3;
 }
 
 .storm-cloud--lower {
+	--cloud-image: url("./assets/clouds/baked/lower.avif");
 	--cloud-top: calc(var(--cloud-frame) * 0.36);
 	--cloud-bottom: calc(var(--cloud-frame) * 0.7);
-	--cloud-image: url("./assets/clouds/storm-cloud-cumulus.avif");
 	--cloud-image-height: 25dvh;
 	--cloud-y: 58dvh;
 	--cloud-drift: -10vw;
 	--cloud-speed: 226s;
 	--cloud-grade: brightness(72%) contrast(108%) saturate(52%)
-		hue-rotate(154deg) blur(1.2px);
-	--cloud-fade: linear-gradient(
-		to bottom,
-		transparent 38%,
-		black 46%,
-		black 57%,
-		transparent 68%
-	);
+		hue-rotate(154deg);
 	z-index: 24;
 	--cloud-opacity: 0.13;
 }
 
 .storm-cloud--near {
+	--cloud-image: url("./assets/clouds/baked/near.avif");
 	--cloud-bottom: calc(var(--cloud-frame) * 0.62);
-	--cloud-image: url("./assets/clouds/storm-cloud-cumulus.avif");
 	--cloud-image-height: 46dvh;
 	--cloud-y: 9dvh;
 	--cloud-drift: -16vw;
 	--cloud-speed: 90s;
 	--cloud-grade: brightness(50%) contrast(120%) saturate(45%)
-		hue-rotate(160deg) blur(0.4px)
-		drop-shadow(0 16px 24px rgba(14, 24, 31, 0.28));
-	--cloud-fade: linear-gradient(
-		to bottom,
-		transparent 0%,
-		black 8%,
-		black 38%,
-		transparent 60%
-	);
+		hue-rotate(160deg);
 	z-index: 35;
 	--cloud-opacity: 0.64;
+}
+
+/* Painted into a canvas by paintClouds in app.js (once it's ready, the
+   background goes). */
+.storm-cloud__texture.is-painted {
+	background-image: none;
+}
+
+.storm-cloud__texture > canvas {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
 }
 
 @keyframes cloud-drift {
@@ -461,21 +459,17 @@ body {
 	overflow: visible;
 	transform: scaleX(var(--bolt-slant));
 	transform-origin: top center;
-	filter: drop-shadow(0 0 3px rgba(224, 240, 255, 0.95))
-		drop-shadow(0 0 11px rgba(134, 180, 229, 0.9))
-		drop-shadow(0 0 26px rgba(93, 135, 196, 0.65));
+	/* One glow per bolt (each extra glow is another full blur pass). */
+	filter: drop-shadow(0 0 9px rgba(150, 190, 235, 0.95));
 	animation: lightning-flicker var(--bolt-duration) steps(1, end) forwards;
 }
 
 .lightning-bolt--far {
-	filter: drop-shadow(0 0 2px rgba(224, 240, 255, 0.82))
-		drop-shadow(0 0 7px rgba(134, 180, 229, 0.7));
+	filter: drop-shadow(0 0 5px rgba(150, 190, 235, 0.8));
 }
 
 .lightning-bolt--middle {
-	filter: drop-shadow(0 0 2px rgba(224, 240, 255, 0.9))
-		drop-shadow(0 0 9px rgba(134, 180, 229, 0.78))
-		drop-shadow(0 0 18px rgba(93, 135, 196, 0.45));
+	filter: drop-shadow(0 0 7px rgba(150, 190, 235, 0.85));
 }
 
 .lightning-bolt path {
@@ -556,19 +550,19 @@ body {
 	mask-position: center;
 	mask-repeat: no-repeat;
 	mask-size: cover;
-	filter: blur(12px);
-	mix-blend-mode: screen;
+	/* No blur or blend: on a new element every strike, those made Safari
+	   stall for a few hundred milliseconds. */
 	transform: translateX(-50%);
 	animation: cloud-lightning-flash var(--flash-duration) steps(1, end)
 		forwards;
 }
 
 .lightning-layer--back .cloud-lightning-flash {
-	--flash-cloud-mask: url("./assets/clouds/storm-cloud-map.avif");
+	--flash-cloud-mask: url("./assets/mobile/storm-cloud-map.avif");
 }
 
 .lightning-layer--middle .cloud-lightning-flash {
-	--flash-cloud-mask: url("./assets/clouds/storm-cloud-alpha.avif");
+	--flash-cloud-mask: url("./assets/mobile/storm-cloud-alpha.avif");
 }
 
 .lightning-layer--front .cloud-lightning-flash {
@@ -644,44 +638,31 @@ body {
 	pointer-events: none;
 	contain: layout paint style;
 
+	/* Every land image is cropped to the rows that can ever be on screen
+	   (plus a margin for the parallax): the rest was never seen but still
+	   took graphics memory, and running out made Chrome drop layers
+	   (flashing, a vanishing figure). Each layer's height and bottom are set
+	   so the crop lands exactly where the full image's rows did. */
 	&[data-scenery="distant-hills"] {
 		--stack-order: 2;
-		--bottom: -118dvh;
-		--height: 180dvh;
-		--texture: url("./assets/israel-hills-cutout-4k.avif");
+		--bottom: -10.869dvh;
+		--height: 40.688dvh;
+		--texture: url("./assets/hills-v3.avif");
 		--color-grade: brightness(33%) saturate(42%) contrast(80%) sepia(6%);
 	}
 
-	&[data-scenery="distant-jerusalem"] {
-		--stack-order: 4;
-		--bottom: clamp(-14dvh, calc(16dvh - 14vw), 8dvh);
-		--height: 140dvh;
-		--texture: url("./assets/distant-jerusalem-city-only-4k.avif");
-		--texture-size: 100% auto;
-		--color-grade: brightness(43%) saturate(28%) contrast(89%)
-			grayscale(32%) sepia(6%);
-	}
-	/* The two near layers are cut-out images with their own skylines, 24% and
-	   11% down the image. Each is 100dvh tall (2.36:1, wide enough for
-	   ultrawide screens). A skyline's height above the screen's bottom is
-	   --bottom + 1.2 (the overscan) x the image below it: the ridge's sits at
-	   11dvh (-80 + 1.2 x 76) and the near ground's at 5dvh (-102 + 1.2 x 89).
-	   The ridge slopes down to the right so Jerusalem shows above it. */
+	/* The two near layers are cut-out images with their own skylines; the
+	   ridge's sits about 11dvh above the bottom of the screen and the near
+	   ground's about 5dvh. The ridge slopes down to the right so Jerusalem
+	   shows above it. */
 	&[data-scenery="golgotha-ridge"] {
 		--stack-order: 12;
-		--bottom: -80dvh;
-		--height: 100dvh;
-		--texture: url("./assets/golgotha-ridge-v2.avif");
+		--bottom: -5.984dvh;
+		--height: 20.483dvh;
+		--texture: url("./assets/golgotha-ridge-v3.avif");
 		--color-grade: brightness(46%) saturate(50%) contrast(82%) sepia(7%);
 	}
 
-	&[data-scenery="ground"] {
-		--stack-order: 25;
-		--bottom: -102dvh;
-		--height: 100dvh;
-		--texture: url("./assets/near-ground-v2.avif");
-		--color-grade: brightness(47%) saturate(55%) contrast(80%) sepia(10%);
-	}
 }
 
 .scenery[data-scenery="distant-jerusalem"] {
@@ -701,51 +682,49 @@ body {
 	background-size: var(--texture-size, auto 100%);
 	filter: var(--color-grade) brightness(var(--land-light, 1))
 		saturate(var(--land-saturation, 1)) sepia(var(--land-warmth, 0));
+	/* Own GPU layer, so a change of light is a GPU filter, not a repaint of
+	   the whole city (the other land layers already are their own layers). */
+	will-change: transform;
 }
 
-/* Cast shadows of the ridges (landShadows in app.js). The catcher is clipped
-   to the receiving land's outline and multiplies its colour onto it; inside
-   it, the ridge's outline (--shadow-shape) is flipped down along the land. */
+/* The city's and near ground's size and place, shared with the shadows cast
+   on them. */
+:is(.scenery[data-scenery="distant-jerusalem"], .land-shadow--city) {
+	--stack-order: 4;
+	--bottom: clamp(-14dvh, calc(16dvh - 14vw), 8dvh);
+	--height: 140dvh;
+	/* Sized by width and anchored at the bottom, so cropping the empty sky
+	   off its top changes nothing else. */
+	--texture: url("./assets/jerusalem-v3.avif");
+	--texture-size: 100% auto;
+	--color-grade: brightness(43%) saturate(28%) contrast(89%)
+		grayscale(32%) sepia(6%);
+}
+
+:is(.scenery[data-scenery="ground"], .land-shadow--ground) {
+	--stack-order: 25;
+	--bottom: -6.028dvh;
+	--height: 15.19dvh;
+	--texture: url("./assets/near-ground-v3.avif");
+	--color-grade: brightness(47%) saturate(55%) contrast(80%) sepia(10%);
+}
+
+/* Cast shadows of the ridges, drawn by landShadows in app.js into a small
+   canvas that lies exactly over the land it falls on (same size, place and
+   parallax), just above it. Shadows are soft, so a low-resolution canvas
+   stretched to fit looks the same. Built from CSS masks and transformed
+   layers instead, they made Chrome drop whole frames and Safari stall. */
 .land-shadow {
 	position: absolute;
-	inset: 0;
-	z-index: 1;
-	pointer-events: none;
-	mix-blend-mode: multiply;
+	left: 50%;
+	bottom: var(--bottom);
+	z-index: var(--stack-order);
+	width: 100%;
+	height: var(--height);
+	transform: translateX(-50%) scale(var(--parallax-overscan));
+	transform-origin: center bottom;
 	opacity: var(--shadow-strength, 0);
-	-webkit-mask-position: center bottom;
-	-webkit-mask-repeat: no-repeat;
-	mask-position: center bottom;
-	mask-repeat: no-repeat;
-}
-
-.scenery[data-scenery="distant-jerusalem"] .land-shadow {
-	-webkit-mask-image: var(--texture);
-	-webkit-mask-size: var(--texture-size, auto 100%);
-	mask-image: var(--texture);
-	mask-size: var(--texture-size, auto 100%);
-}
-
-.scenery[data-scenery="ground"] .land-shadow {
-	-webkit-mask-image: var(--texture);
-	-webkit-mask-size: var(--texture-size, auto 100%);
-	mask-image: var(--texture);
-	mask-size: var(--texture-size, auto 100%);
-}
-
-.land-shadow > span {
-	position: absolute;
-	background: rgb(52, 60, 84);
-	-webkit-mask-image: var(--shadow-shape);
-	-webkit-mask-position: center bottom;
-	-webkit-mask-repeat: no-repeat;
-	-webkit-mask-size: auto 100%;
-	mask-image: var(--shadow-shape);
-	mask-position: center bottom;
-	mask-repeat: no-repeat;
-	mask-size: auto 100%;
-	filter: blur(3px);
-	will-change: transform;
+	pointer-events: none;
 }
 
 /* The light masks and the flicker plane only cover the strip of the city that
@@ -854,7 +833,6 @@ body {
 	box-shadow:
 		0 0 2px rgba(255, 220, 151, 0.95),
 		0 0 6px rgba(255, 126, 35, 0.72);
-	mix-blend-mode: screen;
 	opacity: 0;
 	will-change: opacity;
 }
@@ -966,7 +944,6 @@ body {
 
 .overlay-button:focus-visible,
 .settings-button:focus-visible,
-.settings-close:focus-visible,
 .settings-switch-input:focus-visible + .settings-switch {
 	outline: 2px solid #e7b477;
 	outline-offset: 2px;
@@ -1167,8 +1144,7 @@ body {
 	touch-action: manipulation;
 }
 
-.settings-button svg,
-.settings-close svg {
+.settings-button svg {
 	width: 40px;
 	height: 40px;
 	fill: none;
@@ -1178,47 +1154,70 @@ body {
 	stroke-linejoin: round;
 }
 
-.settings-button svg {
+.settings-gear {
 	transform-origin: 50% 50%;
 	transition: rotate 500ms ease;
 }
 
-/* The panel has its own close button; hide the gear behind it. */
-body:has(.settings[open]) .settings-button {
-	visibility: hidden;
-}
-
 /* 45deg = one tooth, so the gear lands looking the same. */
-.settings-button:hover svg {
+.settings-button:hover .settings-gear {
 	rotate: 45deg;
 }
 
-.settings-close svg {
-	width: 28px;
-	height: 28px;
+/* While the panel is open the gear becomes an x that closes it. */
+.settings-x,
+.settings-button[aria-expanded="true"] .settings-gear {
+	display: none;
 }
 
+.settings-button[aria-expanded="true"] .settings-x {
+	display: block;
+}
+
+/* A panel that drops from the gear, over the scene but leaving the time,
+   the gear and the caption visible (app.js keeps it above the caption). */
 .settings {
 	position: fixed;
-	inset: max(20px, env(safe-area-inset-top))
+	inset: calc(max(20px, env(safe-area-inset-top)) + 88px)
 		max(20px, env(safe-area-inset-right)) auto auto;
+	z-index: 85;
 	width: min(580px, calc(100vw - 40px));
-	max-height: calc(100dvh - 40px);
+	max-height: calc(100dvh - 140px);
 	margin: 0;
 	padding: 0;
 	border: 0;
+	border-radius: 24px;
 	background: none;
 	color: white;
-	overflow: auto;
-	touch-action: pan-y;
+	overflow: hidden;
+}
+
+.settings[open] {
+	display: flex;
+	flex-direction: column;
 }
 
 .settings * {
 	overflow: visible;
 }
 
-.settings::backdrop {
-	background: rgba(5, 15, 22, 0.25);
+/* The card fits the panel's height: the settings scroll inside it and the
+   render details stay pinned at the bottom (a change inside a scrolling
+   area, like the details' live numbers, stalled the scroll in Chrome). */
+.settings .settings-card {
+	min-height: 0;
+	overflow: hidden;
+}
+
+.settings .settings-scroll {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	gap: inherit;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	touch-action: pan-y;
 }
 
 .settings-card {
@@ -1245,24 +1244,9 @@ body:has(.settings[open]) .settings-button {
 .settings-title {
 	margin-top: 6px;
 	font:
-		500 2.7rem/1.15 Georgia,
+		500 var(--text-title)/1.15 Georgia,
 		"Times New Roman",
 		serif;
-}
-
-.settings-close {
-	position: absolute;
-	top: -12px;
-	right: -12px;
-	display: grid;
-	place-items: center;
-	width: 52px;
-	height: 52px;
-	border: 0;
-	border-radius: 50%;
-	background: none;
-	color: rgba(235, 240, 239, 0.7);
-	cursor: pointer;
 }
 
 .settings-group {
@@ -1280,7 +1264,7 @@ body:has(.settings[open]) .settings-button {
 	margin-bottom: 4px;
 	color: #e7b477;
 	font:
-		700 0.92rem/1.2 system-ui,
+		700 var(--text-eyebrow)/1.2 system-ui,
 		sans-serif;
 	letter-spacing: 0.16em;
 	text-transform: uppercase;
@@ -1306,7 +1290,7 @@ body:has(.settings[open]) .settings-button {
 	justify-content: space-between;
 	gap: 8px 16px;
 	font:
-		600 1.45rem/1.3 system-ui,
+		600 var(--text-label)/1.3 system-ui,
 		sans-serif;
 }
 
@@ -1314,7 +1298,7 @@ body:has(.settings[open]) .settings-button {
 .settings-label output {
 	color: rgba(235, 240, 239, 0.6);
 	font:
-		500 1.15rem/1.45 system-ui,
+		500 var(--text-body)/1.45 system-ui,
 		sans-serif;
 }
 
@@ -1387,58 +1371,20 @@ body:has(.settings[open]) .settings-button {
 /* Phones: the panel fills the screen. */
 @media (max-width: 600px) {
 	.settings {
-		inset: 0;
-		width: 100%;
-		max-width: none;
-		height: 100%;
-		max-height: none;
+		inset: calc(max(20px, env(safe-area-inset-top)) + 64px) 12px auto;
+		width: auto;
+		border-radius: 20px;
 	}
 
 	.settings-card {
-		min-height: 100%;
-		box-sizing: border-box;
-		gap: 40px;
-		padding: max(44px, env(safe-area-inset-top)) 28px
-			max(44px, env(safe-area-inset-bottom));
-		border: 0;
-		border-radius: 0;
+		gap: 28px;
+		padding: 28px 22px 26px;
+		border-radius: 20px;
 	}
 
-	/* The close button sits exactly where the gear was, at the same size,
-	   so opening the panel reads as the gear turning into an x. */
-	.settings-close {
-		position: fixed;
-		top: max(20px, env(safe-area-inset-top));
-		right: max(20px, env(safe-area-inset-right));
-		z-index: 1;
-		width: 54px;
-		height: 54px;
-		border: 1px solid rgba(255, 255, 255, 0.16);
-		background: rgba(12, 28, 37, 0.55);
-		color: #e7b477;
-	}
-
-	.settings-close svg {
-		width: 28px;
-		height: 28px;
-	}
-
-	.settings-title {
-		font-size: 1.8rem;
-	}
-
-	.settings-group legend,
-	.settings-group-title {
-		font-size: 0.7rem;
-	}
-
-	.settings-label {
-		font-size: 1.05rem;
-	}
-
-	.settings-label small,
-	.settings-label output {
-		font-size: 0.88rem;
+	.settings-group {
+		gap: 22px;
+		padding-top: 24px;
 	}
 
 	/* (.settings prefix: the base details rule comes later in the file.) */
@@ -1457,6 +1403,373 @@ body:has(.settings[open]) .settings-button {
 	}
 }
 
+
+/* Top left: a pause/play button the same size as the settings gear, then
+   the time in plain white text. */
+.clock-bar {
+	/* The button sits as far from the corner as the gear does from its
+	   corner, and the time as far again from the button. */
+	--edge: 20px;
+	position: fixed;
+	top: max(var(--edge), env(safe-area-inset-top));
+	left: max(var(--edge), env(safe-area-inset-left));
+	z-index: 80;
+	display: flex;
+	align-items: center;
+	gap: var(--edge);
+	font-size: var(--text-clock);
+}
+
+.clock-time {
+	color: white;
+	font:
+		500 1em/1 Georgia,
+		"Times New Roman",
+		serif;
+	letter-spacing: 0.01em;
+	white-space: nowrap;
+	text-shadow:
+		0 1px 2px rgba(0, 0, 0, 0.5),
+		0 2px 16px rgba(0, 0, 0, 0.45);
+}
+
+.clock-play {
+	display: grid;
+	place-items: center;
+	width: 76px;
+	height: 76px;
+	padding: 0;
+	border: 1px solid rgba(255, 255, 255, 0.22);
+	border-radius: 50%;
+	background: rgba(12, 28, 37, 0.5);
+	color: white;
+	cursor: pointer;
+	touch-action: manipulation;
+}
+
+.clock-play:hover {
+	background: rgba(231, 180, 119, 0.25);
+}
+
+.clock-play:focus-visible {
+	outline: 2px solid #e7b477;
+	outline-offset: 2px;
+}
+
+.clock-play svg {
+	width: 36px;
+	height: 36px;
+	fill: currentColor;
+	stroke: currentColor;
+	stroke-width: 3;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.clock-play__pause {
+	fill: none;
+}
+
+/* Paused, it shows play. */
+.clock-play__play,
+.clock-play[data-paused] .clock-play__pause {
+	display: none;
+}
+
+.clock-play[data-paused] .clock-play__play {
+	display: block;
+}
+
+/* Every digit sits in a slot of the same width (Georgia's digits differ),
+   so AM/PM doesn't shift as the minutes change. A one-digit hour has no
+   first slot, so the time stays the same distance from the button. */
+.clock-digit {
+	display: inline-block;
+	width: 0.6em;
+	text-align: center;
+}
+
+.clock-digit:empty {
+	display: none;
+}
+
+.clock-colon {
+	display: inline-block;
+	width: 0.3em;
+	text-align: center;
+}
+
+.clock-period {
+	display: inline-block;
+	width: 1.55em;
+	margin-left: 0.22em;
+}
+
+/* The caption, bottom centre: what is happening, like a film subtitle, with
+   arrows to step between events and a ^ that opens the list of them all
+   upward. */
+.caption {
+	position: fixed;
+	bottom: max(28px, env(safe-area-inset-bottom));
+	left: 50%;
+	z-index: 80;
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	align-items: center;
+	gap: 14px;
+	width: min(760px, calc(100vw - 32px));
+	box-sizing: border-box;
+	padding: 10px 14px;
+	border-radius: 20px;
+	background: rgba(8, 16, 22, 0.62);
+	color: white;
+	translate: -50% 0;
+	overflow: visible;
+}
+
+/* The title and text are one button that opens the list; hovering shows
+   its box. */
+.caption-content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	padding: 10px 14px 12px;
+	border: 1px solid transparent;
+	border-radius: 14px;
+	background: none;
+	color: inherit;
+	text-align: center;
+	text-wrap: balance;
+	cursor: pointer;
+	touch-action: manipulation;
+	transition:
+		background-color 150ms ease,
+		border-color 150ms ease;
+}
+
+.caption-content:hover,
+.caption-content[aria-expanded="true"] {
+	border-color: rgba(255, 255, 255, 0.14);
+	background: rgba(255, 255, 255, 0.07);
+}
+
+.caption-title,
+.caption-text {
+	transition: opacity 400ms ease;
+}
+
+.caption.is-changing :is(.caption-title, .caption-text) {
+	opacity: 0;
+}
+
+.caption-title {
+	font:
+		500 var(--text-label)/1.25 Georgia,
+		"Times New Roman",
+		serif;
+}
+
+.caption-time {
+	opacity: 0.6;
+}
+
+.caption-text {
+	color: rgba(235, 240, 239, 0.85);
+	font:
+		500 var(--text-body)/1.5 system-ui,
+		sans-serif;
+}
+
+.caption-step {
+	display: grid;
+	place-items: center;
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.04);
+	color: #e7b477;
+	cursor: pointer;
+	touch-action: manipulation;
+}
+
+.caption-step {
+	width: 52px;
+	height: 52px;
+}
+
+.caption-step svg {
+	width: 30px;
+	height: 30px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.caption-step:hover:not(:disabled) {
+	background: rgba(231, 180, 119, 0.14);
+}
+
+.caption-step:disabled {
+	opacity: 0.3;
+	cursor: default;
+}
+
+.caption-step:focus-visible,
+.caption-content:focus-visible,
+.timeline-events button:focus-visible {
+	outline: 2px solid #e7b477;
+	outline-offset: 2px;
+}
+
+/* The list of the day's events opens upward from the caption, as wide as
+   it. app.js sets its height to the space above. */
+.timeline {
+	position: absolute;
+	bottom: calc(100% + 10px);
+	left: 0;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 22px 16px 16px;
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	border-radius: 24px;
+	background: linear-gradient(
+		145deg,
+		rgba(35, 54, 64, 0.96),
+		rgba(12, 28, 37, 0.98)
+	);
+	box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	touch-action: pan-y;
+}
+
+.timeline[hidden] {
+	display: none;
+}
+
+.timeline * {
+	overflow: visible;
+}
+
+.timeline-note {
+	padding: 0 18px 14px;
+	color: rgba(235, 240, 239, 0.55);
+	font:
+		500 var(--text-body)/1.45 system-ui,
+		sans-serif;
+}
+
+.timeline-events {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	list-style: none;
+}
+
+.timeline-events button {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+	padding: 20px 18px;
+	border: 0;
+	border-radius: 16px;
+	background: none;
+	color: white;
+	text-align: left;
+	cursor: pointer;
+	touch-action: pan-y;
+}
+
+.timeline-events button:hover {
+	background: rgba(255, 255, 255, 0.06);
+}
+
+/* The latest event, at or before the clock's time. */
+.timeline-events button[aria-current] {
+	background: rgba(231, 180, 119, 0.13);
+	box-shadow: inset 3px 0 #e7b477;
+}
+
+.timeline-event-time {
+	color: #e7b477;
+	font:
+		700 var(--text-eyebrow)/1.2 system-ui,
+		sans-serif;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+
+.timeline-event-title {
+	font:
+		600 var(--text-label)/1.3 system-ui,
+		sans-serif;
+}
+
+.timeline-event-text {
+	color: rgba(235, 240, 239, 0.75);
+	font:
+		500 var(--text-body)/1.5 system-ui,
+		sans-serif;
+}
+
+.timeline-event-references {
+	color: rgba(231, 180, 119, 0.75);
+	font:
+		italic 500 var(--text-body)/1.45 Georgia,
+		"Times New Roman",
+		serif;
+}
+
+@media (max-width: 600px) {
+	.clock-play {
+		width: 54px;
+		height: 54px;
+	}
+
+	.clock-play svg {
+		width: 26px;
+		height: 26px;
+	}
+
+	.caption {
+		gap: 6px;
+		width: calc(100vw - 24px);
+		padding: 8px;
+		border-radius: 16px;
+	}
+
+	.caption-content {
+		padding: 8px 6px 10px;
+	}
+
+	.caption-step {
+		width: 38px;
+		height: 38px;
+	}
+
+	.caption-step svg {
+		width: 22px;
+		height: 22px;
+	}
+
+
+	.timeline {
+		padding: 16px 8px 8px;
+		border-radius: 20px;
+	}
+
+	.timeline-note {
+		padding: 0 12px 10px;
+	}
+
+	.timeline-events button {
+		padding: 16px 12px;
+	}
+}
 
 /* Live render details: small, quiet monospace rows. */
 .settings-details {
@@ -1481,7 +1794,261 @@ body:has(.settings[open]) .settings-button {
 	overflow-wrap: anywhere;
 }
 
-/* Phones: a narrower, shorter cloud frame. */
+/* Computers: every interface size above at half. They were tuned by eye in
+   a browser zoomed to 50%, so at normal (100%) zoom this matches what was
+   approved. Phones keep the sizes above (tuned at real size); borders stay
+   1px. */
+@media (min-width: 601px) {
+	.overlay {
+		padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+		-webkit-backdrop-filter: blur(8px) saturate(70%);
+		backdrop-filter: blur(8px) saturate(70%);
+	}
+
+	.overlay-card {
+		width: min(78vw, 150px);
+		max-width: calc(100vw - 24px);
+		padding: 13.5px 10px 12px;
+		border-radius: 10px;
+		box-shadow: 0 12px 35px rgba(0, 0, 0, 0.42), inset 0 0.5px rgba(255, 255, 255, 0.08);
+	}
+
+	.overlay-actions {
+		gap: 5px;
+		margin-top: 11px;
+	}
+
+	.overlay-button {
+		padding: 6px 8px;
+		border-radius: 6px;
+		font: 600 0.43rem/1.2 system-ui, sans-serif;
+	}
+
+	.overlay-eyebrow {
+		margin-bottom: 4.5px;
+		font: 700 0.305rem/1.2 system-ui, sans-serif;
+	}
+
+	.overlay-title {
+		font: 500 clamp(0.825rem, 6.8vw, 1rem) / 1.15 Georgia, "Times New Roman", serif;
+		text-shadow: 0 1px 9px rgba(0, 0, 0, 0.55);
+	}
+
+	.overlay-copy {
+		max-width: 112.5px;
+		margin-top: 5px;
+		font: 500 0.39rem/1.5 system-ui, sans-serif;
+	}
+
+	#loading .overlay-card {
+		width: min(88vw, 200px);
+		max-width: calc(100vw - 16px);
+		padding: 20px 20px 17px;
+	}
+
+	#loading .overlay-eyebrow {
+		margin-bottom: 6px;
+	}
+
+	#loading .overlay-title {
+		font-size: clamp(0.675rem, 5.6vw, 0.8rem);
+	}
+
+	.loading-emblem {
+		width: 42px;
+		height: 42px;
+		margin-bottom: 12px;
+	}
+
+	.loading-cross {
+		width: 17px;
+		height: 24px;
+	}
+
+	.loading-cross__fill {
+		transform: translateY(calc(28px * (1 - var(--progress))));
+	}
+
+	.loading-cross__glint {
+		filter: drop-shadow(0 0 2px rgba(243, 207, 157, 0.9));
+	}
+
+	.loading-progress {
+		width: 90px;
+		height: 1px;
+		margin-top: 11px;
+		border-radius: 1px;
+	}
+
+	.loading-verse {
+		max-width: 145px;
+		margin-top: 14px;
+		padding-top: 11px;
+		font: italic 0.44rem/1.6 Georgia, "Times New Roman", serif;
+	}
+
+	.loading-verse cite {
+		margin-top: 5px;
+		font: 700 0.29rem/1.2 system-ui, sans-serif;
+	}
+
+	.settings-button {
+		top: max(10px, env(safe-area-inset-top));
+		right: max(10px, env(safe-area-inset-right));
+		width: 38px;
+		height: 38px;
+		-webkit-backdrop-filter: blur(5px);
+		backdrop-filter: blur(5px);
+	}
+
+	.settings-button svg {
+		width: 20px;
+		height: 20px;
+	}
+
+	.settings {
+		inset: calc(max(10px, env(safe-area-inset-top)) + 44px) max(10px, env(safe-area-inset-right)) auto auto;
+		width: min(290px, calc(100vw - 20px));
+		max-height: calc(100dvh - 70px);
+		border-radius: 12px;
+	}
+
+	.settings-card {
+		gap: 19px;
+		padding: 23px 22px 21px;
+		border-radius: 12px;
+		box-shadow: 0 12px 35px rgba(0, 0, 0, 0.42), inset 0 0.5px rgba(255, 255, 255, 0.08);
+	}
+
+	.settings-title {
+		margin-top: 3px;
+	}
+
+	.settings-group {
+		gap: 14px;
+		padding: 17px 0 0;
+	}
+
+	.settings-group legend,
+	.settings-group-title {
+		margin-bottom: 2px;
+	}
+
+	.settings-row {
+		gap: 10px;
+	}
+
+	.settings-row--stacked {
+		gap: 8px;
+	}
+
+	.settings-label {
+		gap: 4px 8px;
+	}
+
+	.settings input[type="range"] {
+		height: 16px;
+	}
+
+	.settings-scale {
+		margin-top: -4px;
+		font: 600 0.41rem/1.2 system-ui, sans-serif;
+	}
+
+	.settings-switch {
+		width: 30px;
+		height: 18px;
+		border-radius: 9px;
+	}
+
+	.settings-switch::before {
+		top: 1.5px;
+		left: 1.5px;
+		width: 15px;
+		height: 15px;
+		box-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.35);
+	}
+
+	.settings-switch-input:checked + .settings-switch::before {
+		translate: 12px 0;
+	}
+
+	.clock-bar {
+		--edge: 10px;
+	}
+
+	.clock-play {
+		width: 38px;
+		height: 38px;
+	}
+
+	.clock-play svg {
+		width: 18px;
+		height: 18px;
+	}
+
+	.clock-time {
+		text-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.5), 0 1px 8px rgba(0, 0, 0, 0.45);
+	}
+
+	.caption {
+		bottom: max(14px, env(safe-area-inset-bottom));
+		gap: 7px;
+		width: min(380px, calc(100vw - 16px));
+		padding: 5px 7px;
+		border-radius: 10px;
+	}
+
+	.caption-content {
+		gap: 3px;
+		padding: 5px 7px 6px;
+		border-radius: 7px;
+	}
+
+	.caption-step {
+		width: 26px;
+		height: 26px;
+	}
+
+	.caption-step svg {
+		width: 15px;
+		height: 15px;
+	}
+
+	.timeline {
+		bottom: calc(100% + 5px);
+		padding: 11px 8px 8px;
+		border-radius: 12px;
+		box-shadow: 0 12px 35px rgba(0, 0, 0, 0.42);
+	}
+
+	.timeline-note {
+		padding: 0 9px 7px;
+	}
+
+	.timeline-events {
+		gap: 3px;
+	}
+
+	.timeline-events button {
+		gap: 4px;
+		padding: 10px 9px;
+		border-radius: 8px;
+	}
+
+	.timeline-events button[aria-current] {
+		box-shadow: inset 1.5px 0 #e7b477;
+	}
+
+	.settings-details {
+		gap: 6px 9px;
+		font: 500 0.525rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+	}
+
+}
+
+/* Phones: a narrower, shorter cloud frame, with the images baked for it
+   (and smaller where the computer ones are bigger). */
 @media (max-width: 900px) {
 	.storm-cloud {
 		--cloud-frame: 124dvh;
@@ -1490,29 +2057,36 @@ body:has(.settings[open]) .settings-button {
 		left: -10vw;
 		width: 120vw;
 	}
+
+	.storm-cloud--far {
+		--cloud-image: url("./assets/mobile/clouds/far.avif");
+	}
+
+	.storm-cloud--deep {
+		--cloud-image: url("./assets/mobile/clouds/deep.avif");
+	}
+
+	.storm-cloud--middle {
+		--cloud-image: url("./assets/mobile/clouds/middle.avif");
+	}
+
+	.storm-cloud--midband {
+		--cloud-image: url("./assets/mobile/clouds/midband.avif");
+	}
+
+	.storm-cloud--lower {
+		--cloud-image: url("./assets/mobile/clouds/lower.avif");
+	}
+
+	.storm-cloud--near {
+		--cloud-image: url("./assets/mobile/clouds/near.avif");
+	}
 }
 
 /* Image size. data-assets="small" (phones) or the low quality level swap in
    the half-size images, keeping phones below their GPU and decoded-image
    memory limits. Set in the <head> script before anything loads. */
-.storm-cloud--far {
-	--cloud-image: url("./assets/clouds/storm-cloud-map.avif");
-}
-
 :root:is([data-assets="small"], [data-quality="low"]) {
-	.storm-cloud--far {
-		--cloud-image: url("./assets/mobile/storm-cloud-map.avif");
-	}
-
-	.storm-cloud--deep,
-	.storm-cloud--near {
-		--cloud-image: url("./assets/mobile/storm-cloud-cumulus.avif");
-	}
-
-	.storm-cloud--middle {
-		--cloud-image: url("./assets/mobile/storm-cloud-alpha.avif");
-	}
-
 	.lightning-layer--back .cloud-lightning-flash {
 		--flash-cloud-mask: url("./assets/mobile/storm-cloud-map.avif");
 	}
@@ -1526,19 +2100,19 @@ body:has(.settings[open]) .settings-button {
 	}
 
 	.scenery[data-scenery="distant-hills"] {
-		--texture: url("./assets/mobile/israel-hills-cutout.avif");
+		--texture: url("./assets/mobile/hills-v3.avif");
 	}
 
 	.scenery[data-scenery="distant-jerusalem"] {
-		--texture: url("./assets/mobile/distant-jerusalem-city-only.avif");
+		--texture: url("./assets/mobile/jerusalem-v3.avif");
 	}
 
 	.scenery[data-scenery="golgotha-ridge"] {
-		--texture: url("./assets/mobile/golgotha-ridge-v2.avif");
+		--texture: url("./assets/mobile/golgotha-ridge-v3.avif");
 	}
 
 	.scenery[data-scenery="ground"] {
-		--texture: url("./assets/mobile/near-ground-v2.avif");
+		--texture: url("./assets/mobile/near-ground-v3.avif");
 	}
 
 	.city-light--architecture {
