@@ -847,7 +847,10 @@ body {
 	z-index: 45;
 	bottom: -1.5%;
 	left: 50%;
-	transform: translateX(-50%) perspective(1100px)
+	/* -52%, not -50%: the cross in the artwork leans, its beam sitting right
+	   of the image's centre (the sign 0.3%, the foot of the beam 3%), so this
+	   centres the cross on the screen and under the caption. */
+	transform: translateX(-52%) perspective(1100px)
 		rotateY(var(--christ-rotate-y));
 	transform-origin: center center;
 	filter: drop-shadow(var(--christ-edge-offset) 0 1px rgba(24, 14, 10, 0.42))
