@@ -1334,25 +1334,36 @@ body:has(.settings[open]) .settings-button {
 	}
 
 	.settings-title {
-		font-size: 2.25rem;
+		font-size: 1.8rem;
 	}
 
 	.settings-group legend,
 	.settings-group-title {
-		font-size: 0.8rem;
+		font-size: 0.7rem;
 	}
 
 	.settings-label {
-		font-size: 1.2rem;
+		font-size: 1.05rem;
 	}
 
 	.settings-label small,
 	.settings-label output {
-		font-size: 1rem;
+		font-size: 0.88rem;
 	}
 
-	.settings-details {
-		font-size: 0.92rem;
+	/* (.settings prefix: the base details rule comes later in the file.) */
+	.settings .settings-details {
+		font-size: 0.8rem;
+	}
+
+	.settings-button {
+		width: 54px;
+		height: 54px;
+	}
+
+	.settings-button svg {
+		width: 28px;
+		height: 28px;
 	}
 }
 
