@@ -122,6 +122,7 @@
 			data-scenery="distant-jerusalem"
 			data-z_index="2.5"
 		>
+			<span class="land-shadow" aria-hidden="true"><span></span></span>
 			<span class="city-light city-light--architecture"></span>
 			<span class="city-light city-light--home city-light--home-1"></span>
 			<span class="city-light city-light--home city-light--home-2"></span>
@@ -143,7 +144,9 @@
 			class="scenery"
 			data-scenery="ground"
 			data-z_index="8"
-		></section>
+		>
+			<span class="land-shadow" aria-hidden="true"><span></span></span>
+		</section>
 
 		<img
 			id="christ"
@@ -285,6 +288,7 @@
 				createShootingStars();
 				createStorm();
 				createCityLights();
+				landShadows();
 				parallax();
 				settingsPanel();
 			});

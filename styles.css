@@ -700,6 +700,51 @@ body {
 		saturate(var(--land-saturation, 1)) sepia(var(--land-warmth, 0));
 }
 
+/* Cast shadows of the ridges (landShadows in app.js). The catcher is clipped
+   to the receiving land's outline and multiplies its colour onto it; inside
+   it, the ridge's outline (--shadow-shape) is flipped down along the land. */
+.land-shadow {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+	mix-blend-mode: multiply;
+	opacity: var(--shadow-strength, 0);
+	-webkit-mask-position: center bottom;
+	-webkit-mask-repeat: no-repeat;
+	mask-position: center bottom;
+	mask-repeat: no-repeat;
+}
+
+.scenery[data-scenery="distant-jerusalem"] .land-shadow {
+	-webkit-mask-image: var(--texture);
+	-webkit-mask-size: var(--texture-size, auto 100%);
+	mask-image: var(--texture);
+	mask-size: var(--texture-size, auto 100%);
+}
+
+.scenery[data-scenery="ground"] .land-shadow {
+	-webkit-mask-image: var(--mask);
+	-webkit-mask-size: var(--mask-size, auto 100%);
+	mask-image: var(--mask);
+	mask-size: var(--mask-size, auto 100%);
+}
+
+.land-shadow > span {
+	position: absolute;
+	background: rgb(52, 60, 84);
+	-webkit-mask-image: var(--shadow-shape);
+	-webkit-mask-position: center bottom;
+	-webkit-mask-repeat: no-repeat;
+	-webkit-mask-size: auto 100%;
+	mask-image: var(--shadow-shape);
+	mask-position: center bottom;
+	mask-repeat: no-repeat;
+	mask-size: auto 100%;
+	filter: blur(3px);
+	will-change: transform;
+}
+
 /* The light masks and the flicker plane only cover the strip of the city that
    has windows: rows 1408-1728 of the 4096x2048 city image, i.e. a strip
    320/4096 of the width tall, sitting 320/4096 of the width above the bottom.
@@ -1562,7 +1607,8 @@ body:has(.settings[open]) .settings-button {
 :root[data-quality="low"] {
 	.storm-cloud--deep,
 	.storm-cloud--middle,
-	.city-flicker-plane {
+	.city-flicker-plane,
+	.land-shadow {
 		display: none;
 	}
 

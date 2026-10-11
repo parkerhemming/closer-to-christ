@@ -59,7 +59,7 @@
 - [x] Sky colors from night to sunrise (on the left horizon) to day
 - [x] Stars and city lights fade out as it gets light
 - [x] Every layer's lighting and color follows the time of day
-- [] Mountain shadows at sunrise that shift with the parallax
+- [x] Mountain shadows at sunrise that shift with the parallax
 - [x] Time of day slider in Scene Settings
 
 # Ground

@@ -67,6 +67,9 @@ const weatherCurves = {
 	cloudShade: [[0, 1.45], [0.4, 1.2], [0.7, 1], [1, 0.72]],
 	// Wind: how fast the clouds drift and how far the rain slants.
 	wind: [[0, 0.35], [0.7, 1], [1, 1.9]],
+	// Direct sunlight getting through the clouds (it sets how strong the
+	// ridges' shadows are).
+	sunlight: [[0, 1], [0.5, 0.8], [0.7, 0.45], [1, 0.15]],
 	// The dark storm wash over the whole scene (its opacity: the wash is
 	// twice the original strength, so 0.5 is the original and 1 is double).
 	gloom: [[0, 0], [0.4, 0.22], [0.7, 0.5], [1, 1]],
@@ -96,6 +99,14 @@ const timeCurves = {
 	figureLight: [[0, 0.75], [0.3, 1], [0.6, 1.12], [1, 1.18]],
 	// The sun: hidden until after 0.32, rising from behind the left hills.
 	sunOpacity: [[0, 0], [0.32, 0], [0.4, 1], [1, 1]],
+	// Cast shadows of the ridges: none before the sun is up, longest and
+	// strongest just after sunrise, retreating to the ridge by late morning.
+	// shadowReach is how much of the visible land in front of a ridge its
+	// shadow covers; shadowLean is how far it slants right (the sun is on the
+	// left) per unit of length.
+	shadowStrength: [[0, 0], [0.38, 0], [0.44, 0.65], [0.55, 0.55], [0.75, 0.3], [0.9, 0], [1, 0]],
+	shadowReach: [[0, 0.8], [0.45, 0.8], [0.55, 0.5], [0.7, 0.2], [0.85, 0.05], [1, 0.02]],
+	shadowLean: [[0, 0.9], [0.38, 0.9], [0.6, 0.6], [1, 0.2]],
 	// Of screen height; the left hills' ridge is at about 0.7, so the sun is
 	// half behind them at 0.45.
 	sunHeight: [[0, 0.85], [0.35, 0.84], [0.45, 0.7], [0.55, 0.58], [0.7, 0.42], [1, 0.14]],
@@ -950,6 +961,139 @@ function createCityLights() {
 	scheduleNextBurst();
 }
 
+// Set by landShadows(); parallax() calls it each frame with the mouse/tilt
+// offset so the shadows follow the layers.
+let updateLandShadows = null;
+
+// Ridges cast shadows on the land in front of them once the sun is up (it
+// rises behind them, on the left). Each shadow is the ridge's own outline,
+// flipped down from where the ridge meets the land in front, stretched by the
+// sun's angle and leaned right, inside a catcher clipped to the receiving
+// land's outline. Its far end moves with the ridge and its near end with the
+// land, so it changes angle as the parallax moves them apart.
+function landShadows() {
+	const rootStyle = getComputedStyle(document.documentElement);
+	// Image rows measured from the artwork's transparency (fraction of the
+	// image height): where each ridge's skyline begins and where each
+	// receiving layer's top edge is.
+	const pairs = [
+		{
+			ridge: '[data-scenery="distant-hills"]',
+			ridgeShape: "--texture",
+			skyline: 0.294,
+			land: '[data-scenery="distant-jerusalem"]',
+			landEdge: 0.697, // the image is sized by width (2:1), anchored at the bottom
+			landSizedByWidth: true,
+			// The land is visible down to where the Golgotha ridge covers it.
+			coveredBy: '[data-scenery="golgotha-ridge"]',
+			coveredBySkyline: 0.636,
+		},
+		{
+			ridge: '[data-scenery="golgotha-ridge"]',
+			ridgeShape: "--mask",
+			skyline: 0.596,
+			land: '[data-scenery="ground"]',
+			landEdge: 0.432, // the image is sized by height
+			landSizedByWidth: false,
+			coveredBy: null, // visible down to the bottom of the screen
+		},
+	].map((pair) => {
+		const ridge = document.querySelector(pair.ridge);
+		const land = document.querySelector(pair.land);
+		const shadow = land.querySelector(".land-shadow > span");
+		shadow.style.setProperty(
+			"--shadow-shape",
+			getComputedStyle(ridge).getPropertyValue(pair.ridgeShape),
+		);
+		return {
+			...pair,
+			shadow,
+			ridgeDepth: Number(ridge.dataset.z_index),
+			landDepth: Number(land.dataset.z_index),
+			ridge,
+			land,
+		};
+	});
+	const landScale = Number(rootStyle.getPropertyValue("--parallax-overscan")) || 1.2;
+	let lastX = 0;
+	let lastDepthScale = 0;
+
+	// Where an element sits with no parallax applied.
+	function restingRect(element) {
+		const rect = element.getBoundingClientRect();
+		const [dx = 0, dy = 0] = (element.style.translate || "")
+			.split(" ")
+			.map((value) => parseFloat(value) || 0);
+		return { left: rect.left - dx, top: rect.top - dy, width: rect.width, height: rect.height, bottom: rect.bottom - dy };
+	}
+
+	// Lays each shadow over its ridge, in the land layer's own (unscaled)
+	// coordinates, and remembers the ground line and the ridge's height.
+	function measure() {
+		for (const pair of pairs) {
+			const ridge = restingRect(pair.ridge);
+			const land = restingRect(pair.land);
+			const toLand = (screen, landStart) => (screen - landStart) / landScale;
+			const groundLine = pair.landSizedByWidth
+				? land.bottom - (1 - pair.landEdge) * (land.width / 2)
+				: land.top + land.height * pair.landEdge;
+			const skylineTop = ridge.top + ridge.height * pair.skyline;
+			const visibleUntil = pair.coveredBy
+				? (() => {
+						const cover = restingRect(document.querySelector(pair.coveredBy));
+						return cover.top + cover.height * pair.coveredBySkyline;
+					})()
+				: window.innerHeight;
+			pair.base = toLand(groundLine, ridge.top);
+			pair.ridgeHeight = Math.max(1, (groundLine - skylineTop) / landScale);
+			// How much land is visible in front of the ridge.
+			pair.visibleLand = Math.max(1, (visibleUntil - groundLine) / landScale);
+			setStyleProperties(pair.shadow, {
+				left: `${toLand(ridge.left, land.left)}px`,
+				top: `${toLand(ridge.top, land.top)}px`,
+				width: `${ridge.width / landScale}px`,
+				height: `${ridge.height / landScale}px`,
+				"transform-origin": `50% ${pair.base}px`,
+			});
+		}
+	}
+
+	function place(x = lastX, depthScale = lastDepthScale) {
+		lastX = x;
+		lastDepthScale = depthScale;
+		const lean = byTime(timeCurves.shadowLean);
+		for (const pair of pairs) {
+			// How far the ridge has moved relative to the land (in land units).
+			const shift = (x * depthScale * (pair.ridgeDepth - pair.landDepth)) / landScale;
+			// The shadow's reach across the visible land, and the stretch of the
+			// ridge's outline that gives it.
+			const reach = byTime(timeCurves.shadowReach) * pair.visibleLand;
+			const length = reach / pair.ridgeHeight;
+			// The base follows the ridge; the tip stays put on the land.
+			const slant = Math.atan(lean - shift / reach);
+			pair.shadow.style.transform =
+				`translateX(${shift}px) skewX(${slant}rad) scaleY(${-length})`;
+		}
+	}
+
+	function applyLight() {
+		document.documentElement.style.setProperty(
+			"--shadow-strength",
+			byTime(timeCurves.shadowStrength) * byWeather(weatherCurves.sunlight),
+		);
+		place();
+	}
+
+	measure();
+	applyLight();
+	updateLandShadows = place;
+	document.addEventListener("scenesettings", applyLight);
+	window.addEventListener("resize", () => {
+		measure();
+		place();
+	});
+}
+
 function parallax() {
 	const layers = document.querySelectorAll("[data-z_index]");
 	const christ = document.getElementById("christ");
@@ -983,6 +1127,7 @@ function parallax() {
 			const scale = depth * depthScale;
 			layer.style.translate = `${x * scale}px ${y * scale}px`;
 		}
+		updateLandShadows?.(x, depthScale);
 
 		const horizontalProgress = clamp(x / horizontalRange, -1, 1);
 
