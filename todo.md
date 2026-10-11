@@ -55,12 +55,12 @@
 
 # Time of Day
 
-- [] `timeOfDay` setting: 0 = night, 1 = full day (today's scene = 0.3)
-- [] Sky colors from night to sunrise (on the left horizon) to day
-- [] Stars and city lights fade out as it gets light
-- [] Every layer's lighting and color follows the time of day
+- [x] `timeOfDay` setting: 0 = night, 1 = full day (today's scene = 0.3)
+- [x] Sky colors from night to sunrise (on the left horizon) to day
+- [x] Stars and city lights fade out as it gets light
+- [x] Every layer's lighting and color follows the time of day
 - [] Mountain shadows at sunrise that shift with the parallax
-- [] Time of day slider in Scene Settings
+- [x] Time of day slider in Scene Settings
 
 # Ground
 

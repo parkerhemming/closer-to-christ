@@ -2,6 +2,9 @@
 // savedSettingNames can also be changed in the settings panel, and a
 // visitor's choices there are saved on their device and win over these.
 const sceneSettings = {
+	// 0 is night, 1 full day; 0.3 is the original pre-dawn scene and sunrise
+	// (on the left horizon) is around 0.45. See timeCurves.
+	timeOfDay: 0.3,
 	// 0 is a clear sky, 1 a full storm; 0.7 is the original storm.
 	// Rain, lightning, clouds and wind all follow it (see weatherCurves).
 	weatherIntensity: 0.7,
@@ -20,7 +23,12 @@ const reducedMotion = window.matchMedia(
 	"(prefers-reduced-motion: reduce)",
 ).matches;
 
-const savedSettingNames = ["weatherIntensity", "parallax", "parallaxSmoothing"];
+const savedSettingNames = [
+	"timeOfDay",
+	"weatherIntensity",
+	"parallax",
+	"parallaxSmoothing",
+];
 
 try {
 	const saved = JSON.parse(localStorage.getItem("sceneSettings")) ?? {};
@@ -65,16 +73,102 @@ const weatherCurves = {
 };
 
 function byWeather(points) {
-	const weather = clamp(sceneSettings.weatherIntensity, 0, 1);
+	return alongCurve(points, sceneSettings.weatherIntensity);
+}
+
+// How the light follows timeOfDay, as [time, value] points like weatherCurves.
+// Every curve gives the original look at 0.3 (multipliers 1, tints 0), so
+// 0.3 is exactly the original scene.
+const timeCurves = {
+	// Brightness, colour and sunrise warmth of the land layers. At sunrise the
+	// sun is behind the hills, so the land stays dim (backlit) a while longer.
+	landLight: [[0, 0.6], [0.3, 1], [0.45, 1.12], [0.6, 1.7], [1, 2.3]],
+	landSaturation: [[0, 0.8], [0.3, 1], [0.6, 1.4], [1, 1.6]],
+	landWarmth: [[0, 0], [0.3, 0], [0.45, 0.35], [0.6, 0.15], [1, 0]],
+	// Clouds: dark at night, glowing warm at sunrise, bright by day.
+	cloudLight: [[0, 0.55], [0.3, 1], [0.45, 1.3], [0.6, 1.6], [1, 1.9]],
+	cloudWarmth: [[0, 0], [0.3, 0], [0.42, 0.45], [0.6, 0.15], [1, 0]],
+	// Stars (and shooting stars) fade as the sky lightens.
+	starlight: [[0, 1], [0.3, 1], [0.45, 0.25], [0.55, 0], [1, 0]],
+	// The city's window and lantern lights go out in daylight.
+	cityGlow: [[0, 1], [0.3, 1], [0.5, 0.35], [0.65, 0], [1, 0]],
+	// The figure's brightness.
+	figureLight: [[0, 0.75], [0.3, 1], [0.6, 1.12], [1, 1.18]],
+	// The sun: hidden until after 0.32, rising from behind the left hills.
+	sunOpacity: [[0, 0], [0.32, 0], [0.4, 1], [1, 1]],
+	// Of screen height; the left hills' ridge is at about 0.7, so the sun is
+	// half behind them at 0.45.
+	sunHeight: [[0, 0.85], [0.35, 0.84], [0.45, 0.7], [0.55, 0.58], [0.7, 0.42], [1, 0.14]],
+	sunLeft: [[0, 0.2], [0.45, 0.2], [1, 0.3]], // of screen width
+};
+
+// Sky colours at each time as [time, [r, g, b, a]]: the gradient from the
+// horizon up, plus the sunrise glow low on the left. 0.3 is the original sky.
+const skyColors = {
+	horizon: [[0, [26, 37, 51, 1]], [0.3, [81, 85, 101, 1]], [0.45, [232, 164, 115, 1]], [0.6, [233, 201, 165, 1]], [1, [201, 224, 239, 1]]],
+	low: [[0, [16, 28, 40, 1]], [0.3, [48, 59, 72, 1]], [0.45, [122, 112, 128, 1]], [0.6, [150, 174, 196, 1]], [1, [127, 177, 222, 1]]],
+	middle: [[0, [11, 26, 38, 1]], [0.3, [23, 40, 52, 1]], [0.45, [76, 98, 122, 1]], [0.6, [110, 150, 190, 1]], [1, [88, 145, 205, 1]]],
+	zenith: [[0, [5, 14, 22, 1]], [0.3, [9, 23, 32, 1]], [0.45, [42, 74, 102, 1]], [0.6, [79, 127, 174, 1]], [1, [61, 120, 184, 1]]],
+	glowCore: [[0, [239, 174, 112, 0]], [0.3, [239, 174, 112, 0.38]], [0.45, [255, 190, 120, 0.75]], [0.6, [255, 228, 190, 0.4]], [1, [255, 250, 235, 0.15]]],
+	glowMiddle: [[0, [166, 111, 98, 0]], [0.3, [166, 111, 98, 0.2]], [0.45, [240, 150, 110, 0.45]], [0.6, [250, 205, 170, 0.2]], [1, [255, 245, 230, 0.06]]],
+	glowEdge: [[0, [58, 61, 76, 0]], [0.3, [58, 61, 76, 0.07]], [0.45, [180, 120, 120, 0.15]], [0.6, [200, 190, 200, 0.06]], [1, [240, 240, 240, 0]]],
+};
+
+function alongCurve(points, at) {
+	at = clamp(at, points[0][0], points.at(-1)[0]);
 	for (let i = 1; i < points.length; i++) {
-		const [fromWeather, fromValue] = points[i - 1];
-		const [toWeather, toValue] = points[i];
-		if (weather <= toWeather) {
-			const along = (weather - fromWeather) / (toWeather - fromWeather);
-			return fromValue + (toValue - fromValue) * along;
+		const [fromAt, from] = points[i - 1];
+		const [toAt, to] = points[i];
+		if (at <= toAt) {
+			const along = (at - fromAt) / (toAt - fromAt);
+			return Array.isArray(from)
+				? from.map((value, j) => value + (to[j] - value) * along)
+				: from + (to - from) * along;
 		}
 	}
 	return points.at(-1)[1];
+}
+
+function byTime(points) {
+	return alongCurve(points, sceneSettings.timeOfDay);
+}
+
+function skyColor(points) {
+	const [r, g, b, a] = alongCurve(points, sceneSettings.timeOfDay);
+	return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a.toFixed(3)})`;
+}
+
+function timeName(time) {
+	if (time < 0.2) return "Night";
+	if (time < 0.38) return "Dawn";
+	if (time < 0.5) return "Sunrise";
+	if (time < 0.75) return "Morning";
+	return "Day";
+}
+
+// Sets the light for the current time of day as CSS variables on <html>;
+// the sky, land, clouds, city lights, stars and figure all read them.
+function applyTimeOfDay() {
+	setStyleProperties(document.documentElement, {
+		"--sky-horizon": skyColor(skyColors.horizon),
+		"--sky-low": skyColor(skyColors.low),
+		"--sky-middle": skyColor(skyColors.middle),
+		"--sky-zenith": skyColor(skyColors.zenith),
+		"--glow-core": skyColor(skyColors.glowCore),
+		"--glow-middle": skyColor(skyColors.glowMiddle),
+		"--glow-edge": skyColor(skyColors.glowEdge),
+		"--land-light": byTime(timeCurves.landLight),
+		"--land-saturation": byTime(timeCurves.landSaturation),
+		"--land-warmth": byTime(timeCurves.landWarmth),
+		"--cloud-light": byTime(timeCurves.cloudLight),
+		"--cloud-warmth": byTime(timeCurves.cloudWarmth),
+		"--starlight": byTime(timeCurves.starlight),
+		"--city-glow": byTime(timeCurves.cityGlow),
+		"--figure-light": byTime(timeCurves.figureLight),
+		"--sun-opacity": byTime(timeCurves.sunOpacity),
+		"--sun-top": `${byTime(timeCurves.sunHeight) * 100}vh`,
+		"--sun-left": `${byTime(timeCurves.sunLeft) * 100}vw`,
+	});
 }
 
 function weatherName(weather) {
@@ -250,7 +344,7 @@ function watchFrameRate() {
 }
 
 function createStars(stars) {
-	const sky = document.getElementById("sky");
+	const sky = document.querySelector("#sky .stars");
 	const fragment = document.createDocumentFragment();
 
 	for (let i = 0; i < stars; i++) {
@@ -283,7 +377,7 @@ function createStars(stars) {
 }
 
 function createShootingStars() {
-	const sky = document.getElementById("sky");
+	const sky = document.querySelector("#sky .stars");
 	// Far, middle, and near meteors: dimmer and slower the farther away.
 	const profiles = [
 		{
@@ -1170,6 +1264,8 @@ function settingsPanel() {
 	const form = dialog.querySelector("form");
 	const details = dialog.querySelector(".settings-details");
 	const {
+		timeOfDay,
+		timeValue,
 		weatherIntensity,
 		weatherValue,
 		parallax,
@@ -1178,6 +1274,8 @@ function settingsPanel() {
 	} = form.elements;
 
 	function showCurrentValues() {
+		timeOfDay.value = sceneSettings.timeOfDay;
+		timeValue.value = timeName(sceneSettings.timeOfDay);
 		weatherIntensity.value = sceneSettings.weatherIntensity;
 		weatherValue.value = `${weatherName(sceneSettings.weatherIntensity)}, ${Math.round(sceneSettings.weatherIntensity * 100)}%`;
 		parallax.checked = sceneSettings.parallax;
@@ -1271,6 +1369,7 @@ function settingsPanel() {
 	});
 
 	form.addEventListener("input", () => {
+		sceneSettings.timeOfDay = Number(timeOfDay.value);
 		sceneSettings.weatherIntensity = Number(weatherIntensity.value);
 		sceneSettings.parallax = parallax.checked;
 		sceneSettings.parallaxSmoothing = Number(parallaxSmoothing.value);

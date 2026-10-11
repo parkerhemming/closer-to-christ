@@ -31,20 +31,22 @@ body {
 #sky {
 	width: 120%;
 	height: 120%;
+	/* Colours come from the time of day (applyTimeOfDay in app.js); the
+	   fallbacks are the original pre-dawn sky. */
 	background:
 		radial-gradient(
 			ellipse 100% 100% at 20% 100%,
-			rgba(239, 174, 112, 0.38) 0%,
-			rgba(166, 111, 98, 0.2) 35%,
-			rgba(58, 61, 76, 0.07) 59%,
+			var(--glow-core, rgba(239, 174, 112, 0.38)) 0%,
+			var(--glow-middle, rgba(166, 111, 98, 0.2)) 35%,
+			var(--glow-edge, rgba(58, 61, 76, 0.07)) 59%,
 			transparent 75%
 		),
 		linear-gradient(
 			to top,
-			#515565 0%,
-			#303b48 20%,
-			#172834 50%,
-			var(--storm-dark) 100%
+			var(--sky-horizon, #515565) 0%,
+			var(--sky-low, #303b48) 20%,
+			var(--sky-middle, #172834) 50%,
+			var(--sky-zenith, var(--storm-dark)) 100%
 		);
 	position: absolute;
 	z-index: 1;
@@ -53,6 +55,34 @@ body {
 	transform: translateX(-50%) translateY(-50%);
 	overflow: hidden;
 	contain: layout paint;
+
+	/* All stars and shooting stars, faded together as the sky lightens. */
+	.stars {
+		position: absolute;
+		inset: 0;
+		opacity: var(--starlight, 1);
+	}
+
+	/* The sun rises from behind the hills on the left (#sky is 120% of the
+	   screen, so the screen-unit position is offset by its 10% overhang). */
+	.sun {
+		position: absolute;
+		top: calc(var(--sun-top, 80vh) + 10vh);
+		left: calc(var(--sun-left, 20vw) + 10vw);
+		width: 14vmin;
+		height: 14vmin;
+		border-radius: 50%;
+		background: radial-gradient(
+			circle,
+			#fffaf0 0%,
+			#fff1d0 28%,
+			rgba(255, 214, 150, 0.55) 42%,
+			rgba(255, 190, 120, 0.18) 62%,
+			transparent 72%
+		);
+		opacity: var(--sun-opacity, 0);
+		translate: -50% -50%;
+	}
 
 	.star {
 		background-color: white;
@@ -240,7 +270,8 @@ body {
 	background-repeat: repeat-x;
 	background-size: auto var(--cloud-image-height);
 	/* Each layer's own grade, lightened or darkened by the weather. */
-	filter: var(--cloud-grade) brightness(var(--cloud-shade, 1));
+	filter: var(--cloud-grade) brightness(var(--cloud-shade, 1))
+		brightness(var(--cloud-light, 1)) sepia(var(--cloud-warmth, 0));
 	-webkit-mask-image: var(--cloud-fade);
 	-webkit-mask-position: 0 calc(-1 * var(--cloud-top));
 	-webkit-mask-repeat: no-repeat;
@@ -607,7 +638,9 @@ body {
 	mask-position: center bottom;
 	mask-repeat: no-repeat;
 	mask-size: var(--mask-size, auto 100%);
-	filter: var(--color-grade);
+	/* Each layer's own grade, then the time of day's light. */
+	filter: var(--color-grade) brightness(var(--land-light, 1))
+		saturate(var(--land-saturation, 1)) sepia(var(--land-warmth, 0));
 	pointer-events: none;
 	contain: layout paint style;
 
@@ -663,7 +696,8 @@ body {
 	background-position: center bottom;
 	background-repeat: no-repeat;
 	background-size: var(--texture-size, auto 100%);
-	filter: var(--color-grade);
+	filter: var(--color-grade) brightness(var(--land-light, 1))
+		saturate(var(--land-saturation, 1)) sepia(var(--land-warmth, 0));
 }
 
 /* The light masks and the flicker plane only cover the strip of the city that
@@ -691,7 +725,8 @@ body {
 	mask-repeat: no-repeat;
 	mask-size: 100% 100%;
 	mix-blend-mode: screen;
-	opacity: var(--light-opacity);
+	/* Lights go out as daylight comes. */
+	opacity: calc(var(--light-opacity) * var(--city-glow, 1));
 }
 
 .city-light--home {
@@ -754,6 +789,7 @@ body {
 .city-flicker-plane {
 	z-index: 3;
 	pointer-events: none;
+	opacity: var(--city-glow, 1);
 	/* Own GPU layer, so each flicker doesn't repaint the glowing city-light
 	   masks underneath. That repaint was the main source of dropped frames. */
 	will-change: transform;
@@ -788,7 +824,8 @@ body {
 	transform: translateX(-50%) perspective(1100px)
 		rotateY(var(--christ-rotate-y));
 	transform-origin: center center;
-	filter: drop-shadow(var(--christ-edge-offset) 0 1px rgba(24, 14, 10, 0.42));
+	filter: drop-shadow(var(--christ-edge-offset) 0 1px rgba(24, 14, 10, 0.42))
+		brightness(var(--figure-light, 1));
 	backface-visibility: hidden;
 }
 

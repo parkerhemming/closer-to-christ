@@ -51,7 +51,10 @@
 		<link rel="stylesheet" href="./styles.css" />
 	</head>
 	<body>
-		<section id="sky" data-z_index="1"></section>
+		<section id="sky" data-z_index="1">
+			<div class="stars"></div>
+			<div class="sun"></div>
+		</section>
 
 		<div id="storm" aria-hidden="true">
 			<section
@@ -179,6 +182,18 @@
 					<legend>Scene</legend>
 					<label class="settings-row settings-row--stacked">
 						<span class="settings-label">
+							Time of day
+							<output name="timeValue"></output>
+							<small>From deep night through sunrise to full day</small>
+						</span>
+						<input type="range" name="timeOfDay" min="0" max="1" step="0.01" />
+						<span class="settings-scale" aria-hidden="true">
+							<span>Night</span>
+							<span>Day</span>
+						</span>
+					</label>
+					<label class="settings-row settings-row--stacked">
+						<span class="settings-label">
 							Weather
 							<output name="weatherValue"></output>
 							<small>From clear skies to a full storm</small>
@@ -263,6 +278,8 @@
 
 		<script src="./app.js"></script>
 		<script>
+			applyTimeOfDay();
+			document.addEventListener("scenesettings", applyTimeOfDay);
 			loadScene().then(() => {
 				createStars({ high: 300, medium: 150, low: 90 }[getQuality()]);
 				createShootingStars();
