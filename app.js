@@ -1,3 +1,7 @@
+function randomBetween(minimum, maximum) {
+	return minimum + Math.random() * (maximum - minimum);
+}
+
 function createStars(stars) {
 	const sky = document.getElementById("sky");
 	const fragment = document.createDocumentFragment();
@@ -38,10 +42,6 @@ function createShootingStars() {
 	).matches;
 
 	if (reducedMotion) return;
-
-	function randomBetween(minimum, maximum) {
-		return minimum + Math.random() * (maximum - minimum);
-	}
 
 	function scheduleShootingStar(firstStar = false) {
 		const minimumDelay = firstStar ? 4500 : 18000;
@@ -169,10 +169,6 @@ function createStorm() {
 		document.getElementById("lightning-front"),
 	];
 	const svgNamespace = "http://www.w3.org/2000/svg";
-
-	function randomBetween(minimum, maximum) {
-		return minimum + Math.random() * (maximum - minimum);
-	}
 
 	function startRainEmitter(elementId, settings) {
 		const rainLayer = document.getElementById(elementId);
@@ -505,10 +501,6 @@ function createCityLights() {
 		[3985, 1519, 6, 8], [2009, 1521, 6, 15],
 	];
 	const colors = ["#ff9a3d", "#ffb35f", "#f47f2f", "#ffc174"];
-
-	function randomBetween(minimum, maximum) {
-		return minimum + Math.random() * (maximum - minimum);
-	}
 
 	const shuffled = [...candidates].sort(() => Math.random() - 0.5).slice(0, 20);
 	const lights = shuffled.map(([x, y, width, height], index) => {

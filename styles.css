@@ -4,6 +4,11 @@
 	overflow: hidden;
 }
 
+html,
+body {
+	touch-action: none;
+}
+
 :root {
 	--storm-dark: #091720;
 	--storm: #1e3440;

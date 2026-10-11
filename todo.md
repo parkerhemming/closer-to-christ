@@ -1,6 +1,6 @@
 # Bugs
 
-- [] Zooming breaks everything on mobile
+- [x] Zooming breaks everything on mobile
 
 # Sky
 
@@ -8,7 +8,7 @@
 
 ### Stars
 
-- [nvm] Shooting Stars
+- [x] Shooting Stars
 - [x] Twinkle Stars
 - [x] Star Brightness Differences
 - [x] Outer Glow
