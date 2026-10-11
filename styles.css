@@ -1846,7 +1846,7 @@ body {
 	/* As far from the bottom and sides as the top buttons are from theirs. */
 	.caption {
 		bottom: max(20px, env(safe-area-inset-bottom));
-		gap: 6px;
+		gap: 12px; /* like the time from the pause button */
 		width: calc(100vw - 40px);
 	}
 
@@ -2047,7 +2047,7 @@ body {
 
 	.caption {
 		bottom: max(12px, env(safe-area-inset-bottom));
-		gap: 7px;
+		gap: 12px; /* like the time from the pause button */
 		width: min(600px, calc(100vw - 32px));
 	}
 
