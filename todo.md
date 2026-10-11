@@ -26,6 +26,11 @@
 - [x] Parallax
 - [] Make ground taller!
 
+# Ground
+
+- [] Redo the two closest ground layers: higher quality, with plants and grass properly cut out
+- [] Animate those plants and grass in the wind, following the weather intensity setting
+
 <br>
 <br>
 

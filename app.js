@@ -1,8 +1,14 @@
-// Scene settings. Change these to tune the scene.
+// Scene settings. Change these to tune the scene. The ones in
+// savedSettingNames can also be changed in the settings panel, and a
+// visitor's choices there are saved on their device and win over these.
 const sceneSettings = {
+	// Whether the scene follows the mouse or phone tilt at all.
+	parallax: true,
 	// Seconds the parallax takes to catch up to the mouse or tilt.
-	// 0 follows exactly; 0.2 is a gentle, floaty ease.
-	parallaxSmoothing: 0,
+	// 0 follows exactly; 0.2 is a gentle, floaty ease. With smoothing, a fast
+	// flick swings a little past where it's heading and settles back (more
+	// smoothing, bigger swing).
+	parallaxSmoothing: 0.3,
 	// The loading screen stays up at least this long so its verse can be read.
 	minimumLoadingSeconds: 4,
 };
@@ -10,6 +16,26 @@ const sceneSettings = {
 const reducedMotion = window.matchMedia(
 	"(prefers-reduced-motion: reduce)",
 ).matches;
+
+const savedSettingNames = ["parallax", "parallaxSmoothing"];
+
+try {
+	const saved = JSON.parse(localStorage.getItem("sceneSettings")) ?? {};
+	for (const name of savedSettingNames) {
+		if (name in saved) sceneSettings[name] = saved[name];
+	}
+} catch {}
+
+// Saves the visitor's choices and tells the scene to pick them up.
+function saveSettings() {
+	try {
+		const saved = Object.fromEntries(
+			savedSettingNames.map((name) => [name, sceneSettings[name]]),
+		);
+		localStorage.setItem("sceneSettings", JSON.stringify(saved));
+	} catch {}
+	document.dispatchEvent(new Event("scenesettings"));
+}
 
 function randomBetween(minimum, maximum) {
 	return minimum + Math.random() * (maximum - minimum);
@@ -25,21 +51,28 @@ function setStyleProperties(element, properties) {
 	}
 }
 
-// Quality levels. The <head> script picks the starting level; these lower it
-// when the device turns out to be slow. CSS reacts to data-quality right away.
+// Quality levels. The <head> script picks the starting level from the
+// connection and device; these lower it when loading or drawing turns out to
+// be slow. CSS reacts to data-quality right away (including the image size).
 const qualityLevels = ["low", "medium", "high"];
-// Loading longer than this counts as a slow device or connection.
-const slowLoadSeconds = 8;
+// Filled in as the scene loads; shown in the settings panel's details.
+const renderStats = { loadSeconds: null, connectionTestMs: null };
+// A small image every lower-quality scene uses; timing it tells a fast
+// connection from a slow one before the large images start downloading.
+const connectionTestImage = "./assets/mobile/storm-cloud-cumulus.avif"; // 48KB
 
 function getQuality() {
 	return document.documentElement.dataset.quality;
 }
 
-function setQuality(quality, { remember }) {
+// remember: keep the level for later visits (for slow devices, not slow
+// networks, since later visits load from the cache).
+function setQuality(quality, { reason, remember = false }) {
 	document.documentElement.dataset.quality = quality;
+	document.documentElement.dataset.qualityReason = reason;
 	if (remember) {
 		try {
-			localStorage.setItem("quality", quality);
+			localStorage.setItem("loweredQuality", quality);
 		} catch {}
 	}
 }
@@ -76,15 +109,30 @@ function sceneImageUrls() {
 // so layers appear together instead of popping in one by one.
 async function loadScene() {
 	const loading = document.getElementById("loading");
-	const urls = sceneImageUrls();
 	const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-	let loaded = 0;
-	let wasHidden = document.hidden;
-	document.addEventListener("visibilitychange", () => {
-		wasHidden ||= document.hidden;
-	});
 
-	const decodeAll = Promise.all(
+	// Time a small download first. Slow (like 3G): use the small images from
+	// the start rather than waiting on large ones that would never finish.
+	const root = document.documentElement;
+	if ("probing" in root.dataset) {
+		const started = performance.now();
+		await fetch(connectionTestImage)
+			.then((response) => response.blob())
+			.catch(() => {});
+		const testMs = Math.round(performance.now() - started);
+		renderStats.connectionTestMs = testMs;
+		// About 3G or slower takes over 1.5s for 48KB; slow 4G, over 0.8s.
+		if (testMs > 1500) {
+			setQuality("low", { reason: `slow connection (test took ${testMs}ms)` });
+		} else if (testMs > 800 && getQuality() === "high") {
+			setQuality("medium", { reason: `slowish connection (test took ${testMs}ms)` });
+		}
+		delete root.dataset.probing; // the scene layers appear and start loading
+	}
+
+	const urls = sceneImageUrls();
+	let loaded = 0;
+	const images = Promise.all(
 		urls.map(async (url) => {
 			const image = new Image();
 			image.src = url;
@@ -99,18 +147,12 @@ async function loadScene() {
 			await Promise.race([image.decode().catch(() => {}), wait(2000)]);
 		}),
 	);
+
 	// Never hold the scene back forever on a very slow connection.
-	await Promise.race([decodeAll, wait(25000)]);
-	const loadSeconds = performance.now() / 1000;
+	await Promise.race([images, wait(25000)]);
+	renderStats.loadSeconds = performance.now() / 1000;
 
-	// A slow load means a slow device or connection: use a lighter scene for
-	// this visit (not remembered, since the next visit loads from the cache).
-	// Time spent in a background tab doesn't count.
-	if (!wasHidden && loadSeconds > slowLoadSeconds) {
-		lowerQuality({ remember: false });
-	}
-
-	await wait((sceneSettings.minimumLoadingSeconds - loadSeconds) * 1000);
+	await wait((sceneSettings.minimumLoadingSeconds - renderStats.loadSeconds) * 1000);
 	loading.classList.add("is-done");
 	loading.addEventListener("transitionend", () => loading.remove(), {
 		once: true,
@@ -122,16 +164,18 @@ async function loadScene() {
 	}
 }
 
-// If the first seconds of the running scene draw below ~25fps, step down a
-// quality level and remember it, so struggling (older) phones get a lighter
-// scene now and on every later visit.
+// Once the scene has settled, watch the frame rate for a few seconds. Well
+// below 20fps steps the quality down one level and remembers it, so
+// struggling (older) phones get a lighter scene now and on later visits.
+// Smooth drawing clears an earlier step-down, so a device isn't stuck on a
+// lower level because of one bad moment.
 function watchFrameRate() {
 	const frameTimes = [];
 	let previous;
 	let end;
 
 	function measure(now) {
-		if (document.hidden) return; // background tabs barely draw; not a fair test
+		if (document.hidden || !document.hasFocus()) return; // not a fair test
 		frameTimes.push(now - previous);
 		previous = now;
 		if (now < end) {
@@ -140,15 +184,21 @@ function watchFrameRate() {
 		}
 		frameTimes.sort((a, b) => a - b);
 		const median = frameTimes[Math.floor(frameTimes.length / 2)];
-		if (median > 40) lowerQuality({ remember: true });
+		if (median > 50) {
+			lowerQuality({ reason: "slow frame rate", remember: true });
+		} else if (median < 25) {
+			try {
+				localStorage.removeItem("loweredQuality");
+			} catch {}
+		}
 	}
 
-	// Skip the first second: the fade-out and first animations settle there.
+	// Skip the first seconds: decoding and the first animations settle there.
 	setTimeout(() => {
 		previous = performance.now();
-		end = previous + 3000;
+		end = previous + 4000;
 		requestAnimationFrame(measure);
-	}, 1000);
+	}, 3000);
 }
 
 function createStars(stars) {
@@ -666,6 +716,8 @@ function parallax() {
 	let targetY = 0;
 	let currentX = 0;
 	let currentY = 0;
+	let velocityX = 0;
+	let velocityY = 0;
 	let animationFrame = 0;
 	let lastFrameTime = 0;
 	// The mouse drives the parallax until the gyroscope actually reports data.
@@ -690,13 +742,14 @@ function parallax() {
 
 		const horizontalProgress = clamp(x / horizontalRange, -1, 1);
 
+		// A slight turn of the figure (and its edge shadow) with the view.
 		christ.style.setProperty(
 			"--christ-rotate-y",
-			`${horizontalProgress * 1.25}deg`,
+			`${horizontalProgress * 0.6}deg`,
 		);
 		christ.style.setProperty(
 			"--christ-edge-offset",
-			`${horizontalProgress * -0.7}px`,
+			`${horizontalProgress * -0.4}px`,
 		);
 	}
 
@@ -707,16 +760,35 @@ function parallax() {
 		lastFrameTime = time;
 		// Share of the remaining distance to cover this frame. Based on elapsed
 		// time, so the ease feels the same at 60Hz and 120Hz. 1 = jump straight there.
+		// With parallax switched off, everything settles back to the centre.
+		const goalX = sceneSettings.parallax ? targetX : 0;
+		const goalY = sceneSettings.parallax ? targetY : 0;
 		const smoothing = sceneSettings.parallaxSmoothing;
-		const step = smoothing > 0 ? 1 - Math.exp(-elapsed / smoothing) : 1;
-		currentX += (targetX - currentX) * step;
-		currentY += (targetY - currentY) * step;
+
+		if (smoothing > 0) {
+			// A spring pulls the scene toward the goal. It carries velocity, so
+			// a fast flick swings past the goal (further the faster it was) and
+			// eases back; a slow move barely swings. The damping allows one
+			// bounce: a fast flick overshoots ~6%, the swing back is <0.5%.
+			// Stepped in small slices so it stays stable at any frame rate.
+			const stiffness = 2.15 / smoothing; // ~63% of the way in `smoothing` seconds
+			const damping = 2 * 0.65 * stiffness;
+			for (let left = elapsed; left > 0; left -= 1 / 240) {
+				const dt = Math.min(left, 1 / 240);
+				velocityX += (stiffness ** 2 * (goalX - currentX) - damping * velocityX) * dt;
+				velocityY += (stiffness ** 2 * (goalY - currentY) - damping * velocityY) * dt;
+				currentX += velocityX * dt;
+				currentY += velocityY * dt;
+			}
+		} else {
+			currentX = goalX;
+			currentY = goalY;
+			velocityX = velocityY = 0;
+		}
 		moveLayers(currentX, currentY);
 
-		if (
-			Math.abs(targetX - currentX) > 0.1 ||
-			Math.abs(targetY - currentY) > 0.1
-		) {
+		const moving = Math.abs(velocityX) + Math.abs(velocityY) > 0.1;
+		if (Math.abs(goalX - currentX) > 0.1 || Math.abs(goalY - currentY) > 0.1 || moving) {
 			requestParallaxFrame();
 		}
 	}
@@ -881,40 +953,169 @@ function parallax() {
 		return "prompt";
 	}
 
-	// Only phones and tablets get the tilt start screen; touchscreen laptops
-	// have a mouse and keep the mouse parallax.
+	// Only phones and tablets use tilt; touchscreen laptops have a mouse and
+	// keep the mouse parallax.
 	const hasTiltScreen =
 		typeof DeviceOrientationEvent !== "undefined" &&
 		window.matchMedia("(pointer: coarse)").matches;
+	// iPhones ask for permission (needs a tap); Android just works.
+	const needsPermission =
+		hasTiltScreen && typeof DeviceOrientationEvent.requestPermission === "function";
 
-	if (hasTiltScreen) {
-		const motionTrigger = document.getElementById("motion-trigger");
-
-		motionTrigger.addEventListener(
-			"click",
-			async () => {
-				motionTrigger.remove();
-
-				if (
-					typeof DeviceOrientationEvent.requestPermission ===
-					"function"
-				) {
-					await requestMotionPermission();
-				} else {
-					startMotion();
-				}
-			},
-			{ once: true },
-		);
-
-		if (typeof DeviceOrientationEvent.requestPermission === "function") {
-			// Safari resolves an existing decision without a user gesture. If the
-			// decision is still pending, it throws and we reveal the start screen.
-			requestMotionPermission().then((permission) => {
-				if (permission === "prompt") motionTrigger.hidden = false;
-			});
-		} else {
-			motionTrigger.hidden = false;
-		}
+	function enableTilt() {
+		if (needsPermission) requestMotionPermission();
+		else startMotion();
 	}
+
+	// Switching parallax on in the settings panel is a tap, so tilt can be
+	// enabled (and permission asked) right there.
+	document.addEventListener("scenesettings", () => {
+		if (sceneSettings.parallax && hasTiltScreen && !motionEnabled) enableTilt();
+		requestParallaxFrame();
+	});
+
+	if (!hasTiltScreen || !sceneSettings.parallax) return;
+
+	const prompt = document.getElementById("motion-prompt");
+	let asked = false;
+	try {
+		asked = localStorage.getItem("motionAsked") === "yes";
+	} catch {}
+
+	function answer(useMotion) {
+		prompt.remove();
+		try {
+			localStorage.setItem("motionAsked", "yes");
+		} catch {}
+		sceneSettings.parallax = useMotion;
+		saveSettings(); // with parallax on, this enables tilt within the tap
+	}
+
+	prompt
+		.querySelector('[data-answer="yes"]')
+		.addEventListener("click", () => answer(true));
+	prompt
+		.querySelector('[data-answer="no"]')
+		.addEventListener("click", () => answer(false));
+
+	if (needsPermission) {
+		// Safari answers silently if permission was already decided; if it is
+		// still undecided it throws, and only a tap on the prompt can ask.
+		requestMotionPermission().then((permission) => {
+			if (permission === "prompt") prompt.hidden = false;
+		});
+	} else if (asked) {
+		startMotion();
+	} else {
+		prompt.hidden = false;
+	}
+}
+
+// The gear button's panel. Every control writes straight into sceneSettings
+// as it moves, so changes show live behind the panel. The render details at
+// the bottom refresh while the panel is open.
+function settingsPanel() {
+	const button = document.getElementById("settings-button");
+	const dialog = document.getElementById("settings");
+	const form = dialog.querySelector("form");
+	const details = dialog.querySelector(".settings-details");
+	const { parallax, parallaxSmoothing, smoothingValue } = form.elements;
+
+	function showCurrentValues() {
+		parallax.checked = sceneSettings.parallax;
+		parallaxSmoothing.value = sceneSettings.parallaxSmoothing;
+		parallaxSmoothing.disabled = !sceneSettings.parallax;
+		smoothingValue.value =
+			sceneSettings.parallaxSmoothing > 0
+				? `${sceneSettings.parallaxSmoothing.toFixed(2)}s`
+				: "Exact";
+	}
+
+	// Frame rate: frames counted over the last second while the panel is open.
+	let framesThisSecond = 0;
+	let framesPerSecond = null;
+	function countFrames() {
+		framesThisSecond += 1;
+		if (dialog.open) requestAnimationFrame(countFrames);
+	}
+
+	function showDetails() {
+		const root = document.documentElement;
+		const connection = navigator.connection;
+		const visibleClouds = [...document.querySelectorAll(".storm-cloud")].filter(
+			(cloud) => cloud.getClientRects().length,
+		).length;
+		const rows = [
+			["Quality", `${root.dataset.quality}: ${root.dataset.qualityReason}`],
+			renderStats.connectionTestMs !== null && [
+				"Connection test",
+				`${renderStats.connectionTestMs}ms for 48KB`,
+			],
+			[
+				"Images",
+				getQuality() === "low" || root.dataset.assets === "small"
+					? "small (2K)"
+					: "full (4K)",
+			],
+			[
+				"Loaded in",
+				renderStats.loadSeconds ? `${renderStats.loadSeconds.toFixed(1)}s` : "...",
+			],
+			["Frame rate", framesPerSecond === null ? "..." : `${framesPerSecond} fps`],
+			["Screen", `${innerWidth}x${innerHeight} @${devicePixelRatio}x`],
+			// Chrome's own guess; often wrong, so it doesn't pick the quality.
+			connection && [
+				"Browser estimate",
+				`${connection.effectiveType}, ${connection.rtt}ms, ${connection.downlink}Mb/s`,
+			],
+			navigator.deviceMemory && ["Memory", `${navigator.deviceMemory}GB`],
+			["Clouds", `${visibleClouds} layers`],
+			[
+				"Effects",
+				`${document.querySelectorAll(".star").length} stars, ` +
+					`${document.querySelectorAll(".rain-drop").length} raindrops`,
+			],
+			[
+				"Offline cache",
+				navigator.serviceWorker?.controller ? "on" : "off until next visit",
+			],
+		].filter(Boolean);
+		details.replaceChildren(
+			...rows.flatMap(([name, value]) => {
+				const term = document.createElement("dt");
+				const description = document.createElement("dd");
+				term.textContent = name;
+				description.textContent = value;
+				return [term, description];
+			}),
+		);
+	}
+
+	let detailsTimer;
+	button.addEventListener("click", () => {
+		showCurrentValues();
+		showDetails();
+		dialog.showModal();
+		framesThisSecond = 0;
+		requestAnimationFrame(countFrames);
+		detailsTimer = setInterval(() => {
+			framesPerSecond = framesThisSecond;
+			framesThisSecond = 0;
+			showDetails();
+		}, 1000);
+	});
+
+	dialog.addEventListener("close", () => clearInterval(detailsTimer));
+
+	// A click on the backdrop (outside the card) closes the panel.
+	dialog.addEventListener("click", (event) => {
+		if (event.target === dialog) dialog.close();
+	});
+
+	form.addEventListener("input", () => {
+		sceneSettings.parallax = parallax.checked;
+		sceneSettings.parallaxSmoothing = Number(parallaxSmoothing.value);
+		saveSettings();
+		showCurrentValues();
+	});
 }
