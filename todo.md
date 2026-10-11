@@ -52,6 +52,7 @@
 - [x] Clouds thin out and brighten in clear weather, thicken and darken in storms
 - [x] Wind speed sets how fast the clouds drift
 - [x] Weather slider in Scene Settings
+- [] Default weather is random: stormier when it's dark, calmer during the day
 
 # Time of Day
 
@@ -61,10 +62,11 @@
 - [x] Every layer's lighting and color follows the time of day
 - [x] Mountain shadows at sunrise that shift with the parallax
 - [x] Time of day slider in Scene Settings
+- [] Default time of day follows the visitor's real local time
 
 # Ground
 
-- [] Redo the two closest ground layers: higher quality, with plants and grass properly cut out
+- [x] Redo the two closest ground layers: higher quality, with plants and grass properly cut out
 - [] Animate those plants and grass in the wind, following the weather intensity setting
 
 # Christ Figure

@@ -661,23 +661,26 @@ body {
 		--color-grade: brightness(43%) saturate(28%) contrast(89%)
 			grayscale(32%) sepia(6%);
 	}
+	/* The two near layers are cut-out images with their own skylines, 24% and
+	   11% down the image. Each is 100dvh tall (2.36:1, wide enough for
+	   ultrawide screens). A skyline's height above the screen's bottom is
+	   --bottom + 1.2 (the overscan) x the image below it: the ridge's sits at
+	   11dvh (-80 + 1.2 x 76) and the near ground's at 5dvh (-102 + 1.2 x 89).
+	   The ridge slopes down to the right so Jerusalem shows above it. */
 	&[data-scenery="golgotha-ridge"] {
 		--stack-order: 12;
-		--bottom: -40dvh;
-		--height: 120dvh;
-		--texture: url("./assets/desert-scrub-midground-4k.avif");
-		--mask: url("./assets/golgotha-ridge-4k.avif");
+		--bottom: -80dvh;
+		--height: 100dvh;
+		--texture: url("./assets/golgotha-ridge-v2.avif");
 		--color-grade: brightness(46%) saturate(50%) contrast(82%) sepia(7%);
 	}
 
 	&[data-scenery="ground"] {
 		--stack-order: 25;
-		--bottom: -66dvh;
+		--bottom: -102dvh;
 		--height: 100dvh;
-		--texture: url("./assets/source-dusk-ground-28186470.avif");
-		--texture-size: cover;
-		--mask: url("./assets/ground-dirt-grass-v2-1280p.avif");
-		--color-grade: brightness(58%) saturate(48%) contrast(74%) sepia(6%);
+		--texture: url("./assets/near-ground-v2.avif");
+		--color-grade: brightness(47%) saturate(55%) contrast(80%) sepia(10%);
 	}
 }
 
@@ -724,10 +727,10 @@ body {
 }
 
 .scenery[data-scenery="ground"] .land-shadow {
-	-webkit-mask-image: var(--mask);
-	-webkit-mask-size: var(--mask-size, auto 100%);
-	mask-image: var(--mask);
-	mask-size: var(--mask-size, auto 100%);
+	-webkit-mask-image: var(--texture);
+	-webkit-mask-size: var(--texture-size, auto 100%);
+	mask-image: var(--texture);
+	mask-size: var(--texture-size, auto 100%);
 }
 
 .land-shadow > span {
@@ -1531,13 +1534,11 @@ body:has(.settings[open]) .settings-button {
 	}
 
 	.scenery[data-scenery="golgotha-ridge"] {
-		--texture: url("./assets/mobile/desert-scrub-midground.avif");
-		--mask: url("./assets/mobile/golgotha-ridge.avif");
+		--texture: url("./assets/mobile/golgotha-ridge-v2.avif");
 	}
 
 	.scenery[data-scenery="ground"] {
-		--texture: url("./assets/mobile/source-dusk-ground.avif");
-		--mask: url("./assets/mobile/ground-dirt-grass.avif");
+		--texture: url("./assets/mobile/near-ground-v2.avif");
 	}
 
 	.city-light--architecture {

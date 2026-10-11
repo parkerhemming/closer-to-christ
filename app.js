@@ -4,10 +4,10 @@
 const sceneSettings = {
 	// 0 is night, 1 full day; 0.3 is the original pre-dawn scene and sunrise
 	// (on the left horizon) is around 0.45. See timeCurves.
-	timeOfDay: 0.3,
+	timeOfDay: 0.4,
 	// 0 is a clear sky, 1 a full storm; 0.7 is the original storm.
 	// Rain, lightning, clouds and wind all follow it (see weatherCurves).
-	weatherIntensity: 0.7,
+	weatherIntensity: 0.9,
 	// Whether the scene follows the mouse or phone tilt at all.
 	parallax: true,
 	// Seconds the parallax takes to catch up to the mouse or tilt.
@@ -986,14 +986,14 @@ function landShadows() {
 			landSizedByWidth: true,
 			// The land is visible down to where the Golgotha ridge covers it.
 			coveredBy: '[data-scenery="golgotha-ridge"]',
-			coveredBySkyline: 0.636,
+			coveredBySkyline: 0.241,
 		},
 		{
 			ridge: '[data-scenery="golgotha-ridge"]',
-			ridgeShape: "--mask",
-			skyline: 0.596,
+			ridgeShape: "--texture",
+			skyline: 0.204,
 			land: '[data-scenery="ground"]',
-			landEdge: 0.432, // the image is sized by height
+			landEdge: 0.111, // the image is sized by height
 			landSizedByWidth: false,
 			coveredBy: null, // visible down to the bottom of the screen
 		},
