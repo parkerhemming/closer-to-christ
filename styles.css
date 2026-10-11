@@ -117,6 +117,8 @@ body {
 		width: var(--shooting-tail-width);
 		height: var(--shooting-thickness);
 		border-radius: 999px;
+		/* The head sticks out past the tail; don't let * { overflow: hidden } clip it. */
+		overflow: visible;
 		background: linear-gradient(
 			90deg,
 			transparent,
@@ -206,38 +208,50 @@ body {
 }
 
 .storm-cloud {
+	--cloud-frame: 140dvh;
+	--cloud-offset-x: -20vw;
+	--cloud-top: 0px;
 	position: absolute;
 	top: -20dvh;
 	left: -15vw;
 	width: 130vw;
-	height: 140dvh;
+	height: var(--cloud-frame);
 	overflow: hidden;
 	pointer-events: none;
 	contain: layout paint;
 }
 
+/* Each texture is only as wide as the frame plus its drift, and only as tall as
+   the band its fade mask shows (--cloud-top to --cloud-bottom). The background
+   and mask are shifted by the same amounts, so the clouds land exactly where a
+   full-size layer would put them, with a fraction of the GPU memory. */
 .storm-cloud__texture {
 	display: block;
 	position: absolute;
-	inset: 0 auto 0 -20vw;
-	width: 180vw;
-	height: 100%;
+	top: var(--cloud-top);
+	left: 0;
+	width: calc(100% - var(--cloud-drift));
+	height: calc(var(--cloud-bottom) - var(--cloud-top));
 	background-image: var(--cloud-image);
-	background-position: left var(--cloud-y);
+	background-position: var(--cloud-offset-x)
+		calc(var(--cloud-y) - var(--cloud-top));
 	background-repeat: repeat-x;
 	background-size: auto var(--cloud-image-height);
 	filter: var(--cloud-grade);
 	-webkit-mask-image: var(--cloud-fade);
+	-webkit-mask-position: 0 calc(-1 * var(--cloud-top));
 	-webkit-mask-repeat: no-repeat;
-	-webkit-mask-size: 100% 100%;
+	-webkit-mask-size: 100% var(--cloud-frame);
 	mask-image: var(--cloud-fade);
+	mask-position: 0 calc(-1 * var(--cloud-top));
 	mask-repeat: no-repeat;
-	mask-size: 100% 100%;
+	mask-size: 100% var(--cloud-frame);
 	animation: cloud-drift var(--cloud-speed) linear infinite;
 	will-change: transform;
 }
 
 .storm-cloud--far {
+	--cloud-bottom: calc(var(--cloud-frame) * 0.74);
 	--cloud-image-height: 110dvh;
 	--cloud-y: 0dvh;
 	--cloud-drift: -13vw;
@@ -256,6 +270,7 @@ body {
 }
 
 .storm-cloud--deep {
+	--cloud-bottom: calc(var(--cloud-frame) * 0.66);
 	--cloud-image: url("./assets/clouds/storm-cloud-cumulus.avif");
 	--cloud-image-height: 55dvh;
 	--cloud-y: 5dvh;
@@ -275,6 +290,7 @@ body {
 }
 
 .storm-cloud--middle {
+	--cloud-bottom: calc(var(--cloud-frame) * 0.7);
 	--cloud-image: url("./assets/clouds/storm-cloud-alpha.avif");
 	--cloud-image-height: 88dvh;
 	--cloud-y: -2dvh;
@@ -294,6 +310,8 @@ body {
 }
 
 .storm-cloud--midband {
+	--cloud-top: calc(var(--cloud-frame) * 0.31);
+	--cloud-bottom: calc(var(--cloud-frame) * 0.49);
 	--cloud-image: url("./assets/clouds/storm-cloud-alpha.avif");
 	--cloud-image-height: 64dvh;
 	--cloud-y: 16dvh;
@@ -315,6 +333,8 @@ body {
 }
 
 .storm-cloud--lower {
+	--cloud-top: calc(var(--cloud-frame) * 0.36);
+	--cloud-bottom: calc(var(--cloud-frame) * 0.7);
 	--cloud-image: url("./assets/clouds/storm-cloud-cumulus.avif");
 	--cloud-image-height: 25dvh;
 	--cloud-y: 58dvh;
@@ -334,6 +354,7 @@ body {
 }
 
 .storm-cloud--near {
+	--cloud-bottom: calc(var(--cloud-frame) * 0.62);
 	--cloud-image: url("./assets/clouds/storm-cloud-cumulus.avif");
 	--cloud-image-height: 46dvh;
 	--cloud-y: 9dvh;
@@ -666,36 +687,42 @@ body {
 	filter: var(--color-grade);
 }
 
-.city-light {
+/* The light masks and the flicker plane only cover the strip of the city that
+   has windows: rows 1408-1728 of the 4096x2048 city image, i.e. a strip
+   320/4096 of the width tall, sitting 320/4096 of the width above the bottom.
+   Margin percentages use the width, so the strip stays locked to the city at
+   any screen size. Keeping the masks this small saves ~230MB of image memory. */
+.city-light,
+.city-flicker-plane {
 	position: absolute;
-	inset: 0;
+	left: 0;
+	bottom: 0;
+	width: 100%;
+	aspect-ratio: 4096 / 320;
+	margin-bottom: 7.8125%;
+}
+
+.city-light {
 	z-index: 1;
 	background-color: var(--light-color);
 	-webkit-mask-image: var(--light-mask);
-	-webkit-mask-position: center bottom;
 	-webkit-mask-repeat: no-repeat;
-	-webkit-mask-size: 100% auto;
+	-webkit-mask-size: 100% 100%;
 	mask-image: var(--light-mask);
-	mask-position: center bottom;
 	mask-repeat: no-repeat;
-	mask-size: 100% auto;
+	mask-size: 100% 100%;
 	mix-blend-mode: screen;
 	opacity: var(--light-opacity);
-	filter: var(--light-glow);
 }
 
 .city-light--home {
 	--light-color: #ff9d42;
-	--light-glow: drop-shadow(0 0 1px rgba(255, 220, 151, 0.96))
-		drop-shadow(0 0 4px rgba(255, 126, 35, 0.76))
-		drop-shadow(0 0 9px rgba(214, 72, 16, 0.35));
 }
 
 .city-light--architecture {
 	--light-mask: url("./assets/city-lights/architecture.webp");
 	--light-color: #94735b;
 	--light-opacity: 0.21;
-	--light-glow: none;
 }
 
 .city-light--home-1 {
@@ -730,9 +757,6 @@ body {
 
 .city-light--lantern {
 	--light-color: #ffc968;
-	--light-glow: drop-shadow(0 0 1px rgba(255, 246, 202, 1))
-		drop-shadow(0 0 3px rgba(255, 184, 72, 0.94))
-		drop-shadow(0 0 8px rgba(235, 116, 25, 0.54));
 	z-index: 2;
 }
 
@@ -746,19 +770,14 @@ body {
 	--light-mask: url("./assets/city-lights/lantern-variant.webp");
 	--light-color: #ff9f43;
 	--light-opacity: 0.68;
-	--light-glow: drop-shadow(0 0 1px rgba(255, 225, 177, 0.92))
-		drop-shadow(0 0 3px rgba(244, 139, 46, 0.72))
-		drop-shadow(0 0 7px rgba(194, 77, 20, 0.36));
 }
 
 .city-flicker-plane {
-	position: absolute;
-	left: 0;
-	bottom: 0;
 	z-index: 3;
-	width: 100%;
-	aspect-ratio: 2 / 1;
 	pointer-events: none;
+	/* Own GPU layer, so each flicker doesn't repaint the glowing city-light
+	   masks underneath. That repaint was the main source of dropped frames. */
+	will-change: transform;
 }
 
 .city-flicker-light {
@@ -794,7 +813,9 @@ body {
 	backface-visibility: hidden;
 }
 
-#motion-trigger {
+/* Full-screen panels over the blurred scene: the loading screen and the
+   phone motion prompt. */
+.overlay {
 	position: fixed;
 	inset: 0;
 	display: grid;
@@ -815,15 +836,18 @@ body {
 	color: white;
 	font: inherit;
 	z-index: 100;
+}
+
+.overlay[hidden] {
+	display: none;
+}
+
+#motion-trigger {
 	touch-action: manipulation;
 	cursor: pointer;
 }
 
-#motion-trigger[hidden] {
-	display: none;
-}
-
-.motion-start-card {
+.overlay-card {
 	display: flex;
 	align-items: center;
 	flex-direction: column;
@@ -845,11 +869,11 @@ body {
 	transition: transform 120ms ease-out;
 }
 
-#motion-trigger:active .motion-start-card {
+#motion-trigger:active .overlay-card {
 	transform: scale(0.985);
 }
 
-.motion-start-eyebrow {
+.overlay-eyebrow {
 	margin-bottom: 9px;
 	color: #e7b477;
 	font:
@@ -859,7 +883,7 @@ body {
 	text-transform: uppercase;
 }
 
-.motion-start-title {
+.overlay-title {
 	font:
 		500 clamp(1.65rem, 6.8vw, 2rem) / 1.15 Georgia,
 		"Times New Roman",
@@ -868,7 +892,7 @@ body {
 	text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
 }
 
-.motion-start-copy {
+.overlay-copy {
 	max-width: 225px;
 	margin-top: 10px;
 	color: rgba(235, 240, 239, 0.72);
@@ -878,30 +902,171 @@ body {
 	letter-spacing: 0.045em;
 }
 
+/* Loading screen: a cross whose outline is traced by a moving glint while it
+   fills with light from the bottom as the scene loads (--progress, 0 to 1). */
+#loading {
+	--progress: 0;
+	z-index: 110;
+	cursor: progress;
+	transition:
+		opacity 900ms ease,
+		visibility 0s linear 900ms;
+}
+
+#loading.is-done {
+	opacity: 0;
+	visibility: hidden;
+}
+
+#loading .overlay-card {
+	width: min(88vw, 400px);
+	max-width: calc(100vw - 32px);
+	padding: 40px 40px 34px;
+}
+
+#loading .overlay-eyebrow {
+	margin-bottom: 12px;
+}
+
+#loading .overlay-title {
+	font-size: clamp(1.35rem, 5.6vw, 1.6rem);
+}
+
+.loading-emblem {
+	position: relative;
+	display: grid;
+	place-items: center;
+	width: 84px;
+	height: 84px;
+	margin-bottom: 24px;
+}
+
+/* Spinner: a thin golden arc circling the cross. */
+.loading-emblem::before {
+	position: absolute;
+	inset: 0;
+	content: "";
+	border: 1.5px solid rgba(231, 180, 119, 0.16);
+	border-top-color: #e7b477;
+	border-radius: 50%;
+	animation: loading-spin 1.1s linear infinite;
+}
+
+@keyframes loading-spin {
+	to {
+		transform: rotate(1turn);
+	}
+}
+
+.loading-cross {
+	width: 34px;
+	height: 48px;
+	overflow: visible;
+}
+
+.loading-cross__base {
+	fill: none;
+	stroke: rgba(231, 180, 119, 0.28);
+	stroke-width: 1.2;
+}
+
+.loading-cross__fill {
+	fill: rgba(231, 180, 119, 0.32);
+	transform: translateY(calc(56px * (1 - var(--progress))));
+	transition: transform 400ms ease-out;
+}
+
+.loading-cross__glint {
+	fill: none;
+	stroke: #f3cf9d;
+	stroke-width: 1.6;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-dasharray: 18 82;
+	filter: drop-shadow(0 0 4px rgba(243, 207, 157, 0.9));
+	animation: loading-trace 2.8s linear infinite;
+}
+
+@keyframes loading-trace {
+	to {
+		stroke-dashoffset: -100;
+	}
+}
+
+.loading-progress {
+	width: 180px;
+	height: 2px;
+	margin-top: 22px;
+	overflow: hidden;
+	border-radius: 2px;
+	background: rgba(255, 255, 255, 0.12);
+}
+
+.loading-progress::after {
+	display: block;
+	height: 100%;
+	content: "";
+	background: #e7b477;
+	transform: scaleX(var(--progress));
+	transform-origin: left;
+	transition: transform 400ms ease-out;
+}
+
+.loading-verse {
+	max-width: 290px;
+	text-wrap: balance;
+	margin-top: 28px;
+	padding-top: 22px;
+	border-top: 1px solid rgba(255, 255, 255, 0.08);
+	color: rgba(235, 240, 239, 0.66);
+	font:
+		italic 0.88rem/1.6 Georgia,
+		"Times New Roman",
+		serif;
+}
+
+.loading-verse cite {
+	display: block;
+	margin-top: 10px;
+	color: #e7b477;
+	font:
+		700 0.58rem/1.2 system-ui,
+		sans-serif;
+	font-style: normal;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.loading-cross__glint,
+	.loading-emblem::before {
+		animation-duration: 4s;
+	}
+}
+
 [data-z_index] {
 	will-change: translate;
 }
 
-@media (min-width: 901px) {
-	.storm-cloud--far {
-		--cloud-image: url("./assets/clouds/storm-cloud-map.avif");
-	}
-}
-
-/* Keep iPhone Safari below its GPU and decoded-image memory limits. */
+/* Phones: a narrower, shorter cloud frame. */
 @media (max-width: 900px) {
 	.storm-cloud {
+		--cloud-frame: 124dvh;
+		--cloud-offset-x: -15vw;
 		top: -12dvh;
 		left: -10vw;
 		width: 120vw;
-		height: 124dvh;
 	}
+}
 
-	.storm-cloud__texture {
-		inset: 0 auto 0 -15vw;
-		width: 165vw;
-	}
+/* Image size. data-assets="small" (phones) or the low quality level swap in
+   the half-size images, keeping phones below their GPU and decoded-image
+   memory limits. Set in the <head> script before anything loads. */
+.storm-cloud--far {
+	--cloud-image: url("./assets/clouds/storm-cloud-map.avif");
+}
 
+:root:is([data-assets="small"], [data-quality="low"]) {
 	.storm-cloud--far {
 		--cloud-image: url("./assets/mobile/storm-cloud-map.avif");
 	}
@@ -925,11 +1090,6 @@ body {
 
 	.lightning-layer--front .cloud-lightning-flash {
 		--flash-cloud-mask: url("./assets/mobile/storm-cloud-cumulus.avif");
-	}
-
-	.storm-cloud--midband,
-	.storm-cloud--lower {
-		display: none;
 	}
 
 	.scenery[data-scenery="distant-hills"] {
@@ -981,8 +1141,17 @@ body {
 	.city-light--lantern-variant {
 		--light-mask: url("./assets/mobile/city-lights/lantern-variant.webp");
 	}
+}
 
-	#motion-trigger {
+/* Quality levels (data-quality on <html>): high is the full scene, medium is
+   the lighter phone scene, low drops the most expensive layers and glows. */
+:root:not([data-quality="high"]) {
+	.storm-cloud--midband,
+	.storm-cloud--lower {
+		display: none;
+	}
+
+	.overlay {
 		-webkit-backdrop-filter: none;
 		backdrop-filter: none;
 		background:
@@ -997,5 +1166,22 @@ body {
 	.rain-drop,
 	.city-flicker-light {
 		will-change: auto;
+	}
+}
+
+:root[data-quality="low"] {
+	.storm-cloud--deep,
+	.storm-cloud--middle,
+	.city-flicker-plane {
+		display: none;
+	}
+
+	#sky .star,
+	.lightning-bolt {
+		filter: none;
+	}
+
+	#sky .star:not(.big) {
+		box-shadow: 0 0 4px #dcefff;
 	}
 }

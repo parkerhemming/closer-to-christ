@@ -1,5 +1,154 @@
+// Scene settings. Change these to tune the scene.
+const sceneSettings = {
+	// Seconds the parallax takes to catch up to the mouse or tilt.
+	// 0 follows exactly; 0.2 is a gentle, floaty ease.
+	parallaxSmoothing: 0,
+	// The loading screen stays up at least this long so its verse can be read.
+	minimumLoadingSeconds: 4,
+};
+
+const reducedMotion = window.matchMedia(
+	"(prefers-reduced-motion: reduce)",
+).matches;
+
 function randomBetween(minimum, maximum) {
 	return minimum + Math.random() * (maximum - minimum);
+}
+
+function clamp(value, minimum, maximum) {
+	return Math.max(minimum, Math.min(maximum, value));
+}
+
+function setStyleProperties(element, properties) {
+	for (const [name, value] of Object.entries(properties)) {
+		element.style.setProperty(name, value);
+	}
+}
+
+// Quality levels. The <head> script picks the starting level; these lower it
+// when the device turns out to be slow. CSS reacts to data-quality right away.
+const qualityLevels = ["low", "medium", "high"];
+// Loading longer than this counts as a slow device or connection.
+const slowLoadSeconds = 8;
+
+function getQuality() {
+	return document.documentElement.dataset.quality;
+}
+
+function setQuality(quality, { remember }) {
+	document.documentElement.dataset.quality = quality;
+	if (remember) {
+		try {
+			localStorage.setItem("quality", quality);
+		} catch {}
+	}
+}
+
+function lowerQuality(options) {
+	const level = qualityLevels.indexOf(getQuality());
+	if (level > 0) setQuality(qualityLevels[level - 1], options);
+}
+
+// Every image the visible scene uses, read from the computed styles so the
+// list never drifts from the CSS. Hidden layers (display: none) are skipped:
+// the browser never downloads their images either.
+function sceneImageUrls() {
+	const urls = new Set();
+	const addUrls = (value) => {
+		for (const [, url] of value.matchAll(/url\("?([^")]+)"?\)/g)) urls.add(url);
+	};
+
+	for (const element of document.querySelectorAll("body *")) {
+		if (element.closest(".overlay") || !element.getClientRects().length) {
+			continue;
+		}
+		for (const pseudo of [null, "::before"]) {
+			const style = getComputedStyle(element, pseudo);
+			addUrls(style.backgroundImage);
+			addUrls(style.maskImage || style.webkitMaskImage || "");
+		}
+		if (element instanceof HTMLImageElement) urls.add(element.currentSrc);
+	}
+	return [...urls];
+}
+
+// Shows the loading screen until every scene image is downloaded and decoded,
+// so layers appear together instead of popping in one by one.
+async function loadScene() {
+	const loading = document.getElementById("loading");
+	const urls = sceneImageUrls();
+	const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+	let loaded = 0;
+	let wasHidden = document.hidden;
+	document.addEventListener("visibilitychange", () => {
+		wasHidden ||= document.hidden;
+	});
+
+	const decodeAll = Promise.all(
+		urls.map(async (url) => {
+			const image = new Image();
+			image.src = url;
+			// Downloaded (or failed: a missing image shouldn't block the scene)...
+			await new Promise((resolve) => {
+				image.onload = image.onerror = resolve;
+			});
+			loaded += 1;
+			loading.style.setProperty("--progress", loaded / urls.length);
+			// ...then decoded, so it can draw at once. Browsers postpone decoding
+			// in background tabs, so don't wait on it for long.
+			await Promise.race([image.decode().catch(() => {}), wait(2000)]);
+		}),
+	);
+	// Never hold the scene back forever on a very slow connection.
+	await Promise.race([decodeAll, wait(25000)]);
+	const loadSeconds = performance.now() / 1000;
+
+	// A slow load means a slow device or connection: use a lighter scene for
+	// this visit (not remembered, since the next visit loads from the cache).
+	// Time spent in a background tab doesn't count.
+	if (!wasHidden && loadSeconds > slowLoadSeconds) {
+		lowerQuality({ remember: false });
+	}
+
+	await wait((sceneSettings.minimumLoadingSeconds - loadSeconds) * 1000);
+	loading.classList.add("is-done");
+	loading.addEventListener("transitionend", () => loading.remove(), {
+		once: true,
+	});
+	watchFrameRate();
+
+	if ("serviceWorker" in navigator) {
+		navigator.serviceWorker.register("./sw.js").catch(() => {});
+	}
+}
+
+// If the first seconds of the running scene draw below ~25fps, step down a
+// quality level and remember it, so struggling (older) phones get a lighter
+// scene now and on every later visit.
+function watchFrameRate() {
+	const frameTimes = [];
+	let previous;
+	let end;
+
+	function measure(now) {
+		if (document.hidden) return; // background tabs barely draw; not a fair test
+		frameTimes.push(now - previous);
+		previous = now;
+		if (now < end) {
+			requestAnimationFrame(measure);
+			return;
+		}
+		frameTimes.sort((a, b) => a - b);
+		const median = frameTimes[Math.floor(frameTimes.length / 2)];
+		if (median > 40) lowerQuality({ remember: true });
+	}
+
+	// Skip the first second: the fade-out and first animations settle there.
+	setTimeout(() => {
+		previous = performance.now();
+		end = previous + 3000;
+		requestAnimationFrame(measure);
+	}, 1000);
 }
 
 function createStars(stars) {
@@ -37,9 +186,39 @@ function createStars(stars) {
 
 function createShootingStars() {
 	const sky = document.getElementById("sky");
-	const reducedMotion = window.matchMedia(
-		"(prefers-reduced-motion: reduce)",
-	).matches;
+	// Far, middle, and near meteors: dimmer and slower the farther away.
+	const profiles = [
+		{
+			chance: 0.42,
+			width: [42, 78],
+			thickness: [0.65, 1.05],
+			duration: [1450, 2350],
+			travel: [28, 48],
+			opacity: [0.42, 0.66],
+			blur: [0.45, 0.8],
+			head: [1.4, 2.1],
+		},
+		{
+			chance: 0.82,
+			width: [76, 132],
+			thickness: [1, 1.75],
+			duration: [920, 1650],
+			travel: [40, 66],
+			opacity: [0.62, 0.86],
+			blur: [0.25, 0.55],
+			head: [1.9, 2.8],
+		},
+		{
+			chance: 1,
+			width: [118, 205],
+			thickness: [1.6, 2.7],
+			duration: [580, 1120],
+			travel: [55, 88],
+			opacity: [0.82, 1],
+			blur: [0.08, 0.3],
+			head: [2.6, 4.2],
+		},
+	];
 
 	if (reducedMotion) return;
 
@@ -55,37 +234,8 @@ function createShootingStars() {
 
 	function launchShootingStar() {
 		const shootingStar = document.createElement("span");
-		const distanceRoll = Math.random();
-		const distance =
-			distanceRoll < 0.42
-				? {
-					width: [42, 78],
-					thickness: [0.65, 1.05],
-					duration: [1450, 2350],
-					travel: [28, 48],
-					opacity: [0.42, 0.66],
-					blur: [0.45, 0.8],
-					head: [1.4, 2.1],
-				}
-				: distanceRoll < 0.82
-					? {
-						width: [76, 132],
-						thickness: [1, 1.75],
-						duration: [920, 1650],
-						travel: [40, 66],
-						opacity: [0.62, 0.86],
-						blur: [0.25, 0.55],
-						head: [1.9, 2.8],
-					}
-					: {
-							width: [118, 205],
-							thickness: [1.6, 2.7],
-							duration: [580, 1120],
-							travel: [55, 88],
-							opacity: [0.82, 1],
-							blur: [0.08, 0.3],
-							head: [2.6, 4.2],
-						};
+		const roll = Math.random();
+		const profile = profiles.find((profile) => roll < profile.chance);
 		const movingRight = Math.random() > 0.5;
 		const movingDown = Math.random() > 0.35;
 		const angle = movingRight
@@ -102,56 +252,31 @@ function createShootingStars() {
 			? 4 + Math.random() * 23
 			: 20 + Math.random() * 18;
 
+		const travel = randomBetween(...profile.travel);
+
 		shootingStar.className = "shooting-star";
 		shootingStar.setAttribute("aria-hidden", "true");
-		shootingStar.style.setProperty("--shooting-start-x", `${startX}%`);
-		shootingStar.style.setProperty("--shooting-start-y", `${startY}%`);
-		shootingStar.style.setProperty("--shooting-angle", `${angle}deg`);
-		const travel = randomBetween(...distance.travel);
-		shootingStar.style.setProperty(
-			"--shooting-distance",
-			`${travel}vw`,
-		);
-		shootingStar.style.setProperty(
-			"--shooting-mid-distance",
-			`${travel * 0.72}vw`,
-		);
-		shootingStar.style.setProperty(
-			"--shooting-duration",
-			`${randomBetween(...distance.duration)}ms`,
-		);
-		shootingStar.style.setProperty(
-			"--shooting-tail-width",
-			`${randomBetween(...distance.width)}px`,
-		);
-		shootingStar.style.setProperty(
-			"--shooting-thickness",
-			`${randomBetween(...distance.thickness)}px`,
-		);
-		shootingStar.style.setProperty(
-			"--shooting-opacity",
-			randomBetween(...distance.opacity),
-		);
-		shootingStar.style.setProperty(
-			"--shooting-blur",
-			`${randomBetween(...distance.blur)}px`,
-		);
-		shootingStar.style.setProperty(
-			"--shooting-head-size",
-			`${randomBetween(...distance.head)}px`,
-		);
+		setStyleProperties(shootingStar, {
+			"--shooting-start-x": `${startX}%`,
+			"--shooting-start-y": `${startY}%`,
+			"--shooting-angle": `${angle}deg`,
+			"--shooting-distance": `${travel}vw`,
+			"--shooting-mid-distance": `${travel * 0.72}vw`,
+			"--shooting-duration": `${randomBetween(...profile.duration)}ms`,
+			"--shooting-tail-width": `${randomBetween(...profile.width)}px`,
+			"--shooting-thickness": `${randomBetween(...profile.thickness)}px`,
+			"--shooting-opacity": randomBetween(...profile.opacity),
+			"--shooting-blur": `${randomBetween(...profile.blur)}px`,
+			"--shooting-head-size": `${randomBetween(...profile.head)}px`,
+		});
 
 		if (Math.random() < 0.3) {
 			shootingStar.classList.add("shooting-star--stretch");
 		}
 
-		shootingStar.addEventListener(
-			"animationend",
-			() => shootingStar.remove(),
-			{
-				once: true,
-			},
-		);
+		shootingStar.addEventListener("animationend", () => shootingStar.remove(), {
+			once: true,
+		});
 		sky.appendChild(shootingStar);
 		scheduleShootingStar();
 	}
@@ -160,9 +285,6 @@ function createShootingStars() {
 }
 
 function createStorm() {
-	const reducedMotion = window.matchMedia(
-		"(prefers-reduced-motion: reduce)",
-	).matches;
 	const lightningLayers = [
 		document.getElementById("lightning-back"),
 		document.getElementById("lightning-middle"),
@@ -175,35 +297,21 @@ function createStorm() {
 
 		function createRainDrop(initialDrop = false) {
 			const drop = document.createElement("span");
-			const duration = randomBetween(
-				settings.minimumDuration,
-				settings.maximumDuration,
-			);
+			const duration = randomBetween(...settings.duration);
+
 			drop.className = "rain-drop";
-			drop.style.setProperty("--rain-x", `${randomBetween(-8, 104)}%`);
-			drop.style.setProperty(
-				"--rain-length",
-				`${randomBetween(settings.minimumLength, settings.maximumLength)}px`,
-			);
-			drop.style.setProperty(
-				"--rain-duration",
-				`${duration}ms`,
-			);
+			setStyleProperties(drop, {
+				"--rain-x": `${randomBetween(-8, 104)}%`,
+				"--rain-length": `${randomBetween(...settings.length)}px`,
+				"--rain-duration": `${duration}ms`,
+				"--rain-opacity": randomBetween(...settings.opacity),
+				"--rain-drift": `${randomBetween(...settings.drift)}px`,
+				"--rain-width": `${randomBetween(...settings.width)}px`,
+			});
+			// Drops present at page load start mid-fall so the rain is already going.
 			if (initialDrop) {
 				drop.style.animationDelay = `${-randomBetween(0, duration * 0.85)}ms`;
 			}
-			drop.style.setProperty(
-				"--rain-opacity",
-				randomBetween(settings.minimumOpacity, settings.maximumOpacity),
-			);
-			drop.style.setProperty(
-				"--rain-drift",
-				`${randomBetween(settings.minimumDrift, settings.maximumDrift)}px`,
-			);
-			drop.style.setProperty(
-				"--rain-width",
-				`${randomBetween(settings.minimumWidth, settings.maximumWidth)}px`,
-			);
 			drop.addEventListener("animationend", () => drop.remove(), {
 				once: true,
 			});
@@ -216,31 +324,27 @@ function createStorm() {
 					? Math.floor(randomBetween(2, settings.maximumBurst + 1))
 					: 1;
 
-			for (let i = 0; i < burstSize; i++) {
-				window.setTimeout(createRainDrop, randomBetween(0, 90));
+			// Hidden tabs pause CSS animations, so drops would never end and pile up.
+			// Low quality thins the rain (lowQualityDensity is the share kept).
+			const density =
+				getQuality() === "low" ? settings.lowQualityDensity : 1;
+			if (!document.hidden && Math.random() < density) {
+				for (let i = 0; i < burstSize; i++) {
+					window.setTimeout(createRainDrop, randomBetween(0, 90));
+				}
 			}
 
 			const pause =
 				Math.random() < settings.pauseChance
-					? randomBetween(
-							settings.minimumPause,
-							settings.maximumPause,
-						)
+					? randomBetween(...settings.pause)
 					: 0;
-			window.setTimeout(
-				scheduleDrop,
-				randomBetween(settings.minimumGap, settings.maximumGap) + pause,
-			);
+			window.setTimeout(scheduleDrop, randomBetween(...settings.gap) + pause);
 		}
 
 		for (let i = 0; i < settings.initialDrops; i++) {
 			createRainDrop(true);
 		}
 		scheduleDrop();
-	}
-
-	function clampLightningX(value) {
-		return Math.max(10, Math.min(90, value));
 	}
 
 	function createBoltPath() {
@@ -250,7 +354,7 @@ function createStorm() {
 		while (y < 104) {
 			y += randomBetween(7, 13);
 			points.push({
-				x: clampLightningX(points.at(-1).x + randomBetween(-14, 14)),
+				x: clamp(points.at(-1).x + randomBetween(-14, 14), 10, 90),
 				y,
 			});
 		}
@@ -318,7 +422,7 @@ function createStorm() {
 		bolt.style.setProperty("--bolt-duration", `${duration}ms`);
 		bolt.style.setProperty(
 			"--bolt-left",
-			`${Math.max(2, Math.min(84, strikeX + randomBetween(-9, 3)))}%`,
+			`${clamp(strikeX + randomBetween(-9, 3), 2, 84)}%`,
 		);
 		bolt.style.setProperty("--bolt-top", `${boltTop}dvh`);
 		bolt.style.setProperty("--bolt-height", `${boltHeight}dvh`);
@@ -347,10 +451,10 @@ function createStorm() {
 				segment < Math.floor(randomBetween(2, 5));
 				segment++
 			) {
-				branchX = clampLightningX(
-					branchX +
-						direction * randomBetween(7, 16) +
-						randomBetween(-3, 3),
+				branchX = clamp(
+					branchX + direction * randomBetween(7, 16) + randomBetween(-3, 3),
+					10,
+					90,
 				);
 				branchY += randomBetween(5, 10);
 				branch.push({ x: branchX, y: branchY });
@@ -430,53 +534,39 @@ function createStorm() {
 
 	if (reducedMotion) return;
 
+	// Each [min, max] pair is a random range. Gap and pause are in ms.
 	startRainEmitter("rain-back", {
-		minimumLength: 8,
-		maximumLength: 20,
-		minimumDuration: 720,
-		maximumDuration: 1120,
-		minimumOpacity: 0.12,
-		maximumOpacity: 0.34,
-		minimumDrift: 50,
-		maximumDrift: 105,
-		minimumWidth: 0.28,
-		maximumWidth: 0.62,
-		minimumGap: 14,
-		maximumGap: 58,
+		length: [8, 20],
+		duration: [720, 1120],
+		opacity: [0.12, 0.34],
+		drift: [50, 105],
+		width: [0.28, 0.62],
+		gap: [14, 58],
 		burstChance: 0.38,
 		maximumBurst: 5,
 		pauseChance: 0.04,
-		minimumPause: 250,
-		maximumPause: 700,
+		pause: [250, 700],
 		initialDrops: 16,
+		lowQualityDensity: 0,
 	});
 	startRainEmitter("rain-front", {
-		minimumLength: 18,
-		maximumLength: 44,
-		minimumDuration: 430,
-		maximumDuration: 760,
-		minimumOpacity: 0.24,
-		maximumOpacity: 0.62,
-		minimumDrift: 90,
-		maximumDrift: 180,
-		minimumWidth: 0.42,
-		maximumWidth: 0.88,
-		minimumGap: 30,
-		maximumGap: 105,
+		length: [18, 44],
+		duration: [430, 760],
+		opacity: [0.24, 0.62],
+		drift: [90, 180],
+		width: [0.42, 0.88],
+		gap: [30, 105],
 		burstChance: 0.3,
 		maximumBurst: 4,
 		pauseChance: 0.06,
-		minimumPause: 350,
-		maximumPause: 950,
+		pause: [350, 950],
 		initialDrops: 6,
+		lowQualityDensity: 0.5,
 	});
 	scheduleLightning(true);
 }
 
 function createCityLights() {
-	const reducedMotion = window.matchMedia(
-		"(prefers-reduced-motion: reduce)",
-	).matches;
 	const plane = document.querySelector(".city-flicker-plane");
 	const candidates = [
 		[2846, 1540, 6, 9], [2350, 1644, 6, 5], [3602, 1544, 6, 13],
@@ -506,10 +596,12 @@ function createCityLights() {
 	const lights = shuffled.map(([x, y, width, height], index) => {
 		const light = document.createElement("span");
 		light.className = "city-flicker-light";
+		// Coordinates are in the 4096x2048 city image; the plane is its
+		// 320px-tall window strip starting at row 1408.
 		light.style.setProperty("--flicker-x", `${(x / 4096) * 100}%`);
-		light.style.setProperty("--flicker-y", `${(y / 2048) * 100}%`);
+		light.style.setProperty("--flicker-y", `${((y - 1408) / 320) * 100}%`);
 		light.style.setProperty("--flicker-width", `${(width / 4096) * 100}%`);
-		light.style.setProperty("--flicker-height", `${(height / 2048) * 100}%`);
+		light.style.setProperty("--flicker-height", `${(height / 320) * 100}%`);
 		light.style.setProperty("--flicker-color", colors[index % colors.length]);
 		light.dataset.activity = randomBetween(0.35, 2.4);
 		plane.appendChild(light);
@@ -567,30 +659,33 @@ function createCityLights() {
 function parallax() {
 	const layers = document.querySelectorAll("[data-z_index]");
 	const christ = document.getElementById("christ");
-	const isTouchDevice = navigator.maxTouchPoints > 0;
-	const depthScale = isTouchDevice ? 0.00044 : 0.0009;
 	const christDepthFactor = 0.78;
 	const mobileHorizontalStrength = 70;
 	const mobileVerticalStrength = 50;
-	const smoothing = 0.075;
 	let targetX = 0;
 	let targetY = 0;
 	let currentX = 0;
 	let currentY = 0;
 	let animationFrame = 0;
-	let horizontalRange = isTouchDevice
-		? 24 * mobileHorizontalStrength
-		: Math.max(window.innerWidth / 2, 1);
+	let lastFrameTime = 0;
+	// The mouse drives the parallax until the gyroscope actually reports data.
+	let tiltActive = false;
 	const layerSettings = [...layers].map((layer) => ({
 		layer,
 		depth:
 			Number(layer.dataset.z_index) *
-			(layer === christ ? depthScale * christDepthFactor : depthScale),
+			(layer === christ ? christDepthFactor : 1),
 	}));
 
 	function moveLayers(x, y) {
+		const depthScale = tiltActive ? 0.00044 : 0.0009;
+		const horizontalRange = tiltActive
+			? 24 * mobileHorizontalStrength
+			: Math.max(window.innerWidth / 2, 1);
+
 		for (const { layer, depth } of layerSettings) {
-			layer.style.translate = `${x * depth}px ${y * depth}px`;
+			const scale = depth * depthScale;
+			layer.style.translate = `${x * scale}px ${y * scale}px`;
 		}
 
 		const horizontalProgress = clamp(x / horizontalRange, -1, 1);
@@ -605,10 +700,17 @@ function parallax() {
 		);
 	}
 
-	function animateParallax() {
+	function animateParallax(time) {
 		animationFrame = 0;
-		currentX += (targetX - currentX) * smoothing;
-		currentY += (targetY - currentY) * smoothing;
+		// Capped so the first frame after a pause doesn't count the idle time.
+		const elapsed = Math.min((time - lastFrameTime) / 1000, 1 / 30);
+		lastFrameTime = time;
+		// Share of the remaining distance to cover this frame. Based on elapsed
+		// time, so the ease feels the same at 60Hz and 120Hz. 1 = jump straight there.
+		const smoothing = sceneSettings.parallaxSmoothing;
+		const step = smoothing > 0 ? 1 - Math.exp(-elapsed / smoothing) : 1;
+		currentX += (targetX - currentX) * step;
+		currentY += (targetY - currentY) * step;
 		moveLayers(currentX, currentY);
 
 		if (
@@ -625,21 +727,17 @@ function parallax() {
 		}
 	}
 
-	if (!isTouchDevice) {
-		document.addEventListener("mousemove", (event) => {
-			targetX = event.clientX - window.innerWidth / 2;
-			targetY = event.clientY - window.innerHeight / 2;
-			requestParallaxFrame();
-		});
-	}
+	document.addEventListener("pointermove", (event) => {
+		if (event.pointerType === "touch" || tiltActive) return;
+		targetX = event.clientX - window.innerWidth / 2;
+		targetY = event.clientY - window.innerHeight / 2;
+		requestParallaxFrame();
+	});
 
 	let resizeTimer;
 	window.addEventListener(
 		"resize",
 		() => {
-			horizontalRange = isTouchDevice
-				? 24 * mobileHorizontalStrength
-				: Math.max(window.innerWidth / 2, 1);
 			document.body.classList.add("is-resizing");
 			window.clearTimeout(resizeTimer);
 			resizeTimer = window.setTimeout(() => {
@@ -653,17 +751,6 @@ function parallax() {
 	// Phone tilt support
 	let startingRotation = null;
 	let motionEnabled = false;
-
-	function clamp(value, minimum, maximum) {
-		return Math.max(minimum, Math.min(maximum, value));
-	}
-
-	function moveToward(current, destination, maximumChange) {
-		return (
-			current +
-			clamp(destination - current, -maximumChange, maximumChange)
-		);
-	}
 
 	function getRotationMatrix(alpha, beta, gamma) {
 		const degreesToRadians = Math.PI / 180;
@@ -763,15 +850,9 @@ function parallax() {
 			verticalTilt = -relativeBeta;
 		}
 
-		const nextTargetX =
-			clamp(horizontalTilt, -24, 24) * mobileHorizontalStrength;
-		const nextTargetY =
-			clamp(verticalTilt, -18, 18) * mobileVerticalStrength;
-
-		// Limit how quickly the target itself can move so re-entering a tilt
-		// boundary remains smooth even if the sensor emits an unusual value.
-		targetX = moveToward(targetX, nextTargetX, 90);
-		targetY = moveToward(targetY, nextTargetY, 75);
+		tiltActive = true;
+		targetX = clamp(horizontalTilt, -24, 24) * mobileHorizontalStrength;
+		targetY = clamp(verticalTilt, -18, 18) * mobileVerticalStrength;
 		requestParallaxFrame();
 	}
 
@@ -800,7 +881,13 @@ function parallax() {
 		return "prompt";
 	}
 
-	if (isTouchDevice && typeof DeviceOrientationEvent !== "undefined") {
+	// Only phones and tablets get the tilt start screen; touchscreen laptops
+	// have a mouse and keep the mouse parallax.
+	const hasTiltScreen =
+		typeof DeviceOrientationEvent !== "undefined" &&
+		window.matchMedia("(pointer: coarse)").matches;
+
+	if (hasTiltScreen) {
 		const motionTrigger = document.getElementById("motion-trigger");
 
 		motionTrigger.addEventListener(

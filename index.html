@@ -7,6 +7,33 @@
 			content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
 		/>
 		<title>Closer To Christ</title>
+		<link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+		<script>
+			// Runs before any image loads. Picks the quality level (a saved
+			// choice wins; otherwise a guess from the device) and the image
+			// size. app.js lowers the quality later if the scene runs slowly.
+			(() => {
+				const root = document.documentElement;
+				const phone = matchMedia("(max-width: 900px)");
+				const memory = navigator.deviceMemory ?? 8; // GB; Chromium only
+				let saved = null;
+				try {
+					saved = localStorage.getItem("quality");
+				} catch {}
+				root.dataset.quality =
+					saved ??
+					(memory <= 2 || navigator.connection?.saveData
+						? "low"
+						: phone.matches || memory <= 4
+							? "medium"
+							: "high");
+				const setAssets = () => {
+					root.dataset.assets = phone.matches ? "small" : "full";
+				};
+				setAssets();
+				phone.addEventListener("change", setAssets);
+			})();
+		</script>
 		<link rel="stylesheet" href="./styles.css" />
 	</head>
 	<body>
@@ -110,28 +137,53 @@
 
 		<button
 			id="motion-trigger"
+			class="overlay"
 			type="button"
 			aria-label="Enable motion parallax"
 			hidden
 		>
-			<span class="motion-start-card">
-				<span class="motion-start-eyebrow">Closer to Christ</span>
-				<span class="motion-start-title">Click to Start</span>
-				<span class="motion-start-copy">
+			<span class="overlay-card">
+				<span class="overlay-eyebrow">Closer to Christ</span>
+				<span class="overlay-title">Click to Start</span>
+				<span class="overlay-copy">
 					Enable motion and tilt your phone to explore the scene
 				</span>
 			</span>
 		</button>
 
+		<div id="loading" class="overlay" role="status" aria-live="polite">
+			<span class="overlay-card">
+				<span class="loading-emblem">
+					<svg class="loading-cross" viewBox="0 0 40 56" aria-hidden="true">
+						<defs>
+							<clipPath id="loading-cross-shape">
+								<path id="loading-cross-path" d="M17 2h6v12h11v6H23v34h-6V20H6v-6h11z" />
+							</clipPath>
+						</defs>
+						<rect class="loading-cross__fill" width="40" height="56" clip-path="url(#loading-cross-shape)" />
+						<use class="loading-cross__base" href="#loading-cross-path" />
+						<path class="loading-cross__glint" d="M17 2h6v12h11v6H23v34h-6V20H6v-6h11z" pathLength="100" />
+					</svg>
+				</span>
+				<span class="overlay-eyebrow">Closer to Christ</span>
+				<span class="overlay-title">Preparing the scene</span>
+				<span class="loading-progress"></span>
+				<span class="loading-verse">
+					&ldquo;Draw near unto me and I will draw near unto you.&rdquo;
+					<cite>D&amp;C 88:63</cite>
+				</span>
+			</span>
+		</div>
+
 		<script src="./app.js"></script>
 		<script>
-			createStars(
-				window.matchMedia("(max-width: 900px)").matches ? 150 : 300,
-			);
-			createShootingStars();
-			createStorm();
-			createCityLights();
-			parallax();
+			loadScene().then(() => {
+				createStars({ high: 300, medium: 150, low: 90 }[getQuality()]);
+				createShootingStars();
+				createStorm();
+				createCityLights();
+				parallax();
+			});
 		</script>
 	</body>
 </html>
