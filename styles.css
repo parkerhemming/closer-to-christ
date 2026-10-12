@@ -1999,6 +1999,22 @@ body {
 	overflow-wrap: anywhere;
 }
 
+/* The project's code and README, at the bottom of the panel. */
+.settings-link {
+	align-self: flex-start;
+	color: #e7b477;
+	font:
+		600 var(--text-body)/1.4 system-ui,
+		sans-serif;
+	text-decoration: none;
+
+	&:hover,
+	&:focus-visible {
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+}
+
 /* Computers: every interface size above at half. They were tuned by eye in
    a browser zoomed to 50%, so at normal (100%) zoom this matches what was
    approved. Phones keep the sizes above (tuned at real size); borders stay

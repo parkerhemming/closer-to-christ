@@ -11,12 +11,10 @@
 
 <br>
 
-<table>
-<tr>
-<td align="center"><img src="docs/layers.webp" alt="Animation: each of the scene's ten layers shown alone, then stacked in 3D and collapsing into the finished scene" height="340"><br><sub>The website: ten layers stacked into one scene</sub></td>
-<td align="center"><img src="docs/bloch-crucifixion.jpg" alt="Carl Bloch's painting Christ at the Cross (1870)" height="340"><br><sub>Carl Bloch, <i>Christ at the Cross</i> (1870), the painting that inspired it</sub></td>
-</tr>
-</table>
+<img src="docs/layers.webp" alt="Animation: each of the scene's ten layers shown alone, then stacked in 3D and collapsing into the finished scene, which moves in depth as the mouse circles" width="560">
+<img src="docs/bloch-crucifixion.jpg" alt="Carl Bloch's painting Christ at the Cross (1870)" width="247">
+
+<sub>The website's ten layers, stacked into one scene &nbsp;·&nbsp; Carl Bloch, <i>Christ at the Cross</i> (1870), the painting that inspired it</sub>
 
 </div>
 
@@ -60,13 +58,13 @@ You can let the day play out, pause it, or jump straight to any event. Times mar
 
 ### 🌅 A scene that changes with the day
 
-<table>
-<tr>
-<td align="center" width="33%"><img src="docs/night.jpg" alt="6:00 AM: still night, with stars over the hills and lamps lit in Jerusalem"><br><b>6:00 AM</b><br><sub>Stars and city lamps before dawn</sub></td>
-<td align="center" width="33%"><img src="docs/morning.jpg" alt="10:00 AM: full daylight, the sun high over the hills"><br><b>10:00 AM</b><br><sub>Full morning light</sub></td>
-<td align="center" width="33%"><img src="docs/afternoon.jpg" alt="1:30 PM: the noon darkness, storm clouds and rain"><br><b>1:30 PM</b><br><sub>Darkness over the land</sub></td>
-</tr>
-</table>
+<p align="center">
+<img src="docs/night.jpg" alt="6:00 AM: still night, with stars over the hills and lamps lit in Jerusalem" width="268">
+<img src="docs/morning.jpg" alt="10:00 AM: full daylight, the sun high over the hills" width="268">
+<img src="docs/afternoon.jpg" alt="1:30 PM: the noon darkness, storm clouds and rain" width="268">
+<br>
+<sub><b>6:00 AM</b> stars and city lamps before dawn &nbsp;·&nbsp; <b>10:00 AM</b> full morning light &nbsp;·&nbsp; <b>1:30 PM</b> darkness over the land</sub>
+</p>
 
 - **Light:** the sun rises behind the hills, and stars and city lamps fade as morning comes. Every layer of the landscape is lit for the hour.
 - **Darkness:** from noon "there was a darkness over all the earth until the ninth hour" (Luke 23:44). The day dims unnaturally and the storm builds.
@@ -109,12 +107,6 @@ The gear button opens settings for the time of day, the weather (from clear skie
 
 ## How it's built
 
-<div align="center">
-<img src="docs/scene.jpg" alt="The website: Christ on the cross above Golgotha at 7:15 in the morning, with Jerusalem and the Mount of Olives behind" width="100%">
-</div>
-
-<br>
-
 It's a hand-built website made with plain HTML, CSS and JavaScript, with no frameworks or libraries.
 
 - **Layers:** the scene is a stack of layers: sky, six cloud layers, rain, distant mountains, desert hills, the Mount of Olives, Jerusalem, Golgotha's ridge, the near ground, and the figure on the cross.
@@ -124,25 +116,27 @@ It's a hand-built website made with plain HTML, CSS and JavaScript, with no fram
 - **Offline cache:** a service worker keeps the images on your device, so later visits load almost instantly.
 
 ```
-index.html             the page
-styles.css             all the styling
-service-worker.js      keeps images on the device after the first visit
-js/
-  utils.js             small shared helpers
-  time-and-weather.js  the clock's light and weather, the sky and the sun
-  loading.js           loading screen and quality levels
-  sky.js               stars and shooting stars
-  storm.js             clouds, rain and lightning
-  land.js              the landscape, city lights, cast shadows and the earthquake
-  parallax.js          movement with the mouse or phone tilt
-  timeline.js          the clock, caption and list of events
-  settings-panel.js    the settings panel
-  teachings.js         what each marker teaches (the scriptures)
-  markers.js           the markers and their cards
-  workers/
-    wind.js            draws the swaying and still layers on the GPU
-    rain.js            draws the rain
-assets/                the images
+closer-to-christ/
+├── index.html               the page
+├── styles.css               all the styling
+├── service-worker.js        keeps images on the device after the first visit
+├── js/
+│   ├── utils.js             small shared helpers
+│   ├── time-and-weather.js  the clock's light and weather, the sky and the sun
+│   ├── loading.js           loading screen and quality levels
+│   ├── sky.js               stars and shooting stars
+│   ├── storm.js             clouds, rain and lightning
+│   ├── land.js              the landscape, city lights, cast shadows and the earthquake
+│   ├── parallax.js          movement with the mouse or phone tilt
+│   ├── timeline.js          the clock, caption and list of events
+│   ├── settings-panel.js    the settings panel
+│   ├── teachings.js         what each marker teaches (the scriptures)
+│   ├── markers.js           the markers and their cards
+│   └── workers/
+│       ├── wind.js          draws the swaying and still layers on the GPU
+│       └── rain.js          draws the rain
+├── assets/                  the images
+└── docs/                    the pictures in this README
 ```
 
 ### Running it yourself
