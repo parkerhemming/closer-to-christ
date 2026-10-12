@@ -285,9 +285,9 @@ body {
 /* Each texture is only as wide as the frame plus its drift, and only as tall as
    the band its clouds show in (--cloud-top to --cloud-bottom), shifted so the
    clouds land exactly where a full-size layer would put them, with a fraction
-   of the GPU memory. Each layer's top and bottom fade is baked into its image
-   (tools/bake-cloud-fades.py): a CSS mask here was a second full-size GPU
-   layer per cloud in Chrome. */
+   of the GPU memory. Each layer's top and bottom fade is baked into its
+   image: a CSS mask here was a second full-size GPU layer per cloud in
+   Chrome. */
 .storm-cloud__texture {
 	display: block;
 	position: absolute;

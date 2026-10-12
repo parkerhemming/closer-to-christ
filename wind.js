@@ -3,8 +3,8 @@
 // handed a canvas by swayInWind in app.js) draws the layer's image with
 // WebGL, shifting each pixel by its motion map's red (how far it sways
 // sideways in the wind) and green (how much it rises with each breath).
-// The maps come from tools/bake-plant-sway.py (plant tips most, roots and
-// rocks not at all) and tools/bake-figure-motion.py. Gusts roll across from
+// The maps were baked from the images (plant tips most, roots and rocks not
+// at all; the figure's hair, cloth and chest). Gusts roll across from
 // left to right; plants each flutter on their own and the cloth and hair
 // ripple downward.
 //
