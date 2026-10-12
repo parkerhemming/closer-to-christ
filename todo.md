@@ -52,6 +52,7 @@
 - [x] `weatherIntensity` setting: 0 = clear sky, 1 = full storm (today's storm = 0.7)
 - [x] Rain amount and wind slant follow the weather
 - [x] Lightning only in stormy weather, more often in heavier storms
+- [] Earthquake effect (the scene shakes) when the storm is at its fullest
 - [x] Clouds thin out and brighten in clear weather, thicken and darken in storms
 - [x] Wind speed sets how fast the clouds drift
 - [x] Weather slider in Scene Settings

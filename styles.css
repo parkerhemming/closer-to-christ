@@ -128,6 +128,12 @@ body {
 		will-change: translate, opacity;
 	}
 
+	/* Until the scene is up the sun is just placed: gliding then could start
+	   it from wherever the page first put it (a corner) as the light is set. */
+	:root:not([data-scene-shown]) & .sun {
+		transition: none;
+	}
+
 	.star {
 		background-color: white;
 		aspect-ratio: 1/1;
@@ -1033,8 +1039,10 @@ body {
 /* The card matches the caption box (narrower): the same background,
    corners, padding (the caption's plus its text's), fonts and sizes, and the
    same small even gaps. */
+/* Spaced in groups: the spinner, the name and title together, the
+   progress line, then the verse with its reference. */
 #loading .overlay-card {
-	gap: 6px;
+	gap: 0;
 	width: min(440px, calc(100vw - 32px));
 	max-width: none;
 	padding: 20px 28px 22px;
@@ -1045,7 +1053,7 @@ body {
 }
 
 #loading .overlay-eyebrow {
-	margin: 0;
+	margin: 0 0 6px;
 	font:
 		700 var(--text-eyebrow)/1.2 system-ui,
 		sans-serif;
@@ -1063,9 +1071,9 @@ body {
 	position: relative;
 	display: grid;
 	place-items: center;
-	width: 52px;
-	height: 52px;
-	margin-bottom: 4px;
+	width: 56px;
+	height: 56px;
+	margin-bottom: 16px;
 }
 
 /* Spinner: a thin golden arc circling the cross. */
@@ -1086,8 +1094,8 @@ body {
 }
 
 .loading-cross {
-	width: 21px;
-	height: 30px;
+	width: 23px;
+	height: 32px;
 	overflow: visible;
 }
 
@@ -1123,7 +1131,7 @@ body {
 .loading-progress {
 	width: 140px;
 	height: 2px;
-	margin: 4px 0;
+	margin: 16px 0 14px;
 	overflow: hidden;
 	border-radius: 2px;
 	background: rgba(255, 255, 255, 0.12);
@@ -1149,7 +1157,7 @@ body {
 
 .loading-verse cite {
 	display: block;
-	margin-top: 6px;
+	margin-top: 8px;
 	color: #e7b477;
 	font:
 		700 var(--text-eyebrow)/1.2 system-ui,
@@ -1163,18 +1171,8 @@ body {
 @media (max-width: 600px) {
 	#loading .overlay-card {
 		width: min(300px, calc(100vw - 24px));
-		padding: 16px 14px 18px;
+		padding: 28px 14px;
 		border-radius: 16px;
-	}
-
-	.loading-emblem {
-		width: 44px;
-		height: 44px;
-	}
-
-	.loading-cross {
-		width: 18px;
-		height: 25px;
 	}
 
 	.loading-progress {
@@ -1184,9 +1182,8 @@ body {
 
 @media (min-width: 601px) {
 	#loading .overlay-card {
-		gap: 4px;
 		width: min(440px, calc(100vw - 32px));
-		padding: 14px 18px 15px;
+		padding: 32px 24px;
 		border-radius: 10px;
 	}
 
@@ -1199,24 +1196,8 @@ body {
 		font-size: 1rem;
 	}
 
-	.loading-emblem {
-		width: 32px;
-		height: 32px;
-		margin-bottom: 3px;
-	}
-
-	.loading-cross {
-		width: 13px;
-		height: 18px;
-	}
-
 	.loading-progress {
-		width: 90px;
-		margin: 3px 0;
-	}
-
-	.loading-verse cite {
-		margin-top: 3px;
+		width: 120px;
 	}
 }
 

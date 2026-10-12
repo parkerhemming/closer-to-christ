@@ -374,6 +374,8 @@
 				swayInWind();
 				parallax();
 				settingsPanel();
+				// From now on the sun glides between positions (see .sun).
+				requestAnimationFrame(() => (document.documentElement.dataset.sceneShown = ""));
 			});
 		</script>
 	</body>
