@@ -8,7 +8,8 @@
 //   On the figure: { figure: [x, y] } in pixels of the 1186x2337 artwork.
 //   In the scene: { layer, style }, placed by CSS within that layer: "city"
 //   lies over the Jerusalem image (sized by the screen's width, anchored at
-//   its bottom) and "sky" is the whole screen.
+//   its bottom), "olives" over the Mount of Olives and "sky" is the whole
+//   screen.
 const teachings = [
 	{
 		id: "palm",
@@ -102,6 +103,20 @@ const teachings = [
 			["Moses 7:55", "And the Lord said unto Enoch: Look, and he looked and beheld the Son of Man lifted up on the cross, after the manner of men;"],
 			["John 19:17\u201318", "And he bearing his cross went forth into a place called the place of a skull, which is called in the Hebrew Golgotha: Where they crucified him, and two other with him, on either side one, and Jesus in the midst."],
 			["John 12:32", "And I, if I be lifted up from the earth, will draw all men unto me."],
+		],
+	},
+	{
+		id: "olives",
+		at: { layer: "olives", style: "left: 22%; top: 30%" },
+		title: "The Mount of Olives",
+		wide: true,
+		text: "Across the Kidron Valley, east of the city. On its slopes, in the garden of Gethsemane, the Savior's suffering for our sins began the night before he was crucified. From this mount he ascended into heaven, and to it he will return.",
+		scriptures: [
+			["Mosiah 3:7", "And lo, he shall suffer temptations, and pain of body, hunger, thirst, and fatigue, even more than man can suffer, except it be unto death; for behold, blood cometh from every pore, so great shall be his anguish for the wickedness and the abominations of his people."],
+			["D&C 19:18", "Which suffering caused myself, even God, the greatest of all, to tremble because of pain, and to bleed at every pore, and to suffer both body and spirit\u2014and would that I might not drink the bitter cup, and shrink\u2014"],
+			["D&C 45:48", "And then shall the Lord set his foot upon this mount, and it shall cleave in twain, and the earth shall tremble, and reel to and fro, and the heavens also shall shake."],
+			["Luke 22:44", "And being in an agony he prayed more earnestly: and his sweat was as it were great drops of blood falling down to the ground."],
+			["Acts 1:11\u201312", "Which also said, Ye men of Galilee, why stand ye gazing up into heaven? this same Jesus, which is taken up from you into heaven, shall so come in like manner as ye have seen him go into heaven. Then returned they unto Jerusalem from the mount called Olivet, which is from Jerusalem a sabbath day's journey."],
 		],
 	},
 	{

@@ -457,8 +457,9 @@ body {
 	height: 100%;
 }
 
+/* Distant rain: in front of the city, behind the ridge. */
 .rain-layer--back {
-	z-index: 11;
+	z-index: 40;
 }
 
 .rain-layer--front {
@@ -670,13 +671,38 @@ body {
 	   took graphics memory, and running out made Chrome drop layers
 	   (flashing, a vanishing figure). Each layer's height and bottom are set
 	   so the crop lands exactly where the full image's rows did. */
-	&[data-scenery="distant-hills"] {
-		--stack-order: 2;
-		--bottom: -10.869dvh;
-		--height: 40.688dvh;
-		--texture: url("./assets/hills-v3.avif");
-		--color-grade: brightness(33%) saturate(42%) contrast(80%) sepia(6%);
+	/* Every land layer stacks above every cloud and lightning layer (2-35),
+	   so clouds never pass in front of the land.
+	   The far horizon: the mountains of Moab beyond the Dead Sea, peeking
+	   over the hills, hazy with distance. */
+	&[data-scenery="far-mountains"] {
+		--stack-order: 36;
+		--bottom: 9dvh;
+		--height: 28dvh;
+		--texture: url("./assets/far-mountains-v2.avif");
+		/* Distance shows as haze: paler, softer and greyer than the hills. */
+		--color-grade: brightness(33%) saturate(55%) contrast(78%) sepia(10%);
 	}
+
+}
+
+/* The Mount of Olives, between the desert hills and the city, shared with the
+   hills' shadow on it and its marker. */
+:is(.scenery[data-scenery="olives"], .land-shadow--olives, .scene-markers--olives) {
+	--stack-order: 38;
+	--bottom: -8dvh;
+	--height: 38dvh;
+	--texture: url("./assets/olives-v2.avif");
+	--color-grade: brightness(35%) saturate(85%) contrast(90%) sepia(6%);
+}
+
+/* The desert hills, shared with the mountains' shadow cast on them. */
+:is(.scenery[data-scenery="distant-hills"], .land-shadow--hills) {
+	--stack-order: 37;
+	--bottom: -14.869dvh;
+	--height: 40.688dvh;
+	--texture: url("./assets/hills-v5.avif");
+	--color-grade: brightness(30%) saturate(60%) contrast(84%) sepia(6%);
 }
 
 /* The two near layers are cut-out images with their own skylines; the
@@ -684,11 +710,11 @@ body {
    ground's about 5dvh. The ridge slopes down to the right so Jerusalem shows
    above it. Each place is shared with its swaying copy (wind.js). */
 :is(.scenery[data-scenery="golgotha-ridge"], .land-wind--ridge) {
-	--stack-order: 12;
+	--stack-order: 41;
 	--bottom: -5.984dvh;
 	--height: 20.483dvh;
 	--texture: url("./assets/golgotha-ridge-v3.avif");
-	--color-grade: brightness(46%) saturate(50%) contrast(82%) sepia(7%);
+	--color-grade: brightness(32%) saturate(65%) contrast(95%) sepia(8%);
 }
 
 .scenery[data-scenery="distant-jerusalem"] {
@@ -716,23 +742,23 @@ body {
 /* The city's and near ground's size and place, shared with the shadows cast
    on them. */
 :is(.scenery[data-scenery="distant-jerusalem"], .land-shadow--city, .scene-markers--city) {
-	--stack-order: 4;
+	--stack-order: 39;
 	--bottom: clamp(-14dvh, calc(16dvh - 14vw), 8dvh);
 	--height: 140dvh;
 	/* Sized by width and anchored at the bottom, so cropping the empty sky
 	   off its top changes nothing else. */
-	--texture: url("./assets/jerusalem-v3.avif");
+	--texture: url("./assets/jerusalem-v5.avif");
 	--texture-size: 100% auto;
-	--color-grade: brightness(43%) saturate(28%) contrast(89%)
-		grayscale(32%) sepia(6%);
+	/* Warm like the hills behind it (it was greyed out before). */
+	--color-grade: brightness(47%) saturate(70%) contrast(95%) sepia(6%);
 }
 
 :is(.scenery[data-scenery="ground"], .land-shadow--ground, .land-wind--ground) {
-	--stack-order: 25;
+	--stack-order: 42;
 	--bottom: -6.028dvh;
 	--height: 15.19dvh;
 	--texture: url("./assets/near-ground-v3.avif");
-	--color-grade: brightness(47%) saturate(55%) contrast(80%) sepia(10%);
+	--color-grade: brightness(42%) saturate(72%) contrast(98%) sepia(8%);
 }
 
 /* Cast shadows of the ridges, drawn by landShadows in app.js into a small
@@ -743,7 +769,8 @@ body {
    swaying ground (wind.js) is placed the same way. */
 .land-shadow,
 .land-wind,
-.scene-markers--city {
+.scene-markers--city,
+.scene-markers--olives {
 	position: absolute;
 	left: 50%;
 	bottom: var(--bottom);
@@ -755,8 +782,10 @@ body {
 	pointer-events: none;
 }
 
+/* Darkens the land beneath, keeping its texture, rather than greying it. */
 .land-shadow {
 	opacity: var(--shadow-strength, 0);
+	mix-blend-mode: multiply;
 }
 
 /* Once the swaying ground has drawn, the still one isn't needed. */
@@ -2225,12 +2254,20 @@ body {
 		--flash-cloud-mask: url("./assets/mobile/storm-cloud-cumulus.avif");
 	}
 
+	.scenery[data-scenery="far-mountains"] {
+		--texture: url("./assets/mobile/far-mountains-v2.avif");
+	}
+
 	.scenery[data-scenery="distant-hills"] {
-		--texture: url("./assets/mobile/hills-v3.avif");
+		--texture: url("./assets/mobile/hills-v5.avif");
+	}
+
+	.scenery[data-scenery="olives"] {
+		--texture: url("./assets/mobile/olives-v2.avif");
 	}
 
 	.scenery[data-scenery="distant-jerusalem"] {
-		--texture: url("./assets/mobile/jerusalem-v3.avif");
+		--texture: url("./assets/mobile/jerusalem-v5.avif");
 	}
 
 	.scenery[data-scenery="golgotha-ridge"] {

@@ -162,14 +162,10 @@ const timeCurves = {
 	figureLight: [[0, 0.75], [0.3, 1], [0.6, 1.12], [1, 1.18]],
 	// The sun: hidden until after 0.32, rising from behind the left hills.
 	sunOpacity: [[0, 0], [0.32, 0], [0.4, 1], [1, 1]],
-	// Cast shadows of the ridges: none before the sun is up, longest and
-	// strongest just after sunrise, retreating to the ridge by late morning.
-	// shadowReach is how much of the visible land in front of a ridge its
-	// shadow covers; shadowLean is how far it slants right (the sun is on the
-	// left) per unit of length.
-	shadowStrength: [[0, 0], [0.38, 0], [0.44, 0.65], [0.55, 0.55], [0.75, 0.3], [0.9, 0], [1, 0]],
-	shadowReach: [[0, 0.8], [0.45, 0.8], [0.55, 0.5], [0.7, 0.2], [0.85, 0.05], [1, 0.02]],
-	shadowLean: [[0, 0.9], [0.38, 0.9], [0.6, 0.6], [1, 0.2]],
+	// How dark the ridges' cast shadows are: none before the sun is up,
+	// strongest just after sunrise, a little softer through the day. Their
+	// length and angle come from the sun's place (landShadows).
+	shadowStrength: [[0, 0], [0.38, 0], [0.44, 0.8], [0.7, 0.65], [1, 0.55]],
 	// Of screen height; the left hills' ridge is at about 0.7, so the sun is
 	// half behind them at 0.45.
 	sunHeight: [[0, 0.85], [0.35, 0.84], [0.45, 0.7], [0.55, 0.58], [0.7, 0.42], [1, 0.14]],
@@ -1032,7 +1028,7 @@ function createCityLights() {
 // 27:51): a moment after the clock reaches 3:00 the ground shakes, then keeps
 // shaking now and then while the storm is at its height (weather 0.9 and up,
 // as it is at 3 PM unless set lower). Each tremor rolls toward the viewer: the far
-// hills jolt first, then the city, the ridge, the near ground and the cross,
+// mountains and hills jolt first, then the Mount of Olives, the city, the ridge, the near ground and the cross,
 // each a moment after the one behind it and harder the nearer it is, over a
 // faint shake of the whole scene. The time, buttons and caption stay still.
 // Each jolt is an animation added on top of the layer's parallax position
@@ -1045,7 +1041,9 @@ function earthquakes() {
 	// far each jolts at full strength, in px: like the parallax, the farther
 	// away, the less it seems to move.
 	const wave = [
+		[1.2, 0.5], // the mountains of Moab
 		[1.5, 0.8], // distant hills
+		[2, 1.1], // the Mount of Olives
 		[2.5, 1.5], // Jerusalem
 		[4.5, 3], // Golgotha ridge
 		[8, 6.5], // near ground
@@ -1221,44 +1219,50 @@ function colorFilter(filters, start = { rows: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
 // offset so the shadows follow the layers.
 let updateLandShadows = null;
 
-// Ridges cast shadows on the land in front of them once the sun is up (it
-// rises behind them, on the left). Each shadow is the ridge's own outline,
-// flipped down from where the ridge meets the land in front, stretched by the
-// sun's angle and leaned right, and clipped to the receiving land's outline.
-// Its far end moves with the ridge and its near end with the land, so it
-// changes angle as the parallax moves them apart. It's drawn into a small
-// canvas over the land (the outlines are small, pre-blurred silhouettes), so
-// each change is a quick redraw rather than work for the GPU's layers.
+// Ridges cast shadows on the land in front of them while the sun is up (it
+// rises behind them, in the east). Each column of a ridge's skyline casts
+// forward, away from the point on the horizon below the sun, as far as the
+// sun's height allows: long and slanting at sunrise, shorter as it climbs,
+// fanning out on either side of the sun, so the angles change as it moves
+// across the sky. Darkest near the ridge and fading toward the far end, the
+// shadow darkens the land beneath it (a multiply blend in the CSS) and keeps
+// to the receiving land's outline; it fades as clouds or the noon darkness
+// hide the sun. Its far end moves with the ridge and its near end with the
+// land, as the parallax moves them apart. Each is drawn into a small canvas
+// over the land, so a change is a quick redraw, not work for the GPU's layers.
 function landShadows() {
-	const rootStyle = getComputedStyle(document.documentElement);
-	// Image rows measured from the artwork's transparency (fraction of the
-	// image height): where each ridge's skyline begins and where each
-	// receiving layer's top edge is.
 	const pairs = [
 		{
+			ridge: '[data-scenery="far-mountains"]',
+			ridgeShape: "./assets/shadows/far-mountains-shape-v2.webp",
+			land: '[data-scenery="distant-hills"]',
+			landShape: "./assets/shadows/hills-shape-v3.webp",
+			canvas: ".land-shadow--hills",
+			landSizedByWidth: false,
+		},
+		{
 			ridge: '[data-scenery="distant-hills"]',
-			ridgeShape: "./assets/shadows/hills-shape.webp",
-			skyline: 0.0709,
+			ridgeShape: "./assets/shadows/hills-shape-v3.webp",
+			land: '[data-scenery="olives"]',
+			landShape: "./assets/shadows/olives-shape-v2.webp",
+			canvas: ".land-shadow--olives",
+			landSizedByWidth: false,
+		},
+		{
+			ridge: '[data-scenery="olives"]',
+			ridgeShape: "./assets/shadows/olives-shape-v2.webp",
 			land: '[data-scenery="distant-jerusalem"]',
-			landShape: "./assets/shadows/jerusalem-land.webp",
+			landShape: "./assets/shadows/jerusalem-land-v2.webp",
 			canvas: ".land-shadow--city",
-			landEdge: 0.1235, // the image is sized by width, anchored at the bottom
-			landAspect: 708 / 4096, // its height over its width
-			landSizedByWidth: true,
-			// The land is visible down to where the Golgotha ridge covers it.
-			coveredBy: '[data-scenery="golgotha-ridge"]',
-			coveredBySkyline: 0.3058,
+			landSizedByWidth: true, // the city image is sized by width
 		},
 		{
 			ridge: '[data-scenery="golgotha-ridge"]',
 			ridgeShape: "./assets/shadows/golgotha-ridge-shape.webp",
-			skyline: 0.1251,
 			land: '[data-scenery="ground"]',
 			landShape: "./assets/shadows/near-ground-land.webp",
 			canvas: ".land-shadow--ground",
-			landEdge: 0.4126, // the image is sized by height
 			landSizedByWidth: false,
-			coveredBy: null, // visible down to the bottom of the screen
 		},
 	].map((pair) => {
 		const ridge = document.querySelector(pair.ridge);
@@ -1275,8 +1279,12 @@ function landShadows() {
 			land,
 		};
 	});
-	const landScale = Number(rootStyle.getPropertyValue("--parallax-overscan")) || 1.2;
+	const landScale =
+		Number(getComputedStyle(document.documentElement).getPropertyValue("--parallax-overscan")) || 1.2;
 	const canvasWidth = 640; // the shadows are soft; this is plenty
+	// Where the land meets the sky, as a share of the screen's height: the
+	// sun's height above it sets how long the shadows are.
+	const horizon = 0.72;
 	let lastX = 0;
 	let lastDepthScale = 0;
 
@@ -1286,102 +1294,140 @@ function landShadows() {
 		const [dx = 0, dy = 0] = (element.style.translate || "")
 			.split(" ")
 			.map((value) => parseFloat(value) || 0);
-		return { left: rect.left - dx, top: rect.top - dy, width: rect.width, height: rect.height, bottom: rect.bottom - dy };
+		return { left: rect.left - dx, top: rect.top - dy, width: rect.width, height: rect.height };
 	}
 
-	// Measures each ridge against its land, in the land layer's own (unscaled)
-	// coordinates: where the ridge's outline goes, the ground line it's
-	// flipped about, the ridge's height and how much land shows in front.
+	// An outline's top edge, column by column, as a share of its height (1
+	// where the column is empty).
+	function topEdge(image) {
+		const canvas = Object.assign(document.createElement("canvas"), {
+			width: image.naturalWidth,
+			height: image.naturalHeight,
+		});
+		const context = canvas.getContext("2d", { willReadFrequently: true });
+		context.drawImage(image, 0, 0);
+		const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
+		const tops = new Float32Array(width).fill(1);
+		for (let x = 0; x < width; x++) {
+			for (let y = 0; y < height; y++) {
+				if (data[(y * width + x) * 4 + 3] > 128) {
+					tops[x] = y / height;
+					break;
+				}
+			}
+		}
+		return tops;
+	}
+
+	// The land's edge as the ground lies, not its grass tips or rooftops: in
+	// each stretch of 31 columns, the edge at the lower quarter.
+	function groundEdge(tops) {
+		return tops.map((_, x) => {
+			const near = [...tops.slice(Math.max(0, x - 15), x + 16)].sort((a, b) => a - b);
+			return near[Math.floor(near.length * 0.75)];
+		});
+	}
+
+	// Where an image drawn like CSS background-size `auto 100%` (or `100%
+	// auto`), anchored at the bottom centre of a box, lands.
+	function placement(image, box, byWidth) {
+		const aspect = image.naturalWidth / image.naturalHeight;
+		const width = byWidth ? box.width : box.height * aspect;
+		const height = byWidth ? box.width / aspect : box.height;
+		return { left: box.left + (box.width - width) / 2, top: box.top + box.height - height, width, height };
+	}
+
+	// The top edge of a placed outline at x, or null off its sides.
+	function edgeAt(tops, place, x) {
+		const along = (x - place.left) / place.width;
+		if (along < 0 || along >= 1) return null;
+		return place.top + tops[Math.floor(along * tops.length)] * place.height;
+	}
+
+	// Each ridge and its land, in the land layer's own (unscaled) units.
 	function measure() {
 		for (const pair of pairs) {
+			if (!pair.ridgeShape.complete || !pair.landShape.complete) return;
+			pair.ridgeTops ??= topEdge(pair.ridgeShape);
+			pair.landTops ??= groundEdge(topEdge(pair.landShape));
 			const ridge = restingRect(pair.ridge);
 			const land = restingRect(pair.land);
-			const toLand = (screen, landStart) => (screen - landStart) / landScale;
-			const groundLine = pair.landSizedByWidth
-				? land.bottom - (1 - pair.landEdge) * land.width * pair.landAspect
-				: land.top + land.height * pair.landEdge;
-			const skylineTop = ridge.top + ridge.height * pair.skyline;
-			const visibleUntil = pair.coveredBy
-				? (() => {
-						const cover = restingRect(document.querySelector(pair.coveredBy));
-						return cover.top + cover.height * pair.coveredBySkyline;
-					})()
-				: window.innerHeight;
-			pair.box = { width: land.width / landScale, height: land.height / landScale };
-			pair.outline = {
-				left: toLand(ridge.left, land.left),
-				top: toLand(ridge.top, land.top),
+			pair.landRect = land;
+			pair.box = { left: 0, top: 0, width: land.width / landScale, height: land.height / landScale };
+			const outline = {
+				left: (ridge.left - land.left) / landScale,
+				top: (ridge.top - land.top) / landScale,
 				width: ridge.width / landScale,
 				height: ridge.height / landScale,
 			};
-			pair.groundLine = toLand(groundLine, land.top);
-			pair.ridgeHeight = Math.max(1, (groundLine - skylineTop) / landScale);
-			// How much land is visible in front of the ridge.
-			pair.visibleLand = Math.max(1, (visibleUntil - groundLine) / landScale);
+			pair.ridgePlace = placement(pair.ridgeShape, outline, false);
+			pair.landPlace = placement(pair.landShape, pair.box, pair.landSizedByWidth);
 			pair.canvas.width = canvasWidth;
 			pair.canvas.height = Math.max(1, Math.round((canvasWidth * pair.box.height) / pair.box.width));
 		}
 	}
 
-	// An image drawn like CSS background-size `auto 100%` (or `100% auto`),
-	// anchored at the bottom centre of a box.
-	function drawAnchored(context, image, box, byWidth) {
-		const aspect = image.naturalWidth / image.naturalHeight;
-		const width = byWidth ? box.width : box.height * aspect;
-		const height = byWidth ? box.width / aspect : box.height;
-		context.drawImage(image, box.left + (box.width - width) / 2, box.top + box.height - height, width, height);
-	}
-
 	function draw(pair, x, depthScale) {
 		const context = pair.canvas.getContext("2d");
-		const { box, outline } = pair;
 		context.setTransform(1, 0, 0, 1, 0, 0);
 		context.clearRect(0, 0, pair.canvas.width, pair.canvas.height);
-		if (pair.canvas.hidden || !pair.ridgeShape.complete || !pair.landShape.complete) return;
-		const scale = pair.canvas.width / box.width;
+		if (pair.canvas.hidden || !pair.ridgeTops) return;
+		const { box } = pair;
+		context.setTransform(pair.canvas.width / box.width, 0, 0, pair.canvas.width / box.width, 0, 0);
 
 		// How far the ridge has moved relative to the land (in land units).
 		const shift = (x * depthScale * (pair.ridgeDepth - pair.landDepth)) / landScale;
-		// The shadow's reach across the visible land, and the stretch of the
-		// ridge's outline that gives it.
-		const reach = byTime(timeCurves.shadowReach) * pair.visibleLand;
-		const length = reach / pair.ridgeHeight;
-		// The base follows the ridge; the tip stays put on the land.
-		const slant = lean - shift / reach;
+		// The sun, in land units, and its height above the horizon: how long
+		// a shadow is for each unit of ridge above the land's edge.
+		const sunX = (byTime(timeCurves.sunLeft) * innerWidth - pair.landRect.left) / landScale;
+		const sunHeight = Math.max(0.025, horizon - byTime(timeCurves.sunHeight));
+		const reach = Math.min(6, 0.3 / sunHeight);
+		// How far a shadow leans sideways, per unit of length, at a point one
+		// unit from below the sun: they fan out on either side of it.
+		const fan = (0.7 * innerHeight) / landScale;
 
-		// The ridge's outline, flipped about the ground line, stretched, leaned
-		// and shifted (centred on the ridge, on the ground line).
-		const originX = outline.left + outline.width / 2;
-		context.setTransform(scale, 0, 0, scale, 0, 0);
-		context.translate(originX + shift, pair.groundLine);
-		context.transform(1, 0, slant, 1, 0, 0);
-		context.scale(1, -length);
-		context.translate(-originX, -pair.groundLine);
-		drawAnchored(context, pair.ridgeShape, outline, false);
+		const bases = [];
+		const tips = [];
+		for (let along = 0; along <= box.width; along += box.width / 200) {
+			const base = edgeAt(pair.landTops, pair.landPlace, along);
+			if (base === null) continue;
+			const top = edgeAt(pair.ridgeTops, pair.ridgePlace, along - shift);
+			const length = top === null ? 0 : Math.max(0, base - top) * reach;
+			const lean = clamp((along - sunX) / fan, -1.5, 1.5);
+			bases.push([along, base]);
+			tips.push([along + lean * length, base + length]);
+		}
 
-		// Shade it, then keep only what falls on the land.
-		context.setTransform(1, 0, 0, 1, 0, 0);
-		context.globalCompositeOperation = "source-in";
-		context.fillStyle = "rgb(24, 28, 42)";
-		context.fillRect(0, 0, pair.canvas.width, pair.canvas.height);
-		context.setTransform(scale, 0, 0, scale, 0, 0);
+		// Darkest near the ridge: layers reaching less and less far.
+		context.fillStyle = "rgba(48, 56, 84, 0.26)";
+		for (const share of [1, 0.78, 0.56, 0.36]) {
+			context.beginPath();
+			bases.forEach(([px, py], i) => (i ? context.lineTo(px, py) : context.moveTo(px, py)));
+			for (let i = tips.length - 1; i >= 0; i--) {
+				const [bx, by] = bases[i];
+				context.lineTo(bx + (tips[i][0] - bx) * share, by + (tips[i][1] - by) * share);
+			}
+			context.fill();
+		}
+
+		// Only what falls on the land.
+		const { left, top, width, height } = pair.landPlace;
 		context.globalCompositeOperation = "destination-in";
-		drawAnchored(context, pair.landShape, { left: 0, top: 0, ...box }, pair.landSizedByWidth);
+		context.drawImage(pair.landShape, left, top, width, height);
 		context.globalCompositeOperation = "source-over";
 	}
 
-	let lean = 0;
 	function place(x = lastX, depthScale = lastDepthScale) {
 		lastX = x;
 		lastDepthScale = depthScale;
-		lean = byTime(timeCurves.shadowLean);
 		for (const pair of pairs) draw(pair, x, depthScale);
 	}
 
 	function applyLight() {
-		const strength = byTime(timeCurves.shadowStrength) * byWeather(weatherCurves.sunlight);
+		const strength =
+			byTime(timeCurves.shadowStrength) * byWeather(weatherCurves.sunlight) * (1 - darkness());
 		document.documentElement.style.setProperty("--shadow-strength", strength);
-		// No shadow (most of the day): hide the canvases and skip drawing.
+		// No sun to cast them: hide the canvases and skip drawing.
 		for (const pair of pairs) pair.canvas.hidden = strength < 0.01;
 		place();
 	}
@@ -1395,8 +1441,12 @@ function landShadows() {
 		place();
 	});
 	for (const pair of pairs) {
-		pair.ridgeShape.addEventListener("load", () => place());
-		pair.landShape.addEventListener("load", () => place());
+		for (const image of [pair.ridgeShape, pair.landShape]) {
+			image.addEventListener("load", () => {
+				measure();
+				place();
+			});
+		}
 	}
 }
 
@@ -2308,6 +2358,7 @@ function teachingMarkers() {
 	const layers = {
 		figure: document.querySelector(".christ-markers"),
 		city: document.querySelector(".scene-markers--city"),
+		olives: document.querySelector(".scene-markers--olives"),
 		sky: document.querySelector(".scene-markers--sky"),
 	};
 	const phone = matchMedia("(max-width: 600px)");

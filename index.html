@@ -121,9 +121,27 @@
 
 		<section
 			class="scenery"
+			data-scenery="far-mountains"
+			data-z_index="1.2"
+		></section>
+
+		<section
+			class="scenery"
 			data-scenery="distant-hills"
 			data-z_index="1.5"
 		></section>
+		<!-- The mountains' shadow on the hills (landShadows in app.js). -->
+		<canvas class="land-shadow land-shadow--hills" data-z_index="1.5" aria-hidden="true"></canvas>
+
+		<!-- The Mount of Olives, across the Kidron Valley behind the city, with
+		     the hills' shadow on it and its marker. -->
+		<section
+			class="scenery"
+			data-scenery="olives"
+			data-z_index="2"
+		></section>
+		<canvas class="land-shadow land-shadow--olives" data-z_index="2" aria-hidden="true"></canvas>
+		<div class="scene-markers scene-markers--olives" data-z_index="2"></div>
 
 		<section
 			class="scenery"
