@@ -145,6 +145,9 @@ body {
 		aspect-ratio: 1/1;
 		border-radius: 50%;
 		position: absolute;
+		/* The glow reaches past the star; don't let * { overflow: hidden }
+		   clip it (Safari cuts a filter's glow off at the box). */
+		overflow: visible;
 		/* A painted glow: Safari stutters on hundreds of filtered layers. */
 		box-shadow:
 			0 0 4px white,
