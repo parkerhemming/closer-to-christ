@@ -143,6 +143,11 @@
 		<!-- The hills' shadow on the city's land, drawn by landShadows in
 		     app.js; it lies exactly over the city layer and moves with it. -->
 		<canvas class="land-shadow land-shadow--city" data-z_index="2.5" aria-hidden="true"></canvas>
+		<!-- Markers that open what each part of the scene teaches
+		     (teachingMarkers in app.js): over the city, in the sky and on the
+		     figure, each moving with its layer. -->
+		<div class="scene-markers scene-markers--city" data-z_index="2.5"></div>
+		<div class="scene-markers scene-markers--sky" data-z_index="1"></div>
 
 		<section
 			class="scenery"
@@ -174,6 +179,24 @@
 			alt=""
 		/>
 		<canvas class="christ christ-wind" data-z_index="16" aria-hidden="true"></canvas>
+		<div class="christ christ-markers" data-z_index="16"></div>
+
+		<!-- What a marker teaches, opened next to it (on phones, across the
+		     screen). Closes on a click elsewhere or Escape. -->
+		<div id="teaching" class="teaching" popover role="dialog" aria-labelledby="teaching-title">
+			<div class="teaching-body">
+				<button class="teaching-close" type="button" popovertarget="teaching" popovertargetaction="hide" aria-label="Close">
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+				</button>
+				<figure class="teaching-picture" hidden>
+					<img alt="" />
+					<figcaption></figcaption>
+				</figure>
+				<h2 id="teaching-title" class="teaching-title"></h2>
+				<p class="teaching-text"></p>
+				<div class="teaching-scriptures"></div>
+			</div>
+		</div>
 
 		<!-- A button to pause and play the scene's time, and the time itself
 		     (timelineClock keeps it current). -->
@@ -360,6 +383,7 @@
 		</div>
 
 		<script src="./rain.js"></script>
+		<script src="./teachings.js"></script>
 		<script src="./app.js"></script>
 		<script>
 			applyTimeOfDay();
@@ -374,8 +398,8 @@
 				swayInWind();
 				parallax();
 				settingsPanel();
-				// From now on the sun glides between positions (see .sun).
-				requestAnimationFrame(() => (document.documentElement.dataset.sceneShown = ""));
+				teachingMarkers();
+				sunGlide();
 			});
 		</script>
 	</body>

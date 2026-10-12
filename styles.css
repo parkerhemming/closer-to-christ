@@ -706,7 +706,7 @@ body {
 
 /* The city's and near ground's size and place, shared with the shadows cast
    on them. */
-:is(.scenery[data-scenery="distant-jerusalem"], .land-shadow--city) {
+:is(.scenery[data-scenery="distant-jerusalem"], .land-shadow--city, .scene-markers--city) {
 	--stack-order: 4;
 	--bottom: clamp(-14dvh, calc(16dvh - 14vw), 8dvh);
 	--height: 140dvh;
@@ -733,7 +733,8 @@ body {
    layers instead, they made Chrome drop whole frames and Safari stall. The
    swaying ground (wind.js) is placed the same way. */
 .land-shadow,
-.land-wind {
+.land-wind,
+.scene-markers--city {
 	position: absolute;
 	left: 50%;
 	bottom: var(--bottom);
@@ -886,6 +887,12 @@ body {
 	filter: drop-shadow(var(--christ-edge-offset) 0 1px rgba(24, 14, 10, 0.42))
 		brightness(var(--figure-light, 1));
 	backface-visibility: hidden;
+}
+
+/* The figure's markers lie over it, turning and moving with it. */
+.christ-markers {
+	z-index: 70;
+	filter: none;
 }
 
 /* The moving figure applies the light itself (wind.js). */
@@ -1222,11 +1229,7 @@ body {
 	place-items: center;
 	width: 76px;
 	height: 76px;
-	border: 1px solid rgba(255, 255, 255, 0.16);
 	border-radius: 50%;
-	background: rgba(12, 28, 37, 0.55);
-	-webkit-backdrop-filter: blur(10px);
-	backdrop-filter: blur(10px);
 	color: #e7b477;
 	cursor: pointer;
 	touch-action: manipulation;
@@ -1579,16 +1582,10 @@ body {
 	width: 76px;
 	height: 76px;
 	padding: 0;
-	border: 1px solid rgba(255, 255, 255, 0.22);
 	border-radius: 50%;
-	background: rgba(12, 28, 37, 0.5);
 	color: white;
 	cursor: pointer;
 	touch-action: manipulation;
-}
-
-.clock-play:hover {
-	background: rgba(231, 180, 119, 0.25);
 }
 
 .clock-play:focus-visible {
@@ -1723,22 +1720,21 @@ body {
 	animation: caption-appear 300ms ease;
 }
 
+/* Lines filled as far as they go (only a lone last word is avoided), so the
+   box stays as short as it can. */
 .caption-text {
 	color: rgba(235, 240, 239, 0.85);
 	font:
-		500 var(--text-body)/1.5 system-ui,
+		500 var(--text-body)/1.4 system-ui,
 		sans-serif;
+	text-wrap: pretty;
 }
 
-/* Round buttons of their own, filled like the settings button. */
+/* Round buttons of their own, beside the caption box. */
 .caption-step {
 	display: grid;
 	place-items: center;
-	border: 1px solid rgba(255, 255, 255, 0.16);
 	border-radius: 50%;
-	background: rgba(12, 28, 37, 0.55);
-	-webkit-backdrop-filter: blur(10px);
-	backdrop-filter: blur(10px);
 	color: #e7b477;
 	cursor: pointer;
 	touch-action: manipulation;
@@ -1757,12 +1753,6 @@ body {
 	stroke-width: 2;
 	stroke-linecap: round;
 	stroke-linejoin: round;
-}
-
-/* A little darker, with a gold edge. */
-.caption-step:hover:not(:disabled) {
-	border-color: rgba(231, 180, 119, 0.45);
-	background: rgba(12, 28, 37, 0.72);
 }
 
 .caption-step:disabled {
@@ -2002,8 +1992,6 @@ body {
 	.settings-button {
 		width: 38px;
 		height: 38px;
-		-webkit-backdrop-filter: blur(5px);
-		backdrop-filter: blur(5px);
 	}
 
 	.settings-button svg {
@@ -2109,7 +2097,7 @@ body {
 	.caption {
 		bottom: max(12px, env(safe-area-inset-bottom));
 		gap: 12px; /* like the time from the pause button */
-		width: min(600px, calc(100vw - 32px));
+		width: min(700px, calc(100vw - 32px));
 	}
 
 	.caption-content {
@@ -2124,8 +2112,6 @@ body {
 		height: 38px;
 		/* Centred on the folded box (10px + 11px padding, border, a line). */
 		margin-bottom: calc((10px + 11px + 2px + var(--text-label) * 1.25 - 38px) / 2);
-		-webkit-backdrop-filter: blur(5px); /* like the settings button */
-		backdrop-filter: blur(5px);
 	}
 
 	.caption-step svg {
@@ -2311,5 +2297,349 @@ body {
 
 	#sky .star:not(.big) {
 		box-shadow: 0 0 4px #dcefff;
+	}
+}
+
+/* Markers: a small gold ring over the scene's layers (above the rain and
+   storm wash, below the caption and panels). Faint until the mouse comes
+   near (teachingMarkers in app.js); hovering one makes it pulse, lights up
+   the area around it and shows its title.
+   The button is bigger than the ring so it's easy to tap. */
+.scene-markers {
+	z-index: 70;
+	pointer-events: none;
+}
+
+.scene-markers--sky {
+	position: fixed;
+	inset: 0;
+}
+
+/* The glow and title reach past each marker (everything clips by default). */
+:is(.scene-markers, .christ-markers),
+:is(.scene-markers, .christ-markers) * {
+	overflow: visible;
+}
+
+.marker {
+	position: absolute;
+	width: 36px;
+	height: 36px;
+	margin: -18px 0 0 -18px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: none;
+	/* Faint, brightening as the mouse comes near (--near, from app.js). */
+	opacity: calc(0.3 + 0.7 * var(--near, 0));
+	cursor: pointer;
+	pointer-events: auto;
+	touch-action: manipulation;
+	transition: opacity 150ms ease;
+}
+
+.marker:hover,
+.marker:focus-visible,
+.marker[aria-expanded="true"] {
+	opacity: 1;
+}
+
+/* Touch screens can't come near first, so they're a little brighter. */
+@media (hover: none) {
+	.marker {
+		opacity: 0.65;
+	}
+}
+
+.marker::before,
+.marker::after {
+	position: absolute;
+	inset: 9px;
+	content: "";
+	border-radius: 50%;
+}
+
+.marker::before {
+	border: 2px solid #e7b477;
+	background: radial-gradient(circle, #f3d3a4 0 3px, rgba(12, 28, 37, 0.6) 3.5px);
+	box-shadow:
+		0 0 0 1px rgba(0, 0, 0, 0.35),
+		0 0 10px rgba(231, 180, 119, 0.45);
+	transition:
+		scale 200ms ease,
+		box-shadow 300ms ease;
+}
+
+/* The pulse, while hovered or open. */
+.marker::after {
+	border: 1.5px solid rgba(231, 180, 119, 0.8);
+	opacity: 0;
+}
+
+.marker:is(:hover, :focus-visible, [aria-expanded="true"])::after {
+	animation: marker-pulse 2.6s ease-out infinite;
+}
+
+@keyframes marker-pulse {
+	from {
+		opacity: 0.9;
+		transform: scale(1);
+	}
+	to {
+		opacity: 0;
+		transform: scale(2.2);
+	}
+}
+
+/* Hovered or open: a soft golden light over the part it's about. */
+.marker:hover::before,
+.marker:focus-visible::before,
+.marker[aria-expanded="true"]::before {
+	scale: 1.2;
+	box-shadow:
+		0 0 0 1px rgba(0, 0, 0, 0.35),
+		0 0 36px 24px rgba(231, 180, 119, 0.3);
+}
+
+.marker:focus-visible {
+	outline: 2px solid #e7b477;
+	outline-offset: 2px;
+}
+
+/* The hovered marker (and its title) above the others, and its layer above
+   the other layers'. */
+.marker:is(:hover, :focus-visible) {
+	z-index: 1;
+}
+
+:is(.scene-markers, .christ-markers):has(.marker:is(:hover, :focus-visible)) {
+	z-index: 71;
+}
+
+/* Its title, above it while hovered. */
+.marker-label {
+	position: absolute;
+	bottom: calc(100% + 4px);
+	left: 50%;
+	padding: 5px 10px;
+	border: 1px solid rgba(231, 180, 119, 0.45);
+	border-radius: 999px;
+	background: rgba(8, 16, 22, 0.88);
+	color: white;
+	font:
+		600 var(--text-eyebrow)/1.2 system-ui,
+		sans-serif;
+	letter-spacing: 0.02em;
+	white-space: nowrap;
+	opacity: 0;
+	translate: -50% 4px;
+	pointer-events: none;
+	transition:
+		opacity 150ms ease,
+		translate 150ms ease;
+}
+
+.marker:is(:hover, :focus-visible):not([aria-expanded="true"]) .marker-label {
+	opacity: 1;
+	translate: -50% 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.marker::after {
+		animation: none !important;
+	}
+}
+
+/* The card a marker opens: placed beside it by teachingMarkers in app.js. */
+.teaching {
+	box-sizing: border-box; /* its max-height includes the border */
+	inset: auto;
+	width: min(400px, calc(100vw - 40px));
+	max-height: calc(100dvh - 40px);
+	margin: 0;
+	padding: 0;
+	overflow: visible; /* for its pointer */
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 10px;
+	background: #0a1218; /* solid, so its pointer blends into it */
+	box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
+	color: white;
+}
+
+.teaching:popover-open {
+	display: flex;
+	flex-direction: column;
+}
+
+/* Its contents scroll inside it. */
+.teaching-body {
+	min-height: 0;
+	padding: 18px 20px 20px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	border-radius: inherit;
+}
+
+/* A pointer from the card's side to its marker: a square in the card's
+   colour, turned 45deg and centred on the card's edge. Its inner half covers
+   that stretch of the card's border and only its two outer sides have one,
+   so a single outline runs round the card and the point. app.js sets the
+   side and --pointer-y. */
+.teaching[data-pointer]::before {
+	position: absolute;
+	top: calc(var(--pointer-y) - 11px);
+	width: 22px;
+	height: 22px;
+	content: "";
+	box-sizing: border-box;
+	background: #0a1218;
+	rotate: 45deg;
+}
+
+.teaching[data-pointer="left"]::before {
+	left: -12px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+	border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.teaching[data-pointer="right"]::before {
+	right: -12px;
+	border-top: 1px solid rgba(255, 255, 255, 0.12);
+	border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.teaching--wide {
+	width: min(560px, calc(100vw - 40px));
+}
+
+.teaching-close {
+	float: right;
+	display: grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	margin: -6px -8px 0 8px;
+	padding: 0;
+	border-radius: 50%;
+	color: #e7b477;
+	cursor: pointer;
+}
+
+.teaching-close svg {
+	width: 18px;
+	height: 18px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+}
+
+/* A close-up (the sign), at the top of the card. */
+.teaching-picture {
+	clear: right; /* below the close button */
+	/* Padding, not margin: clearing the button swallows a top margin. */
+	margin: 0 0 16px;
+	padding-top: 14px;
+	text-align: center;
+}
+
+.teaching-picture img {
+	display: block;
+	width: 100%;
+	height: auto;
+	border-radius: 6px;
+}
+
+.teaching-picture figcaption {
+	margin-top: 10px;
+	color: rgba(235, 240, 239, 0.7);
+	font:
+		italic 500 var(--text-body)/1.4 system-ui,
+		sans-serif;
+}
+
+.teaching-title {
+	margin: 0 0 8px;
+	font:
+		500 calc(var(--text-title) * 0.72) / 1.2 Georgia,
+		"Times New Roman",
+		serif;
+}
+
+.teaching-text {
+	margin: 0 0 16px;
+	color: rgba(235, 240, 239, 0.85);
+	font:
+		500 var(--text-body)/1.5 system-ui,
+		sans-serif;
+}
+
+/* Each scripture like the loading screen's verse: the words, then the
+   reference in gold. */
+.teaching-scriptures {
+	display: grid;
+	gap: 14px;
+	padding-top: 14px;
+	border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.teaching-scripture {
+	margin: 0;
+	color: rgba(235, 240, 239, 0.9);
+	font:
+		italic 500 var(--text-body)/1.5 system-ui,
+		sans-serif;
+}
+
+.teaching-scripture cite {
+	display: block;
+	margin-top: 6px;
+	color: #e7b477;
+	font:
+		700 var(--text-eyebrow)/1.2 system-ui,
+		sans-serif;
+	font-style: normal;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+
+/* Phones: across the screen, under the time. */
+@media (max-width: 600px) {
+	.teaching {
+		top: calc(max(20px, env(safe-area-inset-top)) + 54px);
+		left: 20px;
+		width: auto;
+		right: 20px;
+		max-height: calc(100dvh - max(20px, env(safe-area-inset-top)) - 74px);
+		border-radius: 16px;
+	}
+
+	/* Across the screen, not beside the marker. */
+	.teaching[data-pointer]::before {
+		display: none;
+	}
+}
+
+/* Every round button looks alike: the same dark glass, edge and hover (a
+   little darker, with a gold edge). Icons are gold, except pause/play's. */
+:is(.settings-button, .clock-play, .caption-step, .teaching-close) {
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	background: rgba(12, 28, 37, 0.55);
+	-webkit-backdrop-filter: blur(10px);
+	backdrop-filter: blur(10px);
+	transition:
+		background-color 150ms ease,
+		border-color 150ms ease;
+}
+
+:is(.settings-button, .clock-play, .caption-step, .teaching-close):hover:not(:disabled) {
+	border-color: rgba(231, 180, 119, 0.45);
+	background: rgba(12, 28, 37, 0.72);
+}
+
+@media (min-width: 601px) {
+	:is(.settings-button, .clock-play, .caption-step, .teaching-close) {
+		-webkit-backdrop-filter: blur(5px);
+		backdrop-filter: blur(5px);
 	}
 }

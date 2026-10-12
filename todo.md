@@ -85,9 +85,9 @@
 
 # Tooltips
 
-- [] Clickable circle markers on the cross and the scene
-- [] Popups with LDS teaching and scripture (Book of Mormon, D&C, Pearl of Great Price first, then the Bible)
-- [] Topics: palm and wrist nails, crown of thorns, side wound, INRI sign, Golgotha, Jerusalem, the darkness, "Father, forgive them"
+- [x] Clickable circle markers on the cross and the scene
+- [x] Popups with LDS teaching and scripture (Book of Mormon, D&C, Pearl of Great Price first, then the Bible)
+- [x] Topics: palm and wrist nails, crown of thorns, side wound, INRI sign, Golgotha, Jerusalem, the darkness, "Father, forgive them"
 
 <br>
 <br>
