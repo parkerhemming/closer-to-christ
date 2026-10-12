@@ -36,7 +36,7 @@ body {
 	   screen. 12px (the small caps) is the smallest text anywhere; the rest
 	   scale up from it. Phones differ only in the title and the time. */
 	--text-title: 2.2rem;
-	--text-clock: 1.9rem;
+	--text-clock: 1.6rem;
 	--text-label: 1.125rem;
 	--text-body: 0.9375rem;
 	--text-eyebrow: 0.75rem;
@@ -663,7 +663,12 @@ body {
 
 /* The Mount of Olives, between the desert hills and the city, shared with the
    hills' shadow on it and its marker. */
-:is(.scenery[data-scenery="olives"], .land-wind--olives, .land-shadow--olives, .scene-markers--olives) {
+:is(
+	.scenery[data-scenery="olives"],
+	.land-wind--olives,
+	.land-shadow--olives,
+	.scene-markers--olives
+) {
 	--stack-order: 38;
 	--bottom: -8dvh;
 	--height: 38dvh;
@@ -672,7 +677,11 @@ body {
 }
 
 /* The desert hills, shared with the mountains' shadow cast on them. */
-:is(.scenery[data-scenery="distant-hills"], .land-wind--hills, .land-shadow--hills) {
+:is(
+	.scenery[data-scenery="distant-hills"],
+	.land-wind--hills,
+	.land-shadow--hills
+) {
 	--stack-order: 37;
 	--bottom: -14.869dvh;
 	--height: 40.688dvh;
@@ -716,7 +725,11 @@ body {
 
 /* The city's and near ground's size and place, shared with the shadows cast
    on them. */
-:is(.scenery[data-scenery="distant-jerusalem"], .land-shadow--city, .scene-markers--city) {
+:is(
+	.scenery[data-scenery="distant-jerusalem"],
+	.land-shadow--city,
+	.scene-markers--city
+) {
 	--stack-order: 39;
 	--bottom: clamp(-14dvh, calc(16dvh - 14vw), 8dvh);
 	/* Exactly the image's height (it's sized by width, anchored at the
@@ -960,7 +973,6 @@ body {
 .overlay[hidden] {
 	display: none;
 }
-
 
 .overlay-card {
 	display: flex;
@@ -1553,7 +1565,6 @@ body {
 		padding-top: 24px;
 	}
 
-
 	/* The same size as the caption's arrows. */
 	.settings-button {
 		width: 38px;
@@ -1565,7 +1576,6 @@ body {
 		height: 22px;
 	}
 }
-
 
 /* Top left: a pause/play button the same size as the settings gear, then
    the time in plain white text. */
@@ -1942,14 +1952,15 @@ body {
 	.caption-step {
 		width: 38px;
 		height: 38px;
-		margin-bottom: calc((12px + 14px + 2px + var(--text-label) * 1.25 - 38px) / 2);
+		margin-bottom: calc(
+			(12px + 14px + 2px + var(--text-label) * 1.25 - 38px) / 2
+		);
 	}
 
 	.caption-step svg {
 		width: 22px;
 		height: 22px;
 	}
-
 
 	.timeline {
 		padding: 16px 8px 8px;
@@ -1994,7 +2005,8 @@ body {
    1px. */
 @media (min-width: 601px) {
 	.overlay {
-		padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+		padding: max(12px, env(safe-area-inset-top)) 12px
+			max(12px, env(safe-area-inset-bottom));
 		-webkit-backdrop-filter: blur(8px) saturate(70%);
 		backdrop-filter: blur(8px) saturate(70%);
 	}
@@ -2004,7 +2016,9 @@ body {
 		max-width: calc(100vw - 24px);
 		padding: 13.5px 10px 12px;
 		border-radius: 10px;
-		box-shadow: 0 12px 35px rgba(0, 0, 0, 0.42), inset 0 0.5px rgba(255, 255, 255, 0.08);
+		box-shadow:
+			0 12px 35px rgba(0, 0, 0, 0.42),
+			inset 0 0.5px rgba(255, 255, 255, 0.08);
 	}
 
 	.overlay-actions {
@@ -2042,7 +2056,8 @@ body {
 	}
 
 	.settings {
-		inset: calc(max(20px, env(safe-area-inset-top)) + 48px) max(20px, env(safe-area-inset-right)) auto auto;
+		inset: calc(max(20px, env(safe-area-inset-top)) + 48px)
+			max(20px, env(safe-area-inset-right)) auto auto;
 		width: min(440px, calc(100vw - 40px));
 		max-height: calc(100dvh - 88px);
 		border-radius: 12px;
@@ -2052,7 +2067,9 @@ body {
 		gap: 19px;
 		padding: 23px 22px 21px;
 		border-radius: 12px;
-		box-shadow: 0 12px 35px rgba(0, 0, 0, 0.42), inset 0 0.5px rgba(255, 255, 255, 0.08);
+		box-shadow:
+			0 12px 35px rgba(0, 0, 0, 0.42),
+			inset 0 0.5px rgba(255, 255, 255, 0.08);
 	}
 
 	.settings-title {
@@ -2133,7 +2150,9 @@ body {
 	}
 
 	.clock-time {
-		text-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.5), 0 1px 8px rgba(0, 0, 0, 0.45);
+		text-shadow:
+			0 0.5px 1px rgba(0, 0, 0, 0.5),
+			0 1px 8px rgba(0, 0, 0, 0.45);
 	}
 
 	.caption {
@@ -2153,7 +2172,9 @@ body {
 		width: 38px;
 		height: 38px;
 		/* Centred on the folded box (10px + 11px padding, border, a line). */
-		margin-bottom: calc((10px + 11px + 2px + var(--text-label) * 1.25 - 38px) / 2);
+		margin-bottom: calc(
+			(10px + 11px + 2px + var(--text-label) * 1.25 - 38px) / 2
+		);
 	}
 
 	.caption-step svg {
@@ -2189,7 +2210,6 @@ body {
 	.settings-details {
 		gap: 6px 9px;
 	}
-
 }
 
 /* Phones: a narrower, shorter cloud frame, with the images baked for it
@@ -2411,7 +2431,11 @@ body {
 
 .marker::before {
 	border: 2px solid #e7b477;
-	background: radial-gradient(circle, #f3d3a4 0 3px, rgba(12, 28, 37, 0.6) 3.5px);
+	background: radial-gradient(
+		circle,
+		#f3d3a4 0 3px,
+		rgba(12, 28, 37, 0.6) 3.5px
+	);
 	box-shadow:
 		0 0 0 1px rgba(0, 0, 0, 0.35),
 		0 0 10px rgba(231, 180, 119, 0.45);
@@ -2682,7 +2706,9 @@ body {
 		border-color 150ms ease;
 }
 
-:is(.settings-button, .clock-play, .caption-step, .teaching-close):hover:not(:disabled) {
+:is(.settings-button, .clock-play, .caption-step, .teaching-close):hover:not(
+		:disabled
+	) {
 	border-color: rgba(231, 180, 119, 0.45);
 	background: rgba(12, 28, 37, 0.72);
 }
