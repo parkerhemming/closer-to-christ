@@ -63,12 +63,12 @@ function createRain(layers, conditions, onCount) {
 	}
 
 	function frame(now) {
+		nextFrame(frame);
+		// At most about 60 a second: on 120Hz screens every other frame is
+		// skipped, which halves the drawing and looks the same for rain.
+		if (paused || !width || now - lastTime < 14) return;
 		const elapsed = Math.min((now - lastTime) / 1000, 0.05);
 		lastTime = now;
-		if (paused || !width) {
-			nextFrame(frame);
-			return;
-		}
 		const { rain, wind, lengthScale, brightness, low } = conditions();
 		const seconds = now / 1000;
 		// Gusts: the amount of rain swells and eases a little over time.
@@ -81,6 +81,14 @@ function createRain(layers, conditions, onCount) {
 			while (layer.drops.length < target) {
 				layer.drops.push(newDrop(layer, firstFrame));
 			}
+			// No rain: clear the canvas once, then leave it alone (an untouched
+			// canvas costs nothing to show).
+			if (!layer.drops.length) {
+				if (!layer.blank) layer.context.clearRect(0, 0, width, height);
+				layer.blank = true;
+				continue;
+			}
+			layer.blank = false;
 
 			// One faint tail path and one brighter head path per band.
 			const tails = Array.from({ length: brightnessBands * widthBands }, () => new Path2D());
@@ -133,7 +141,6 @@ function createRain(layers, conditions, onCount) {
 			lastCount = now;
 			onCount(total);
 		}
-		nextFrame(frame);
 	}
 
 	nextFrame(frame);

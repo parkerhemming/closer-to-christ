@@ -21,14 +21,20 @@
 				const touchPhone = matchMedia("(max-width: 900px) and (pointer: coarse)");
 				const connection = navigator.connection; // Chromium only
 				const memory = navigator.deviceMemory ?? 8; // GB; Chromium only
-				// A step-down saved after a slow frame rate (app.js). The key was
+				// A level picked in the settings, which sticks; otherwise a
+				// step-down saved after a slow frame rate (app.js). That key was
 				// renamed so ones saved by an older, too-strict check are ignored.
+				let chosen = null;
 				let saved = null;
 				try {
+					chosen = localStorage.getItem("quality");
 					saved = localStorage.getItem("loweredQuality");
 				} catch {}
+				if (!["low", "medium", "high"].includes(chosen)) chosen = null;
 
-				const [quality, reason] = saved
+				const [quality, reason] = chosen
+					? [chosen, "chosen in settings"]
+					: saved
 					? [saved, "lowered earlier for a slow frame rate"]
 					: connection?.saveData
 						? ["low", "data saver is on"]
@@ -39,7 +45,8 @@
 								: ["high", "fast device and connection"];
 				root.dataset.quality = quality;
 				root.dataset.qualityReason = reason;
-				if (quality !== "low") root.dataset.probing = "";
+				if (chosen) root.dataset.qualityChosen = "";
+				else if (quality !== "low") root.dataset.probing = "";
 
 				const setAssets = () => {
 					root.dataset.assets = phone.matches ? "small" : "full";
@@ -154,12 +161,19 @@
 		<canvas class="land-wind land-wind--ground" data-z_index="8" aria-hidden="true"></canvas>
 		<canvas class="land-shadow land-shadow--ground" data-z_index="8" aria-hidden="true"></canvas>
 
+		<!-- The browser picks the size: the figure is about 46vh wide. The
+		     canvas after it draws the same figure with its hair and loincloth
+		     moving and breathing (wind.js); the still one hides once it has. -->
 		<img
 			id="christ"
+			class="christ"
 			data-z_index="16"
-			src="./assets/gifs/christ-wind-120ms-57f.gif"
+			src="./assets/christ/christ-1186.avif"
+			srcset="./assets/christ/christ-600.avif 600w, ./assets/christ/christ-1186.avif 1186w"
+			sizes="46.3vh"
 			alt=""
 		/>
+		<canvas class="christ christ-wind" data-z_index="16" aria-hidden="true"></canvas>
 
 		<!-- A button to pause and play the scene's time, and the time itself
 		     (timelineClock keeps it current). -->
@@ -278,6 +292,22 @@
 						</label>
 					</fieldset>
 
+					<fieldset class="settings-group">
+						<legend>Performance</legend>
+						<div class="settings-row settings-row--stacked">
+							<span id="quality-label" class="settings-label">
+								Quality
+								<small>Auto picks a level for this device and steps down if the scene lags. Lower levels draw less. Changing it reloads the scene.</small>
+							</span>
+							<div class="settings-choice" role="radiogroup" aria-labelledby="quality-label">
+								<label><input type="radio" name="quality" value="auto" /><span>Auto</span></label>
+								<label><input type="radio" name="quality" value="high" /><span>High</span></label>
+								<label><input type="radio" name="quality" value="medium" /><span>Medium</span></label>
+								<label><input type="radio" name="quality" value="low" /><span>Low</span></label>
+							</div>
+						</div>
+					</fieldset>
+
 					<section class="settings-group" aria-labelledby="settings-details-title">
 						<h3 id="settings-details-title" class="settings-group-title">Render details</h3>
 						<dl class="settings-details"></dl>
@@ -341,7 +371,7 @@
 				createStorm();
 				createCityLights();
 				landShadows();
-				plantWind();
+				swayInWind();
 				parallax();
 				settingsPanel();
 			});

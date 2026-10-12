@@ -36,6 +36,8 @@
 - [x] Automatic quality (connection test before loading, frame rate check)
 - [x] Smaller memory use (cropped city-light masks, smaller cloud layers)
 - [x] Safari stutter fixed (small shadow masks, cheaper star/lightning glows); measured 58-60fps
+- [x] Quality choice in settings (Auto / High / Medium / Low)
+- [x] Moving layers redraw fewer pixels (rain at 1x, plants 1.25x, figure 1.5x, at most 60 a second); no stalls in Safari or Chrome
 
 # Settings
 
@@ -76,9 +78,9 @@
 # Christ Figure
 
 - [x] New realistic figure (palm and wrist nails, hanging loincloth end)
-- [] Replace the GIF with the new figure
-- [] Hair and loincloth move with the wind (follows the weather setting)
-- [] Breathing
+- [x] Replace the GIF with the new figure
+- [x] Hair and loincloth move with the wind (follows the weather setting)
+- [x] Breathing
 
 # Tooltips
 

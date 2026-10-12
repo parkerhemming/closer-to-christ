@@ -858,26 +858,37 @@ body {
 	will-change: opacity;
 }
 
-#christ {
+.christ {
 	--christ-rotate-y: 0deg;
 	--christ-edge-offset: 0px;
 	image-rendering: auto;
 	pointer-events: none;
-	height: 92.5%;
+	/* The crossbar as wide and high on screen as the old figure's. */
+	height: 91.22%;
+	aspect-ratio: 1186 / 2337; /* the artwork's, for the canvas too */
 	position: absolute;
 	z-index: 45;
-	bottom: -1.5%;
+	bottom: -2.47%;
 	left: 50%;
-	/* The cross in the artwork is turned about 0.8deg anticlockwise (its
+	/* The cross in the artwork is turned about 0.5deg anticlockwise (its
 	   crossbar's right end higher, its upright drifting right toward the
-	   foot), so it's turned back level, then shifted so the crossbar and the
-	   upright both sit within a few pixels of the screen's centre. */
-	transform: translateX(-51.25%) perspective(1100px)
-		rotateY(var(--christ-rotate-y)) rotate(0.8deg);
+	   foot), so it's turned back level. Its upright is 3.6% of the width right
+	   of the crossbar's middle, so it's shifted halfway between the two. */
+	transform: translateX(-51.77%) perspective(1100px)
+		rotateY(var(--christ-rotate-y)) rotate(0.5deg);
 	transform-origin: center center;
 	filter: drop-shadow(var(--christ-edge-offset) 0 1px rgba(24, 14, 10, 0.42))
 		brightness(var(--figure-light, 1));
 	backface-visibility: hidden;
+}
+
+/* The moving figure applies the light itself (wind.js). */
+.christ-wind {
+	filter: none;
+}
+
+.christ.is-swaying {
+	visibility: hidden;
 }
 
 /* Full-screen panels over the blurred scene: the loading screen and the
@@ -1462,6 +1473,51 @@ body {
 	background: #e7b477;
 }
 
+/* Auto / High / Medium / Low: one segmented row of radio buttons. */
+.settings-choice {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 4px;
+	padding: 4px;
+	border-radius: 14px;
+	background: rgba(255, 255, 255, 0.08);
+}
+
+.settings-choice input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.settings-choice span {
+	display: block;
+	padding: 10px 0;
+	border-radius: 10px;
+	color: rgba(235, 240, 239, 0.75);
+	font:
+		600 var(--text-body)/1.2 system-ui,
+		sans-serif;
+	text-align: center;
+	cursor: pointer;
+	transition:
+		background-color 150ms ease,
+		color 150ms ease;
+}
+
+.settings-choice span:hover {
+	background: rgba(255, 255, 255, 0.08);
+}
+
+.settings-choice input:checked + span {
+	background: #e7b477;
+	color: #13212a;
+}
+
+.settings-choice input:focus-visible + span {
+	outline: 2px solid #e7b477;
+	outline-offset: 2px;
+}
+
 .settings-switch-input:checked + .settings-switch::before {
 	translate: 24px 0;
 }
@@ -2038,6 +2094,17 @@ body {
 
 	.settings-switch-input:checked + .settings-switch::before {
 		translate: 12px 0;
+	}
+
+	.settings-choice {
+		gap: 2px;
+		padding: 2px;
+		border-radius: 7px;
+	}
+
+	.settings-choice span {
+		padding: 5px 0;
+		border-radius: 5px;
 	}
 
 	.clock-bar {

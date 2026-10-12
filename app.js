@@ -419,6 +419,7 @@ async function loadScene() {
 // Smooth drawing clears an earlier step-down, so a device isn't stuck on a
 // lower level because of one bad moment.
 function watchFrameRate() {
+	if ("qualityChosen" in document.documentElement.dataset) return; // picked by hand
 	const frameTimes = [];
 	let previous;
 	let end;
@@ -928,7 +929,9 @@ function createStorm() {
 			opacity: [0.24, 0.62],
 			drift: [90, 180],
 			width: [0.42, 0.88],
-			maximumScale: 2,
+			// Full-screen at retina sharpness was the scene's biggest cost;
+			// motion-blurred streaks look the same at 1x.
+			maximumScale: 1,
 			lowQualityShare: 0.5,
 		},
 	]);
@@ -1031,7 +1034,7 @@ function createCityLights() {
 // farther off and its bushes stiffer, so it moves less. Without a worker
 // canvas or WebGL, with reduced motion or on low quality, the still images
 // stay.
-function plantWind() {
+function swayInWind() {
 	if (
 		reducedMotion ||
 		getQuality() === "low" ||
@@ -1039,29 +1042,49 @@ function plantWind() {
 	) {
 		return;
 	}
-	swayLayer("ground", ".land-wind--ground", "./assets/wind/near-ground-sway-v2.png", 1);
-	swayLayer("golgotha-ridge", ".land-wind--ridge", "./assets/wind/golgotha-ridge-sway-v2.png", 0.45);
+	const landLight = () =>
+		`brightness(${lightFor("landLight")}) saturate(${lightFor("landSaturation")}) sepia(${byTime(timeCurves.landWarmth)})`;
+	// Plants flutter each on their own (waves across the image); the cloth
+	// and hair ripple downward.
+	// Drawn below retina sharpness (maximumScale): every pixel is redrawn
+	// each frame, and these dark, moving layers look the same with fewer.
+	const plants = { light: landLight, flutterFrequency: [140, 0, 57, 0], maximumScale: 1.25 };
+	swayLayer('[data-scenery="ground"]', ".land-wind--ground", "./assets/wind/near-ground-sway-v2.png", {
+		...plants,
+		strength: 1,
+	});
+	swayLayer('[data-scenery="golgotha-ridge"]', ".land-wind--ridge", "./assets/wind/golgotha-ridge-sway-v2.png", {
+		...plants,
+		strength: 0.45,
+	});
+	swayLayer("#christ", ".christ-wind", "./assets/christ/christ-motion-v1.png", {
+		light: () => `brightness(${lightFor("figureLight")})`,
+		strength: 0.3,
+		flutterFrequency: [0, -30, 0, 13],
+		breathing: 1,
+		breathCentre: 625 / 1186, // the middle of the chest
+		maximumScale: 1.5,
+	});
 }
 
-function swayLayer(name, canvasSelector, swayUrl, strength) {
-	const land = document.querySelector(`[data-scenery="${name}"]`);
+// still: the element showing the layer's image until its moving copy has
+// drawn. light(): the time of day's CSS filters for it.
+function swayLayer(still, canvasSelector, swayUrl, { light, ...motion }) {
+	const land = document.querySelector(still);
 	const canvas = document.querySelector(canvasSelector);
 	const style = getComputedStyle(land);
-	const texture = style.backgroundImage.match(/url\("?([^")]+)"?\)/)?.[1];
+	const texture = land.currentSrc || style.backgroundImage.match(/url\("?([^")]+)"?\)/)?.[1];
 	if (!texture) return;
 
 	// The layer's CSS filters (its grade, then the time of day's light) as one
 	// colour matrix for the shader.
 	const grade = colorFilter(style.getPropertyValue("--color-grade"));
 	const conditions = () => {
-		const light = colorFilter(
-			`brightness(${lightFor("landLight")}) saturate(${lightFor("landSaturation")}) sepia(${byTime(timeCurves.landWarmth)})`,
-			grade,
-		);
+		const filters = colorFilter(light(), grade);
 		return {
 			wind: byWeather(weatherCurves.wind),
-			grade: [0, 1, 2].flatMap((column) => light.rows.map((row) => row[column])),
-			gradeOffset: light.offset,
+			grade: [0, 1, 2].flatMap((column) => filters.rows.map((row) => row[column])),
+			gradeOffset: filters.offset,
 		};
 	};
 	const size = () => [canvas.offsetWidth, canvas.offsetHeight, window.devicePixelRatio];
@@ -1073,7 +1096,7 @@ function swayLayer(name, canvasSelector, swayUrl, strength) {
 			canvas: offscreen,
 			image: texture,
 			sway: new URL(swayUrl, location.href).href,
-			strength,
+			...motion,
 			size: size(),
 			conditions: conditions(),
 		},
@@ -1303,7 +1326,7 @@ function landShadows() {
 
 function parallax() {
 	const layers = document.querySelectorAll("[data-z_index]");
-	const christ = document.getElementById("christ");
+	const christ = document.querySelectorAll(".christ"); // still and moving
 	const christDepthFactor = 0.78;
 	const mobileHorizontalStrength = 70;
 	const mobileVerticalStrength = 50;
@@ -1321,7 +1344,7 @@ function parallax() {
 		layer,
 		depth:
 			Number(layer.dataset.z_index) *
-			(layer === christ ? christDepthFactor : 1),
+			(layer.classList.contains("christ") ? christDepthFactor : 1),
 	}));
 
 	function moveLayers(x, y) {
@@ -1339,14 +1362,10 @@ function parallax() {
 		const horizontalProgress = clamp(x / horizontalRange, -1, 1);
 
 		// A slight turn of the figure (and its edge shadow) with the view.
-		christ.style.setProperty(
-			"--christ-rotate-y",
-			`${horizontalProgress * 0.6}deg`,
-		);
-		christ.style.setProperty(
-			"--christ-edge-offset",
-			`${horizontalProgress * -0.4}px`,
-		);
+		for (const figure of christ) {
+			figure.style.setProperty("--christ-rotate-y", `${horizontalProgress * 0.6}deg`);
+			figure.style.setProperty("--christ-edge-offset", `${horizontalProgress * -0.4}px`);
+		}
 	}
 
 	function animateParallax(time) {
@@ -1745,6 +1764,25 @@ function settingsPanel() {
 			dialog.close();
 		}
 	});
+
+	// Quality: Auto, or a level that sticks. The scene is built for its level
+	// (images, stars, what moves), so a change reloads it. Either way any
+	// earlier step-down is forgotten.
+	try {
+		form.elements.quality.value = localStorage.getItem("quality") ?? "auto";
+	} catch {
+		form.elements.quality.value = "auto";
+	}
+	for (const choice of form.elements.quality) {
+		choice.addEventListener("change", () => {
+			try {
+				if (choice.value === "auto") localStorage.removeItem("quality");
+				else localStorage.setItem("quality", choice.value);
+				localStorage.removeItem("loweredQuality");
+			} catch {}
+			location.reload();
+		});
+	}
 
 	form.addEventListener("input", (event) => {
 		// Setting the time or weather by hand pauses the clock, so it stays.
