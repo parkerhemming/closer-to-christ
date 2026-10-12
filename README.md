@@ -6,15 +6,15 @@
 
 **[Open the website →](https://github.hemm.ing/closer-to-christ/)**
 
-*A Closer to Christ Project for REL A 250: Jesus Christ and His Everlasting Gospel*
-*Brigham Young University · Fall 2026 · Professor David Ridge*
+_A Closer to Christ Project for REL A 250: Jesus Christ and His Everlasting Gospel_
+_Brigham Young University · Fall 2026 · Professor David Ridge_
 
 <br>
 
 <img src="docs/layers.webp" alt="Animation: each of the scene's ten layers shown alone, then stacked in 3D and collapsing into the finished scene, which moves in depth as the mouse circles" width="560">
 <img src="docs/bloch-crucifixion.jpg" alt="Carl Bloch's painting Christ at the Cross (1870)" width="247">
 
-<sub>The website's ten layers, stacked into one scene &nbsp;·&nbsp; Carl Bloch, <i>Christ at the Cross</i> (1870), the painting that inspired it</sub>
+<sub>The website's ten layers, stacked into one scene (Left) &nbsp;·&nbsp; Carl Bloch, <i>Christ at the Cross</i> (1870), the painting that inspired it (Right)</sub>
 
 </div>
 
@@ -36,25 +36,25 @@ Building it meant slowing down and studying the Crucifixion in far more detail t
 
 The scene runs on its own clock from **6:00 AM to 3:00 PM**, the hours from Christ's trial to His death. A caption follows the scriptural timeline through 15 events, each with its references:
 
-| Time | Event |
-|---|---|
-| 6:00 AM | Bound and led to Pilate |
-| 6:30 AM | Sent to Herod |
-| 7:00 AM | Barabbas is released |
-| 7:30 AM | Scourged and crowned with thorns |
-| 8:00 AM | "Behold the man!" |
-| 8:30 AM | The road to Golgotha |
-| 9:00 AM | Crucified at the third hour |
-| 9:30 AM | His garments divided |
-| 10:15 AM | Mocked on the cross |
+| Time     | Event                                      |
+| -------- | ------------------------------------------ |
+| 6:00 AM  | Bound and led to Pilate                    |
+| 6:30 AM  | Sent to Herod                              |
+| 7:00 AM  | Barabbas is released                       |
+| 7:30 AM  | Scourged and crowned with thorns           |
+| 8:00 AM  | "Behold the man!"                          |
+| 8:30 AM  | The road to Golgotha                       |
+| 9:00 AM  | Crucified at the third hour                |
+| 9:30 AM  | His garments divided                       |
+| 10:15 AM | Mocked on the cross                        |
 | 10:45 AM | "To day shalt thou be with me in paradise" |
-| 11:15 AM | "Behold thy mother!" |
-| 12:00 PM | Darkness at the sixth hour |
-| 2:45 PM | "Why hast thou forsaken me?" |
-| 2:55 PM | "It is finished" |
-| 3:00 PM | The earth quakes, the veil is torn |
+| 11:15 AM | "Behold thy mother!"                       |
+| 12:00 PM | Darkness at the sixth hour                 |
+| 2:45 PM  | "Why hast thou forsaken me?"               |
+| 2:55 PM  | "It is finished"                           |
+| 3:00 PM  | The earth quakes, the veil is torn         |
 
-You can let the day play out, pause it, or jump straight to any event. Times marked *about* are ones the scriptures don't give exactly.
+You can let the day play out, pause it, or jump straight to any event. Times marked _about_ are ones the scriptures don't give exactly.
 
 ### 🌅 A scene that changes with the day
 
@@ -83,19 +83,19 @@ Small gold markers sit on the figure and in the landscape. Each one opens a card
 
 <br>
 
-| Marker | What it teaches |
-|---|---|
-| **The Prints of the Nails** | He invites us to feel the prints in His hands (1 Nephi 21:16; 3 Nephi 11:14; John 20:27) |
-| **A Nail in a Sure Place** | The nails in the wrists, and Isaiah's "nail in a sure place" (Mosiah 14:5; D&C 45:51–52; Isaiah 22:23) |
-| **His Hands and His Feet** | The risen Lord showed His wounds as witness (3 Nephi 11:15; D&C 130:22; Luke 24:39) |
-| **The Crown of Thorns** | Thorns came with the Fall; He wore them to overcome it (1 Nephi 19:9; Moses 4:24; Matthew 27:29) |
-| **The Wound in His Side** | The wound He still points to as His witness (D&C 6:37; John 19:34) |
-| **Father, Forgive Them** | Forgiveness offered from the cross (D&C 19:16; D&C 64:10; Luke 23:34) |
-| **The King of the Jews** | The sign in Hebrew, Greek and Latin, with a picture of how it may have looked (Mosiah 3:8; John 19:19–20) |
+| Marker                       | What it teaches                                                                                                                            |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **The Prints of the Nails**  | He invites us to feel the prints in His hands (1 Nephi 21:16; 3 Nephi 11:14; John 20:27)                                                   |
+| **A Nail in a Sure Place**   | The nails in the wrists, and Isaiah's "nail in a sure place" (Mosiah 14:5; D&C 45:51–52; Isaiah 22:23)                                     |
+| **His Hands and His Feet**   | The risen Lord showed His wounds as witness (3 Nephi 11:15; D&C 130:22; Luke 24:39)                                                        |
+| **The Crown of Thorns**      | Thorns came with the Fall; He wore them to overcome it (1 Nephi 19:9; Moses 4:24; Matthew 27:29)                                           |
+| **The Wound in His Side**    | The wound He still points to as His witness (D&C 6:37; John 19:34)                                                                         |
+| **Father, Forgive Them**     | Forgiveness offered from the cross (D&C 19:16; D&C 64:10; Luke 23:34)                                                                      |
+| **The King of the Jews**     | The sign in Hebrew, Greek and Latin, with a picture of how it may have looked (Mosiah 3:8; John 19:19–20)                                  |
 | **Lifted Up upon the Cross** | Golgotha, and the prophecies that He would be lifted up (1 Nephi 11:33; Mosiah 15:7; 3 Nephi 27:14; Moses 7:55; John 19:17–18; John 12:32) |
-| **The Mount of Olives** | Gethsemane, the Ascension and the Second Coming (Mosiah 3:7; D&C 19:18; D&C 45:48; Luke 22:44; Acts 1:11–12) |
-| **Jerusalem** | The city He wept over (3 Nephi 10:5; Matthew 23:37; Hebrews 13:12) |
-| **Darkness over the Land** | Darkness in Jerusalem, and the storm and three days of darkness in the Americas (3 Nephi 8:5–6, 20; Moses 7:56; Luke 23:44–45) |
+| **The Mount of Olives**      | Gethsemane, the Ascension and the Second Coming (Mosiah 3:7; D&C 19:18; D&C 45:48; Luke 22:44; Acts 1:11–12)                               |
+| **Jerusalem**                | The city He wept over (3 Nephi 10:5; Matthew 23:37; Hebrews 13:12)                                                                         |
+| **Darkness over the Land**   | Darkness in Jerusalem, and the storm and three days of darkness in the Americas (3 Nephi 8:5–6, 20; Moses 7:56; Luke 23:44–45)             |
 
 Scriptures are quoted from the Church's editions at [churchofjesuschrist.org](https://www.churchofjesuschrist.org/study/scriptures).
 
@@ -154,7 +154,7 @@ Then open [http://localhost:8123](http://localhost:8123).
 ## Credits
 
 - **Scriptures:** from the standard works of The Church of Jesus Christ of Latter-day Saints, quoted from [churchofjesuschrist.org](https://www.churchofjesuschrist.org/study/scriptures).
-- **Inspiration:** Carl Bloch's *Christ at the Cross* (1870), a painting often used by The Church of Jesus Christ of Latter-day Saints. It's public domain.
+- **Inspiration:** Carl Bloch's _Christ at the Cross_ (1870), a painting often used by The Church of Jesus Christ of Latter-day Saints. It's public domain.
 - **Artwork:** the figure, landscape layers and sign were created with Google's Gemini image models and then cut out, colour-graded and animated in code.
 - **Code:** written with help from [Claude Code](https://claude.com/claude-code), an AI coding assistant.
 
@@ -162,11 +162,15 @@ Then open [http://localhost:8123](http://localhost:8123).
 
 <div align="center">
 
-*This is a personal school project. It is not an official website of The Church of Jesus Christ of Latter-day Saints.*
+_This is a personal school project. It is not an official website of The Church of Jesus Christ of Latter-day Saints._
 
 <br>
 
 > "When Jesus therefore had received the vinegar, he said, **It is finished**: and he bowed his head, and gave up the ghost."
 > — John 19:30
+
+<br>
+
+<a href="https://hemm.ing"><img src="docs/hemming-llc.png" alt="Hemming, an LLC: Parker Hemming's portfolio" width="160"></a>
 
 </div>

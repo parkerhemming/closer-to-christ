@@ -1999,6 +1999,66 @@ body {
 	overflow-wrap: anywhere;
 }
 
+/* The maker's mark, centred at the very bottom of the panel with room above
+   it, styled as in the footer of hemm.ing (linking to the portfolio). */
+.settings-maker {
+	display: flex;
+	justify-content: center;
+	padding: 9px 0 41px;
+}
+
+.maker-mark {
+	display: inline-block;
+	text-decoration: none;
+	opacity: 0.4;
+	transition: opacity 0.2s;
+
+	&:hover,
+	&:focus-visible {
+		opacity: 0.8;
+	}
+}
+
+/* The symbols sit in its top padding, inside its box: placed above the box,
+   Safari clipped them away whenever the mark wasn't fading. */
+.maker-mark__text {
+	position: relative;
+	display: block;
+	padding-top: 14px;
+	color: #f6f6f6;
+	font:
+		300 18px/1 "Times New Roman",
+		serif;
+	letter-spacing: 0.1px;
+	text-align: center;
+	opacity: 0.6;
+	transform: scaleX(1.15) scaleY(0.9);
+}
+
+.maker-mark__symbols {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	display: flex;
+	gap: 4px;
+	align-items: center;
+	justify-content: center;
+	font:
+		200 9px/9px Arial,
+		Helvetica,
+		sans-serif;
+	opacity: 0.5;
+	transform: translateX(-50%) scaleY(1.1);
+}
+
+.maker-mark__an {
+	display: inline-block;
+	font:
+		italic 400 14px "Allura",
+		cursive;
+	transform: scaleX(1) scaleY(1.5) translateY(-1px) rotate(-2.25deg);
+}
+
 /* The project's code and README, at the bottom of the panel. */
 .settings-link {
 	align-self: flex-start;
