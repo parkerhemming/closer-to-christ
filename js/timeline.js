@@ -96,7 +96,7 @@ const timeline = [
 		about: true,
 		title: "\"It is finished\"",
 		text: "After a sponge of vinegar he said, \"It is finished,\" and, \"Father, into thy hands I commend my spirit,\" and gave up the ghost.",
-		references: "D&C 19:18-19; Luke 23:46; John 19:28-30",
+		references: "Mosiah 15:7; D&C 19:18-19; Luke 23:46; John 19:28-30",
 	},
 	{
 		hour: 15,

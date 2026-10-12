@@ -99,6 +99,7 @@ const teachings = [
 		text: "Jesus carried his cross to a hill outside Jerusalem called Golgotha, \u201cthe place of a skull\u201d (Calvary, in Latin). Six hundred years before, Nephi saw in vision that he would be lifted up upon the cross, so that he might draw all people to him.",
 		scriptures: [
 			["1 Nephi 11:33", "And I, Nephi, saw that he was lifted up upon the cross and slain for the sins of the world."],
+			["Mosiah 15:7", "Yea, even so he shall be led, crucified, and slain, the flesh becoming subject even unto death, the will of the Son being swallowed up in the will of the Father."],
 			["3 Nephi 27:14", "And my Father sent me that I might be lifted up upon the cross; and after that I had been lifted up upon the cross, that I might draw all men unto me…"],
 			["Moses 7:55", "And the Lord said unto Enoch: Look, and he looked and beheld the Son of Man lifted up on the cross, after the manner of men;"],
 			["John 19:17\u201318", "And he bearing his cross went forth into a place called the place of a skull, which is called in the Hebrew Golgotha: Where they crucified him, and two other with him, on either side one, and Jesus in the midst."],
