@@ -109,7 +109,7 @@ async function loadScene() {
 	watchFrameRate();
 
 	if ("serviceWorker" in navigator) {
-		navigator.serviceWorker.register("./sw.js").catch(() => {});
+		navigator.serviceWorker.register("./service-worker.js").catch(() => {});
 	}
 }
 
