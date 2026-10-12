@@ -8,8 +8,8 @@
 //   On the figure: { figure: [x, y] } in pixels of the 1186x2337 artwork.
 //   In the scene: { layer, style }, placed by CSS within that layer: "city"
 //   lies over the Jerusalem image (sized by the screen's width, anchored at
-//   its bottom), "olives" over the Mount of Olives and "sky" is the whole
-//   screen.
+//   its bottom), "olives" over the Mount of Olives and "sky" is a point
+//   in the sky (placed in styles.css).
 const teachings = [
 	{
 		id: "palm",
@@ -132,7 +132,7 @@ const teachings = [
 	},
 	{
 		id: "darkness",
-		at: { layer: "sky", style: "left: 80%; top: 14%" },
+		at: { layer: "sky", style: "left: 0; top: 0" }, // the spot is set in styles.css
 		title: "Darkness over the Land",
 		wide: true,
 		text: "From the sixth hour to the ninth (noon to 3 PM) darkness covered the land. In the Americas his death was marked by a great storm, earthquakes and three days of darkness, as the prophets had foretold.",

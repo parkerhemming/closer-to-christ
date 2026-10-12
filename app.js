@@ -255,23 +255,57 @@ function drawSky() {
 	context.restore();
 }
 
-// Sets the light for the clock's hour as CSS variables on <html>; the land,
-// clouds, city lights, stars, sun and figure read them. The sky is painted.
+// Sets the light for the clock's hour as CSS variables on the land, clouds,
+// city lights, stars, sun and figure (the drawn layers in wind.js get it as a
+// colour matrix, in swayLayer). The sky is painted.
 function applyTimeOfDay() {
 	drawSky();
-	setStyleProperties(document.documentElement, {
+	// Fully faded out, the stars and the city's lights are switched off, so
+	// their layers don't take GPU memory and drawing through the day.
+	const root = document.documentElement;
+	root.toggleAttribute("data-no-stars", lightFor("starlight") < 0.005);
+	root.toggleAttribute("data-no-city-lights", lightFor("cityGlow") < 0.005);
+	// Each value goes on the elements that use it, not on <html>: a change
+	// there reaches every element on the page, and Safari then redrew most of
+	// the scene after every tick of the clock (frames of 50-100ms).
+	setStyle(".scenery", {
 		"--land-light": lightFor("landLight"),
 		"--land-saturation": lightFor("landSaturation"),
 		"--land-warmth": byTime(timeCurves.landWarmth),
+	});
+	setStyle(".city-light, .city-flicker-plane", { "--city-glow": lightFor("cityGlow") });
+	setStyle(".storm-cloud", {
 		"--cloud-light": lightFor("cloudLight"),
 		"--cloud-warmth": byTime(timeCurves.cloudWarmth),
-		"--starlight": lightFor("starlight"),
-		"--city-glow": lightFor("cityGlow"),
-		"--figure-light": lightFor("figureLight"),
+	});
+	setStyle("#sky .stars", { "--starlight": lightFor("starlight") });
+	setStyle("#christ", { "--figure-light": lightFor("figureLight") });
+	setStyle("#sky .sun", {
 		"--sun-opacity": lightFor("sunOpacity"),
 		"--sun-top": `${byTime(timeCurves.sunHeight) * 100}vh`,
 		"--sun-left": `${byTime(timeCurves.sunLeft) * 100}vw`,
 	});
+}
+
+// Sets CSS variables on every element a selector matches, but only once a
+// value has moved enough to see (1.5% for the light, 0.3 units for the sun's
+// place): the clock nudges them all a tiny step every tick, and each change
+// makes the browser redraw the layers that use it. All of them on every tick
+// cost Safari a stall of 50-100ms; most ticks now change nothing.
+const appliedStyle = new WeakMap();
+function setStyle(selector, properties) {
+	for (const element of document.querySelectorAll(selector)) {
+		const applied = appliedStyle.get(element) ?? {};
+		appliedStyle.set(element, applied);
+		for (const [name, value] of Object.entries(properties)) {
+			const now = parseFloat(value);
+			const before = applied[name];
+			const step = name.startsWith("--sun-") ? 0.3 : Math.max(0.015 * Math.abs(before), 0.004);
+			if (before !== undefined && Math.abs(now - before) < step) continue;
+			applied[name] = now;
+			element.style.setProperty(name, value);
+		}
+	}
 }
 
 function weatherName(weather) {
@@ -409,75 +443,174 @@ async function loadScene() {
 	}
 }
 
-// Once the scene has settled, watch the frame rate for a few seconds. Well
-// below 20fps steps the quality down one level and remembers it, so
-// struggling (older) phones get a lighter scene now and on later visits.
-// Smooth drawing clears an earlier step-down, so a device isn't stuck on a
-// lower level because of one bad moment.
+// Once the scene has settled, watch the frame rate. Everyone starts on the
+// full scene; only a device that is truly struggling (under 20fps in each of
+// three 4-second checks in a row, not one slow moment) steps down a level,
+// and remembers it so struggling (older) phones get a lighter scene on later
+// visits. Smooth drawing clears an earlier step-down.
 function watchFrameRate() {
 	if ("qualityChosen" in document.documentElement.dataset) return; // picked by hand
-	const frameTimes = [];
-	let previous;
-	let end;
+	const checks = 3;
+	const medians = [];
 
-	function measure(now) {
-		if (document.hidden || !document.hasFocus()) return; // not a fair test
-		frameTimes.push(now - previous);
-		previous = now;
-		if (now < end) {
-			requestAnimationFrame(measure);
-			return;
+	function check() {
+		const frameTimes = [];
+		let previous = performance.now();
+		const end = previous + 4000;
+		function measure(now) {
+			// Not a fair test while hidden or in the background: start over.
+			if (document.hidden || !document.hasFocus()) {
+				setTimeout(check, 2000);
+				return;
+			}
+			frameTimes.push(now - previous);
+			previous = now;
+			if (now < end) {
+				requestAnimationFrame(measure);
+				return;
+			}
+			frameTimes.sort((a, b) => a - b);
+			const median = frameTimes[Math.floor(frameTimes.length / 2)];
+			if (median < 25) {
+				try {
+					localStorage.removeItem("loweredQuality");
+				} catch {}
+				return; // smooth: nothing more to check
+			}
+			medians.push(median);
+			if (medians.length < checks) return check();
+			if (medians.every((m) => m > 50)) {
+				lowerQuality({ reason: "slow frame rate", remember: true });
+			}
 		}
-		frameTimes.sort((a, b) => a - b);
-		const median = frameTimes[Math.floor(frameTimes.length / 2)];
-		if (median > 50) {
-			lowerQuality({ reason: "slow frame rate", remember: true });
-		} else if (median < 25) {
-			try {
-				localStorage.removeItem("loweredQuality");
-			} catch {}
-		}
+		requestAnimationFrame(measure);
 	}
 
 	// Skip the first seconds: decoding and the first animations settle there.
-	setTimeout(() => {
-		previous = performance.now();
-		end = previous + 4000;
-		requestAnimationFrame(measure);
-	}, 3000);
+	setTimeout(check, 6000);
 }
 
-function createStars(stars) {
+// The stars: the still ones painted once into a canvas (with their glow),
+// so the starfield is a single picture that fades with the dawn; as
+// hundreds of glowing elements, every star was repainted each frame while it
+// faded, and Safari slowed to a few frames a second through sunrise. The
+// twinkling ones are tiny elements of their own, each fading by itself.
+function createStars(count) {
 	const sky = document.querySelector("#sky .stars");
-	const fragment = document.createDocumentFragment();
-
-	for (let i = 0; i < stars; i++) {
+	const canvas = document.createElement("canvas");
+	canvas.className = "stars-canvas";
+	sky.append(canvas);
+	const lowQuality = getQuality() === "low";
+	const stars = Array.from({ length: count }, () => {
 		const size = Math.random();
-		const star = document.createElement("div");
+		return {
+			x: Math.random(),
+			y: Math.random(),
+			opacity: Math.random() * 0.8,
+			twinkle: size < 0.25,
+			big: size > 0.96,
+			width: size > 0.96 ? size * 12.5 : size * 2.5,
+			delay: Math.random(),
+		};
+	});
+	renderStats.stars = count;
 
-		star.classList.add("star");
-		star.style.top = Math.random() * 100 + "%";
-		star.style.left = Math.random() * 100 + "%";
-		star.style.opacity = Math.random() * 0.8;
+	const fragment = document.createDocumentFragment();
+	for (const star of stars.filter((star) => star.twinkle)) {
+		const holder = document.createElement("span");
+		holder.className = "star-twinkle";
+		holder.style.left = `${star.x * 100}%`;
+		holder.style.top = `${star.y * 100}%`;
+		const dot = document.createElement("span");
+		dot.style.width = `${star.width}px`;
+		dot.style.animationDelay = `${star.delay}s`;
+		dot.style.animationDuration = `${star.delay * 2 + 0.75}s`;
+		holder.append(dot);
+		fragment.append(holder);
+	}
+	sky.append(fragment);
 
-		if (size < 0.25) {
-			star.classList.add("twinkle");
-			const delay = Math.random();
-			star.style.animationDelay = delay + "s";
-			star.style.animationDuration = delay * 2 + 0.75 + "s";
-		}
-
-		if (size > 0.96) {
-			star.classList.add("big");
-			star.style.width = size * 12.5 + "px";
-		} else {
-			star.style.width = size * 2.5 + "px";
-		}
-
-		fragment.appendChild(star);
+	// Painted as the stars' CSS was: each glow is the star itself blurred
+	// (a box-shadow's blur radius is twice the spread, as a canvas shadowBlur
+	// is), so a tiny star has a tiny, faint glow.
+	const glows = lowQuality ? [[4, "#dcefff"]] : [[20, "#8ebce0"], [10, "#dcefff"], [4, "white"]];
+	// Just a shape's glow: the shape is drawn off the canvas and its shadow
+	// thrown back onto it.
+	function glow(context, draw, blur, colour, scale) {
+		context.save();
+		context.shadowColor = colour;
+		context.shadowBlur = blur * scale;
+		context.shadowOffsetX = 100000 * scale;
+		context.translate(-100000, 0);
+		draw();
+		context.restore();
 	}
 
-	sky.appendChild(fragment);
+	// The big stars: a four-pointed sparkle, glowing as their CSS
+	// drop-shadows did (each glow is of everything before it), painted once.
+	const sparkle = [
+		[50, 0], [52, 37], [58, 41], [72, 27], [61, 44], [64, 48], [100, 50], [64, 52],
+		[61, 56], [72, 73], [58, 59], [52, 63], [50, 100], [48, 63], [42, 59], [28, 73],
+		[39, 56], [36, 52], [0, 50], [36, 48], [39, 44], [28, 27], [42, 41], [48, 37],
+	];
+	function sparkleImage(width, scale) {
+		const reach = width / 2 + 24; // the glows' reach, in CSS pixels
+		const image = document.createElement("canvas");
+		image.width = image.height = Math.ceil(reach * 2 * scale);
+		const context = image.getContext("2d");
+		context.setTransform(scale, 0, 0, scale, image.width / 2, image.height / 2);
+		context.beginPath();
+		for (const [x, y] of sparkle) context.lineTo(((x - 50) / 100) * width, ((y - 50) / 100) * width);
+		context.closePath();
+		context.fillStyle = "white";
+		context.fill();
+		context.setTransform(1, 0, 0, 1, 0, 0);
+		context.globalCompositeOperation = "destination-over";
+		for (const [blur, colour] of lowQuality ? [] : [[1.5, "white"], [4, "#dcefff"], [8, "#8ebce0"]]) {
+			const copy = document.createElement("canvas");
+			copy.width = copy.height = image.width;
+			copy.getContext("2d").drawImage(image, 0, 0);
+			glow(context, () => context.drawImage(copy, 0, 0), blur, colour, 1);
+		}
+		return { image, reach };
+	}
+
+	function paint() {
+		const width = sky.offsetWidth;
+		const height = sky.offsetHeight;
+		if (!width) return;
+		const scale = Math.min(window.devicePixelRatio, 2);
+		canvas.width = Math.round(width * scale);
+		canvas.height = Math.round(height * scale);
+		const context = canvas.getContext("2d");
+		context.setTransform(scale, 0, 0, scale, 0, 0);
+		for (const star of stars) {
+			if (star.twinkle) continue;
+			const x = star.x * width;
+			const y = star.y * height;
+			context.globalAlpha = star.opacity;
+			if (star.big) {
+				const { image, reach } = sparkleImage(star.width, scale);
+				context.drawImage(image, x - reach, y - reach, reach * 2, reach * 2);
+				continue;
+			}
+			const dot = () => {
+				context.beginPath();
+				context.arc(x, y, star.width / 2, 0, Math.PI * 2);
+				context.fillStyle = "white";
+				context.fill();
+			};
+			for (const [blur, colour] of glows) glow(context, dot, blur, colour, scale);
+			dot();
+		}
+	}
+
+	paint();
+	let resizeTimer;
+	window.addEventListener("resize", () => {
+		clearTimeout(resizeTimer);
+		resizeTimer = setTimeout(paint, 300);
+	});
 }
 
 function createShootingStars() {
@@ -526,6 +659,13 @@ function createShootingStars() {
 	}
 
 	function launchShootingStar() {
+		// A hidden tab still fires timers but doesn't run animations, so stars
+		// launched then never end: they'd pile up and all streak at once on
+		// return. Skip this one instead.
+		if (document.hidden) {
+			scheduleShootingStar();
+			return;
+		}
 		const shootingStar = document.createElement("span");
 		const roll = Math.random();
 		const profile = profiles.find((profile) => roll < profile.chance);
@@ -558,7 +698,8 @@ function createShootingStars() {
 			"--shooting-duration": `${randomBetween(...profile.duration)}ms`,
 			"--shooting-tail-width": `${randomBetween(...profile.width)}px`,
 			"--shooting-thickness": `${randomBetween(...profile.thickness)}px`,
-			"--shooting-opacity": randomBetween(...profile.opacity),
+			// Fainter as the sky lightens (they no longer sit in a fading layer).
+			"--shooting-opacity": randomBetween(...profile.opacity) * lightFor("starlight"),
 			"--shooting-head-size": `${randomBetween(...profile.head)}px`,
 		});
 
@@ -785,8 +926,9 @@ function createStorm() {
 	}
 
 	function triggerLightning() {
-		// The weather may have calmed since this strike was scheduled.
-		if (byWeather(weatherCurves.lightning) === 0) {
+		// The weather may have calmed since this strike was scheduled; and
+		// strikes in a hidden tab would only pile up (as shooting stars would).
+		if (byWeather(weatherCurves.lightning) === 0 || document.hidden) {
 			scheduleLightning();
 			return;
 		}
@@ -836,11 +978,13 @@ function createStorm() {
 	let appliedWind = 1;
 	function applyWeather() {
 		const storm = document.getElementById("storm");
-		setStyleProperties(storm, {
+		// On the clouds and the wash themselves, not their shared parent (see
+		// applyTimeOfDay).
+		setStyle(".storm-cloud", {
 			"--cloud-amount": byWeather(weatherCurves.clouds),
 			"--cloud-shade": byWeather(weatherCurves.cloudShade),
-			"--gloom": byWeather(weatherCurves.gloom),
 		});
+		setStyle(".storm-tone", { "--gloom": byWeather(weatherCurves.gloom) });
 		clearTimeout(windTimer);
 		windTimer = setTimeout(() => {
 			const wind = byWeather(weatherCurves.wind);
@@ -856,50 +1000,6 @@ function createStorm() {
 
 	applyWeather();
 	document.addEventListener("scenesettings", applyWeather);
-
-	// Each cloud layer is painted once into a canvas at CSS-pixel resolution,
-	// from the image and positions its CSS background describes, and the
-	// background is then dropped. As a background the browser kept every layer
-	// at full Retina resolution (about 28MB each), though the cloud images are
-	// soft and half-size anyway; that crowded out other drawing, so scrolling
-	// the settings panel stalled the whole scene in Chrome. The drift
-	// animation and the colour filter stay on the layer, so nothing changes.
-	function paintClouds() {
-		for (const texture of document.querySelectorAll(".storm-cloud__texture")) {
-			if (!texture.getClientRects().length) continue; // hidden at this quality
-			// Read the CSS background as it is now (it differs on phones).
-			texture.classList.remove("is-painted");
-			const style = getComputedStyle(texture);
-			const source = style.backgroundImage.match(/url\("?(.*?)"?\)/)?.[1];
-			const imageHeight = parseFloat(style.backgroundSize.split(" ")[1]);
-			const x = parseFloat(style.backgroundPositionX);
-			const y = parseFloat(style.backgroundPositionY);
-			if (!source) continue;
-			const image = new Image();
-			image.src = source;
-			image.decode().then(() => {
-				const canvas = texture.querySelector("canvas") ?? texture.appendChild(document.createElement("canvas"));
-				const width = texture.offsetWidth;
-				const height = texture.offsetHeight;
-				const imageWidth = (imageHeight * image.naturalWidth) / image.naturalHeight;
-				canvas.width = Math.ceil(width);
-				canvas.height = Math.ceil(height);
-				const context = canvas.getContext("2d");
-				// repeat-x: tiles from the first one left of the edge to the right.
-				for (let left = x - Math.ceil(x / imageWidth) * imageWidth; left < width; left += imageWidth) {
-					context.drawImage(image, left, y, imageWidth, imageHeight);
-				}
-				texture.classList.add("is-painted");
-			}, () => {}); // if it can't load, the CSS background stays
-		}
-	}
-
-	paintClouds();
-	let paintTimer;
-	window.addEventListener("resize", () => {
-		clearTimeout(paintTimer);
-		paintTimer = setTimeout(paintClouds, 300);
-	});
 
 	if (reducedMotion) return;
 
@@ -999,6 +1099,10 @@ function createCityLights() {
 	}
 
 	function startBurst() {
+		if (document.hidden || document.documentElement.hasAttribute("data-no-city-lights")) {
+			scheduleNextBurst(); // nothing to flicker for in a hidden tab
+			return;
+		}
 		const light = selectNextLight();
 		previousLight = light;
 		let pulses = Math.floor(randomBetween(2, 7));
@@ -1094,12 +1198,26 @@ function earthquakes() {
 		shakeIn(randomBetween(5000, 12000));
 	}
 
+	// The first strikes just after the 3 PM caption has been read and folds
+	// (or after a few seconds if it stays open).
+	let waitingForCaption = false;
+	function firstAfterCaption() {
+		waitingForCaption = true;
+		shakeIn(7000, true);
+	}
+	document.addEventListener("captionfolded", () => {
+		if (!waitingForCaption) return;
+		waitingForCaption = false;
+		if (atThree()) shakeIn(500, true);
+	});
 	let wasThree = atThree();
 	document.addEventListener("scenesettings", () => {
-		if (atThree() && !wasThree) shakeIn(1000, true);
+		if (atThree() && !wasThree) firstAfterCaption();
+		if (!atThree()) waitingForCaption = false;
 		wasThree = atThree();
 	});
-	shakeIn(2000, wasThree);
+	if (wasThree) firstAfterCaption();
+	else shakeIn(2000);
 }
 
 // The grass and bushes on the two near land layers sway in the wind, each
@@ -1109,20 +1227,36 @@ function earthquakes() {
 // canvas or WebGL, with reduced motion or on low quality, the still images
 // stay.
 function swayInWind() {
-	if (
-		reducedMotion ||
-		getQuality() === "low" ||
-		!("transferControlToOffscreen" in HTMLCanvasElement.prototype)
-	) {
-		return;
+	if (!("transferControlToOffscreen" in HTMLCanvasElement.prototype)) return;
+	// Drawn still (see wind.js), so their light changes without the browser
+	// redrawing them in full each tick: the clouds, at CSS-pixel resolution
+	// (their images are soft and half-size anyway), each image repeated across
+	// as its CSS background is, drifting with the layer's animation...
+	const clouds = {
+		light: () =>
+			`brightness(${byWeather(weatherCurves.cloudShade)}) brightness(${lightFor("cloudLight")}) sepia(${byTime(timeCurves.cloudWarmth)})`,
+		still: true,
+		tiled: true,
+		maximumScale: 1,
+	};
+	for (const cloud of ["far", "deep", "middle", "midband", "lower", "near"]) {
+		swayLayer(`.storm-cloud--${cloud} .storm-cloud__texture`, `.storm-cloud--${cloud} canvas`, null, clouds);
 	}
+	if (getQuality() === "low") return;
+	// ...and the far land layers.
 	const landLight = () =>
 		`brightness(${lightFor("landLight")}) saturate(${lightFor("landSaturation")}) sepia(${byTime(timeCurves.landWarmth)})`;
+	const far = { light: landLight, still: true, maximumScale: 2 };
+	swayLayer('[data-scenery="far-mountains"]', ".land-wind--far", null, far);
+	swayLayer('[data-scenery="distant-hills"]', ".land-wind--hills", null, far);
+	swayLayer('[data-scenery="olives"]', ".land-wind--olives", null, far);
+	swayLayer('[data-scenery="distant-jerusalem"]', ".land-wind--city", null, far);
 	// Plants flutter each on their own (waves across the image); the cloth
 	// and hair ripple downward.
 	// Drawn below retina sharpness (maximumScale): every pixel is redrawn
 	// each frame, and these dark, moving layers look the same with fewer.
-	const plants = { light: landLight, flutterFrequency: [140, 0, 57, 0], maximumScale: 1.25 };
+	// With reduced motion they're drawn still too.
+	const plants = { light: landLight, flutterFrequency: [140, 0, 57, 0], maximumScale: 1.25, still: reducedMotion };
 	swayLayer('[data-scenery="ground"]', ".land-wind--ground", "./assets/wind/near-ground-sway-v2.png", {
 		...plants,
 		strength: 1,
@@ -1138,17 +1272,28 @@ function swayInWind() {
 		breathing: 1,
 		breathCentre: 625 / 1186, // the middle of the chest
 		maximumScale: 1.5,
+		still: reducedMotion,
 	});
 }
 
-// still: the element showing the layer's image until its moving copy has
-// drawn. light(): the time of day's CSS filters for it.
-function swayLayer(still, canvasSelector, swayUrl, { light, ...motion }) {
-	const land = document.querySelector(still);
+let stillLayers = 0;
+
+// layer: the element showing the layer's image until its drawn copy is up.
+// light(): the time of day's CSS filters for it. swayUrl: its motion map, or
+// null for a still layer. tiled: the image repeats across, placed by the
+// layer's background position and size (the clouds).
+function swayLayer(layer, canvasSelector, swayUrl, { light, tiled, ...motion }) {
+	const land = document.querySelector(layer);
 	const canvas = document.querySelector(canvasSelector);
+	if (!land || !canvas || !land.getClientRects().length) return; // hidden at this quality
 	const style = getComputedStyle(land);
-	const texture = land.currentSrc || style.backgroundImage.match(/url\("?([^")]+)"?\)/)?.[1];
-	if (!texture) return;
+	// The image: an <img>, the layer's background, or (the city) the
+	// --texture its ::before shows.
+	const source =
+		land.currentSrc ||
+		(style.backgroundImage + style.getPropertyValue("--texture")).match(/url\("?([^")]+)"?\)/)?.[1];
+	if (!source) return;
+	const texture = new URL(source, document.baseURI).href;
 
 	// The layer's CSS filters (its grade, then the time of day's light) as one
 	// colour matrix for the shader.
@@ -1162,6 +1307,11 @@ function swayLayer(still, canvasSelector, swayUrl, { light, ...motion }) {
 		};
 	};
 	const size = () => [canvas.offsetWidth, canvas.offsetHeight, window.devicePixelRatio];
+	const tile = () => {
+		if (!tiled) return undefined;
+		const { backgroundPositionX, backgroundPositionY, backgroundSize } = getComputedStyle(land);
+		return [backgroundPositionX, backgroundPositionY, backgroundSize.split(" ")[1]].map(parseFloat);
+	};
 
 	const worker = new Worker("./wind.js");
 	const offscreen = canvas.transferControlToOffscreen();
@@ -1169,9 +1319,10 @@ function swayLayer(still, canvasSelector, swayUrl, { light, ...motion }) {
 		{
 			canvas: offscreen,
 			image: texture,
-			sway: new URL(swayUrl, location.href).href,
+			sway: swayUrl && new URL(swayUrl, location.href).href,
 			...motion,
 			size: size(),
+			tile: tile(),
 			conditions: conditions(),
 		},
 		[offscreen],
@@ -1179,19 +1330,32 @@ function swayLayer(still, canvasSelector, swayUrl, { light, ...motion }) {
 	worker.onmessage = ({ data }) => {
 		if (data === "drawn") land.classList.add("is-swaying");
 	};
-	document.addEventListener("scenesettings", () => worker.postMessage({ conditions: conditions() }));
-	window.addEventListener("resize", () => worker.postMessage({ size: size() }), { passive: true });
+	// Only once the light or wind has moved enough to see (as in setStyle),
+	// and the still layers one after another, not all in one frame: each
+	// redraw of a big layer is new work for Safari's compositor.
+	const delay = motion.still ? 40 * stillLayers++ : 0;
+	let sent = [];
+	document.addEventListener("scenesettings", () => {
+		const next = conditions();
+		const numbers = [next.wind, ...next.grade, ...next.gradeOffset];
+		if (numbers.every((number, i) => Math.abs(number - sent[i]) < Math.max(0.015 * Math.abs(sent[i]), 0.004))) return;
+		sent = numbers;
+		setTimeout(() => worker.postMessage({ conditions: next }), delay);
+	});
+	window.addEventListener("resize", () => worker.postMessage({ size: size(), tile: tile() }), { passive: true });
 	document.addEventListener("visibilitychange", () => worker.postMessage({ hidden: document.hidden }));
 }
 
-// CSS filter functions (brightness, saturate, contrast, sepia) combined into
-// one colour matrix (rows) and offset, using the filter spec's formulas,
-// applied after `start`.
+// CSS filter functions (brightness, saturate, contrast, sepia, hue-rotate)
+// combined into one colour matrix (rows) and offset, using the filter spec's
+// formulas, applied after `start`. The browser clamps each step's colours;
+// this only clamps the end (within 2/255 of it on the clouds).
 function colorFilter(filters, start = { rows: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], offset: [0, 0, 0] }) {
 	let { rows, offset } = start;
-	for (const [, name, number, percent] of filters.matchAll(/(\w+)\(([\d.]+)(%?)\)/g)) {
-		const a = Number(number) / (percent ? 100 : 1);
+	for (const [, name, number, unit] of filters.matchAll(/([\w-]+)\(([\d.]+)(%|deg)?\)/g)) {
+		const a = Number(number) / (unit === "%" ? 100 : 1);
 		const n = 1 - Math.min(a, 1);
+		const [cos, sin] = [Math.cos((a * Math.PI) / 180), Math.sin((a * Math.PI) / 180)];
 		const step = {
 			brightness: [[a, 0, 0], [0, a, 0], [0, 0, a]],
 			contrast: [[a, 0, 0], [0, a, 0], [0, 0, a]],
@@ -1204,6 +1368,11 @@ function colorFilter(filters, start = { rows: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
 				[0.393 + 0.607 * n, 0.769 - 0.769 * n, 0.189 - 0.189 * n],
 				[0.349 - 0.349 * n, 0.686 + 0.314 * n, 0.168 - 0.168 * n],
 				[0.272 - 0.272 * n, 0.534 - 0.534 * n, 0.131 + 0.869 * n],
+			],
+			"hue-rotate": [
+				[0.213 + cos * 0.787 - sin * 0.213, 0.715 - cos * 0.715 - sin * 0.715, 0.072 - cos * 0.072 + sin * 0.928],
+				[0.213 - cos * 0.213 + sin * 0.143, 0.715 + cos * 0.285 + sin * 0.14, 0.072 - cos * 0.072 - sin * 0.283],
+				[0.213 - cos * 0.213 - sin * 0.787, 0.715 - cos * 0.715 + sin * 0.715, 0.072 + cos * 0.928 + sin * 0.072],
 			],
 		}[name];
 		const add = name === "contrast" ? 0.5 - 0.5 * a : 0;
@@ -1399,7 +1568,7 @@ function landShadows() {
 		}
 
 		// Darkest near the ridge: layers reaching less and less far.
-		context.fillStyle = "rgba(48, 56, 84, 0.26)";
+		context.fillStyle = "rgba(14, 18, 32, 0.24)";
 		for (const share of [1, 0.78, 0.56, 0.36]) {
 			context.beginPath();
 			bases.forEach(([px, py], i) => (i ? context.lineTo(px, py) : context.moveTo(px, py)));
@@ -1417,19 +1586,29 @@ function landShadows() {
 		context.globalCompositeOperation = "source-over";
 	}
 
-	function place(x = lastX, depthScale = lastDepthScale) {
+	// The parallax calls this every frame, but a shadow only moves by its
+	// ridge's offset from its land, a fraction of a pixel per frame: redraw a
+	// canvas only once that adds up to half a canvas pixel (or the light has
+	// changed, which passes force).
+	function place(x = lastX, depthScale = lastDepthScale, force = false) {
 		lastX = x;
 		lastDepthScale = depthScale;
-		for (const pair of pairs) draw(pair, x, depthScale);
+		for (const pair of pairs) {
+			const shift = (x * depthScale * (pair.ridgeDepth - pair.landDepth)) / landScale;
+			const halfPixel = pair.box ? (0.5 * pair.box.width) / pair.canvas.width : 0;
+			if (!force && pair.drawnShift !== undefined && Math.abs(shift - pair.drawnShift) < halfPixel) continue;
+			pair.drawnShift = shift;
+			draw(pair, x, depthScale);
+		}
 	}
 
 	function applyLight() {
 		const strength =
 			byTime(timeCurves.shadowStrength) * byWeather(weatherCurves.sunlight) * (1 - darkness());
-		document.documentElement.style.setProperty("--shadow-strength", strength);
+		for (const pair of pairs) pair.canvas.style.setProperty("--shadow-strength", strength);
 		// No sun to cast them: hide the canvases and skip drawing.
 		for (const pair of pairs) pair.canvas.hidden = strength < 0.01;
-		place();
+		place(lastX, lastDepthScale, true);
 	}
 
 	measure();
@@ -1438,13 +1617,13 @@ function landShadows() {
 	document.addEventListener("scenesettings", applyLight);
 	window.addEventListener("resize", () => {
 		measure();
-		place();
+		place(lastX, lastDepthScale, true);
 	});
 	for (const pair of pairs) {
 		for (const image of [pair.ridgeShape, pair.landShape]) {
 			image.addEventListener("load", () => {
 				measure();
-				place();
+				place(lastX, lastDepthScale, true);
 			});
 		}
 	}
@@ -1695,9 +1874,11 @@ function parallax() {
 	}
 
 	// Only phones and tablets use tilt; touchscreen laptops have a mouse and
-	// keep the mouse parallax.
+	// keep the mouse parallax. A touch screen is required too: some desktop
+	// browsers (test builds of WebKit) call their pointer coarse.
 	const hasTiltScreen =
 		typeof DeviceOrientationEvent !== "undefined" &&
+		navigator.maxTouchPoints > 0 &&
 		window.matchMedia("(pointer: coarse)").matches;
 	// iPhones ask for permission (needs a tap); Android just works.
 	const needsPermission =
@@ -1807,8 +1988,8 @@ function settingsPanel() {
 			[
 				"Images",
 				getQuality() === "low" || root.dataset.assets === "small"
-					? "small (2K)"
-					: "full (4K)",
+					? "half size (2048px wide)"
+					: "full size (4096px wide)",
 			],
 			[
 				"Loaded in",
@@ -1825,7 +2006,7 @@ function settingsPanel() {
 			["Clouds", `${visibleClouds} layers`],
 			[
 				"Effects",
-				`${document.querySelectorAll(".star").length} stars, ` +
+				`${renderStats.stars ?? 0} stars, ` +
 					`${renderStats.raindrops} raindrops`,
 			],
 			[
@@ -2160,6 +2341,7 @@ function timelineClock() {
 		if (folded === caption.classList.contains("is-folded") || (folded && holding)) return;
 		clearTimeout(foldTimer);
 		resizeSmoothly(() => caption.classList.toggle("is-folded", folded));
+		if (folded) document.dispatchEvent(new Event("captionfolded"));
 	}
 	// Not while the pointer is over it or the list of events is open, and the
 	// first caption's seconds start once the loading screen goes.
@@ -2285,11 +2467,15 @@ function timelineClock() {
 		}
 	});
 	// A click anywhere else, or Escape, closes the list and folds the caption.
-	document.addEventListener("pointerdown", (event) => {
+	// (touchstart too: a tap on the scene, which ignores touches, lands on
+	// the page itself, and iOS doesn't always report that as a pointer.)
+	function pressOutside(event) {
 		if (caption.contains(event.target)) return;
 		if (list.hidden) setFolded(true);
 		else setOpen(false);
-	});
+	}
+	document.addEventListener("pointerdown", pressOutside);
+	document.addEventListener("touchstart", pressOutside, { passive: true });
 	document.addEventListener("keydown", (event) => {
 		if (event.key === "Escape" && !list.hidden) {
 			setOpen(false);
@@ -2466,8 +2652,12 @@ function teachingMarkers() {
 	}
 
 	// --near: 1 with the mouse on a marker, fading to 0 about 150px away
-	// (measured at most once a frame).
+	// (at most once a frame). Where the markers are is measured at most four
+	// times a second: measuring every frame forced the browser to lay out
+	// the page mid-frame, and the parallax only moves them a few pixels.
 	const markers = [...document.querySelectorAll(".marker")];
+	let centres = [];
+	let measuredAt = -Infinity;
 	let pointer = null;
 	let measuring = 0;
 	document.addEventListener(
@@ -2475,16 +2665,20 @@ function teachingMarkers() {
 		(event) => {
 			if (event.pointerType !== "mouse") return;
 			pointer = event;
-			measuring ||= requestAnimationFrame(() => {
+			measuring ||= requestAnimationFrame((now) => {
 				measuring = 0;
-				for (const marker of markers) {
-					const box = marker.getBoundingClientRect();
-					const distance = Math.hypot(
-						pointer.clientX - (box.left + box.width / 2),
-						pointer.clientY - (box.top + box.height / 2),
-					);
-					marker.style.setProperty("--near", clamp(1 - (distance - 20) / 130, 0, 1).toFixed(2));
+				if (now - measuredAt > 250) {
+					measuredAt = now;
+					centres = markers.map((marker) => {
+						const box = marker.getBoundingClientRect();
+						return [box.left + box.width / 2, box.top + box.height / 2];
+					});
 				}
+				markers.forEach((marker, i) => {
+					const distance = Math.hypot(pointer.clientX - centres[i][0], pointer.clientY - centres[i][1]);
+					const near = clamp(1 - (distance - 20) / 130, 0, 1).toFixed(2);
+					if (marker.style.getPropertyValue("--near") !== near) marker.style.setProperty("--near", near);
+				});
 			});
 		},
 		{ passive: true },

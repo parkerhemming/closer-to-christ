@@ -69,7 +69,7 @@
 				class="storm-cloud storm-cloud--far"
 				data-z_index="0.45"
 			>
-				<span class="storm-cloud__texture"></span>
+				<span class="storm-cloud__texture"><canvas></canvas></span>
 			</section>
 			<div
 				id="lightning-back"
@@ -79,7 +79,7 @@
 				class="storm-cloud storm-cloud--deep"
 				data-z_index="0.9"
 			>
-				<span class="storm-cloud__texture"></span>
+				<span class="storm-cloud__texture"><canvas></canvas></span>
 			</section>
 			<div
 				id="lightning-middle"
@@ -89,19 +89,19 @@
 				class="storm-cloud storm-cloud--middle"
 				data-z_index="1.55"
 			>
-				<span class="storm-cloud__texture"></span>
+				<span class="storm-cloud__texture"><canvas></canvas></span>
 			</section>
 			<section
 				class="storm-cloud storm-cloud--midband"
 				data-z_index="1.95"
 			>
-				<span class="storm-cloud__texture"></span>
+				<span class="storm-cloud__texture"><canvas></canvas></span>
 			</section>
 			<section
 				class="storm-cloud storm-cloud--lower"
 				data-z_index="2.45"
 			>
-				<span class="storm-cloud__texture"></span>
+				<span class="storm-cloud__texture"><canvas></canvas></span>
 			</section>
 			<div
 				id="lightning-front"
@@ -111,7 +111,7 @@
 				class="storm-cloud storm-cloud--near"
 				data-z_index="3.7"
 			>
-				<span class="storm-cloud__texture"></span>
+				<span class="storm-cloud__texture"><canvas></canvas></span>
 			</section>
 
 			<canvas id="rain-back" class="rain-layer rain-layer--back"></canvas>
@@ -124,12 +124,15 @@
 			data-scenery="far-mountains"
 			data-z_index="1.2"
 		></section>
+		<!-- The far land layers drawn by wind.js (swayInWind in app.js). -->
+		<canvas class="land-wind land-wind--far" data-z_index="1.2" aria-hidden="true"></canvas>
 
 		<section
 			class="scenery"
 			data-scenery="distant-hills"
 			data-z_index="1.5"
 		></section>
+		<canvas class="land-wind land-wind--hills" data-z_index="1.5" aria-hidden="true"></canvas>
 		<!-- The mountains' shadow on the hills (landShadows in app.js). -->
 		<canvas class="land-shadow land-shadow--hills" data-z_index="1.5" aria-hidden="true"></canvas>
 
@@ -140,6 +143,7 @@
 			data-scenery="olives"
 			data-z_index="2"
 		></section>
+		<canvas class="land-wind land-wind--olives" data-z_index="2" aria-hidden="true"></canvas>
 		<canvas class="land-shadow land-shadow--olives" data-z_index="2" aria-hidden="true"></canvas>
 		<div class="scene-markers scene-markers--olives" data-z_index="2"></div>
 
@@ -148,6 +152,7 @@
 			data-scenery="distant-jerusalem"
 			data-z_index="2.5"
 		>
+			<canvas class="land-wind--city" aria-hidden="true"></canvas>
 			<span class="city-light city-light--architecture"></span>
 			<span class="city-light city-light--home city-light--home-1"></span>
 			<span class="city-light city-light--home city-light--home-2"></span>

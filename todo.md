@@ -38,6 +38,9 @@
 - [x] Safari stutter fixed (small shadow masks, cheaper star/lightning glows); measured 58-60fps
 - [x] Quality choice in settings (Auto / High / Medium / Low)
 - [x] Moving layers redraw fewer pixels (rain at 1x, plants 1.25x, figure 1.5x, at most 60 a second); no stalls in Safari or Chrome
+- [x] Stars painted into one canvas (their fade made the first minute run at ~6fps)
+- [x] Far land and clouds drawn on the GPU, so the clock's light changes don't stall Safari or Firefox; tested in Safari's engine, Chrome and Firefox
+- [x] Jerusalem sharpened (same pixels, so the window lights still line up)
 
 # Settings
 

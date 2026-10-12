@@ -86,16 +86,45 @@ body {
 		height: 100%;
 	}
 
-	/* All stars and shooting stars, faded together as the sky lightens. Its
-	   own GPU layer, so a sky colour change doesn't repaint every star. */
+	/* The stars (createStars in app.js): the still ones painted into one
+	   canvas, the twinkling ones tiny elements of their own. Each fades by
+	   itself as the sky lightens; fading the whole starfield as a group made
+	   the browser redraw it all every frame. The clock updates the light
+	   once a second, so each glides between (a little longer than that, so
+	   a late update never leaves a pause). */
 	.stars {
 		position: absolute;
 		inset: 0;
+	}
+
+	.stars-canvas,
+	.star-twinkle {
+		position: absolute;
 		opacity: var(--starlight, 1);
-		/* The clock updates the light once a second; glide between (a little
-		   longer than that, so a late update never leaves a pause). */
 		transition: opacity 1.2s linear;
-		will-change: opacity;
+	}
+
+	.stars-canvas {
+		inset: 0;
+		width: 100%;
+		height: 100%;
+	}
+
+	.star-twinkle {
+		width: 0;
+		height: 0;
+		overflow: visible;
+
+		/* A tiny dot. The painted stars' glow is a blur of the star, so on
+		   these (all under 0.7px) it would be too faint to see. */
+		& > span {
+			position: absolute;
+			aspect-ratio: 1;
+			translate: -50% -50%;
+			border-radius: 50%;
+			background: white;
+			animation: twinkle 1s alternate-reverse infinite;
+		}
 	}
 
 	/* The sun rises from behind the hills on the left (#sky is 120% of the
@@ -138,69 +167,6 @@ body {
 	   on top only left the sun crawling into place after it. */
 	:root[data-jumping] & :is(.sun, .stars) {
 		transition-duration: 150ms;
-	}
-
-	.star {
-		background-color: white;
-		aspect-ratio: 1/1;
-		border-radius: 50%;
-		position: absolute;
-		/* The glow reaches past the star; don't let * { overflow: hidden }
-		   clip it (Safari cuts a filter's glow off at the box). */
-		overflow: visible;
-		/* A painted glow: Safari stutters on hundreds of filtered layers. */
-		box-shadow:
-			0 0 4px white,
-			0 0 10px #dcefff,
-			0 0 20px #8ebce0;
-
-		&.twinkle {
-			animation-name: twinkle;
-			animation-direction: alternate-reverse;
-			animation-iteration-count: infinite;
-			animation-duration: 1s;
-		}
-
-		&.big {
-			background-color: transparent;
-			border-radius: 0;
-			box-shadow: none;
-			filter: blur(0.18px) drop-shadow(0 0 1.5px white)
-				drop-shadow(0 0 4px #dcefff) drop-shadow(0 0 8px #8ebce0);
-
-			&::before {
-				position: absolute;
-				inset: 0;
-				content: "";
-				background-color: white;
-				clip-path: polygon(
-					50% 0%,
-					52% 37%,
-					58% 41%,
-					72% 27%,
-					61% 44%,
-					64% 48%,
-					100% 50%,
-					64% 52%,
-					61% 56%,
-					72% 73%,
-					58% 59%,
-					52% 63%,
-					50% 100%,
-					48% 63%,
-					42% 59%,
-					28% 73%,
-					39% 56%,
-					36% 52%,
-					0% 50%,
-					36% 48%,
-					39% 44%,
-					28% 27%,
-					42% 41%,
-					48% 37%
-				);
-			}
-		}
 	}
 
 	.shooting-star {
@@ -333,8 +299,9 @@ body {
 		calc(var(--cloud-y) - var(--cloud-top));
 	background-repeat: repeat-x;
 	background-size: auto var(--cloud-image-height);
-	/* Each layer's own grade, lightened or darkened by the weather. */
-	filter: var(--cloud-grade) brightness(var(--cloud-shade, 1))
+	/* Each layer's own grade, lightened or darkened by the weather. Once
+	   drawn into its canvas the colour is drawn in too (see below). */
+	filter: var(--color-grade) brightness(var(--cloud-shade, 1))
 		brightness(var(--cloud-light, 1)) sepia(var(--cloud-warmth, 0));
 	animation: cloud-drift var(--cloud-speed) linear infinite;
 	will-change: transform;
@@ -347,7 +314,7 @@ body {
 	--cloud-y: 0dvh;
 	--cloud-drift: -13vw;
 	--cloud-speed: 450s;
-	--cloud-grade: brightness(62%) contrast(116%) sepia(16%) saturate(80%)
+	--color-grade: brightness(62%) contrast(116%) sepia(16%) saturate(80%)
 		hue-rotate(154deg);
 	z-index: 2;
 	--cloud-opacity: 0.28;
@@ -360,7 +327,7 @@ body {
 	--cloud-y: 5dvh;
 	--cloud-drift: -15vw;
 	--cloud-speed: 360s;
-	--cloud-grade: brightness(54%) contrast(116%) saturate(48%)
+	--color-grade: brightness(54%) contrast(116%) saturate(48%)
 		hue-rotate(158deg);
 	z-index: 4;
 	--cloud-opacity: 0.56;
@@ -373,7 +340,7 @@ body {
 	--cloud-y: -2dvh;
 	--cloud-drift: -12vw;
 	--cloud-speed: 286s;
-	--cloud-grade: brightness(64%) contrast(116%) sepia(12%) saturate(70%)
+	--color-grade: brightness(64%) contrast(116%) sepia(12%) saturate(70%)
 		hue-rotate(150deg);
 	z-index: 8;
 	--cloud-opacity: 0.2;
@@ -387,7 +354,7 @@ body {
 	--cloud-y: 16dvh;
 	--cloud-drift: -11vw;
 	--cloud-speed: 247s;
-	--cloud-grade: brightness(56%) contrast(118%) sepia(10%) saturate(64%)
+	--color-grade: brightness(56%) contrast(118%) sepia(10%) saturate(64%)
 		hue-rotate(154deg);
 	z-index: 12;
 	--cloud-opacity: 0.3;
@@ -401,7 +368,7 @@ body {
 	--cloud-y: 58dvh;
 	--cloud-drift: -10vw;
 	--cloud-speed: 226s;
-	--cloud-grade: brightness(72%) contrast(108%) saturate(52%)
+	--color-grade: brightness(72%) contrast(108%) saturate(52%)
 		hue-rotate(154deg);
 	z-index: 24;
 	--cloud-opacity: 0.13;
@@ -414,16 +381,19 @@ body {
 	--cloud-y: 9dvh;
 	--cloud-drift: -16vw;
 	--cloud-speed: 90s;
-	--cloud-grade: brightness(50%) contrast(120%) saturate(45%)
+	--color-grade: brightness(50%) contrast(120%) saturate(45%)
 		hue-rotate(160deg);
 	z-index: 35;
 	--cloud-opacity: 0.64;
 }
 
-/* Painted into a canvas by paintClouds in app.js (once it's ready, the
-   background goes). */
-.storm-cloud__texture.is-painted {
+/* Drawn into a canvas by wind.js (swayInWind in app.js), colour and all
+   (once it's up, the background and the live filter go: a filter on these
+   drifting, near full-screen layers was redone every frame, the scene's
+   biggest cost). */
+.storm-cloud__texture.is-swaying {
 	background-image: none;
+	filter: none;
 }
 
 .storm-cloud__texture > canvas {
@@ -554,7 +524,9 @@ body {
 			rgba(0, 8, 13, 0.4) 92%
 		),
 		linear-gradient(to bottom, rgba(2, 11, 17, 0.16), rgba(2, 9, 12, 0.4));
-	mix-blend-mode: multiply;
+	/* A plain overlay, not a multiply blend: with colours this dark the two
+	   look the same, and a blend made the browser recombine the whole scene
+	   beneath it every frame. */
 }
 
 .cloud-lightning-flash {
@@ -671,24 +643,26 @@ body {
 	   took graphics memory, and running out made Chrome drop layers
 	   (flashing, a vanishing figure). Each layer's height and bottom are set
 	   so the crop lands exactly where the full image's rows did. */
-	/* Every land layer stacks above every cloud and lightning layer (2-35),
-	   so clouds never pass in front of the land.
-	   The far horizon: the mountains of Moab beyond the Dead Sea, peeking
-	   over the hills, hazy with distance. */
-	&[data-scenery="far-mountains"] {
-		--stack-order: 36;
-		--bottom: 9dvh;
-		--height: 28dvh;
-		--texture: url("./assets/far-mountains-v2.avif");
-		/* Distance shows as haze: paler, softer and greyer than the hills. */
-		--color-grade: brightness(33%) saturate(55%) contrast(78%) sepia(10%);
-	}
+}
 
+/* Every land layer stacks above every cloud and lightning layer (2-35), so
+   clouds never pass in front of the land. Each far layer's place is shared
+   with its drawn copy (wind.js), and the hills' and olives' with the shadow
+   on them.
+   The far horizon: the mountains of Moab beyond the Dead Sea, peeking over
+   the hills, hazy with distance. */
+:is(.scenery[data-scenery="far-mountains"], .land-wind--far) {
+	--stack-order: 36;
+	--bottom: 9dvh;
+	--height: 28dvh;
+	--texture: url("./assets/far-mountains-v2.avif");
+	/* Distance shows as haze: paler, softer and greyer than the hills. */
+	--color-grade: brightness(33%) saturate(55%) contrast(78%) sepia(10%);
 }
 
 /* The Mount of Olives, between the desert hills and the city, shared with the
    hills' shadow on it and its marker. */
-:is(.scenery[data-scenery="olives"], .land-shadow--olives, .scene-markers--olives) {
+:is(.scenery[data-scenery="olives"], .land-wind--olives, .land-shadow--olives, .scene-markers--olives) {
 	--stack-order: 38;
 	--bottom: -8dvh;
 	--height: 38dvh;
@@ -697,7 +671,7 @@ body {
 }
 
 /* The desert hills, shared with the mountains' shadow cast on them. */
-:is(.scenery[data-scenery="distant-hills"], .land-shadow--hills) {
+:is(.scenery[data-scenery="distant-hills"], .land-wind--hills, .land-shadow--hills) {
 	--stack-order: 37;
 	--bottom: -14.869dvh;
 	--height: 40.688dvh;
@@ -744,10 +718,11 @@ body {
 :is(.scenery[data-scenery="distant-jerusalem"], .land-shadow--city, .scene-markers--city) {
 	--stack-order: 39;
 	--bottom: clamp(-14dvh, calc(16dvh - 14vw), 8dvh);
-	--height: 140dvh;
-	/* Sized by width and anchored at the bottom, so cropping the empty sky
-	   off its top changes nothing else. */
-	--texture: url("./assets/jerusalem-v5.avif");
+	/* Exactly the image's height (it's sized by width, anchored at the
+	   bottom): a taller box was mostly empty but still took four large
+	   GPU layers (the city, its shadow, its lights' box and its marker). */
+	--height: calc(100vw * 708 / 4096);
+	--texture: url("./assets/jerusalem-v6.avif");
 	--texture-size: 100% auto;
 	/* Warm like the hills behind it (it was greyed out before). */
 	--color-grade: brightness(47%) saturate(70%) contrast(95%) sepia(6%);
@@ -782,15 +757,29 @@ body {
 	pointer-events: none;
 }
 
-/* Darkens the land beneath, keeping its texture, rather than greying it. */
+/* A deep, see-through shade over the land (not a multiply blend, which made
+   the browser recombine everything beneath it every frame). */
 .land-shadow {
 	opacity: var(--shadow-strength, 0);
-	mix-blend-mode: multiply;
 }
 
-/* Once the swaying ground has drawn, the still one isn't needed. */
+/* The city's drawn copy lies under its lights. */
+.land-wind--city {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	width: 100%;
+	height: 100%;
+}
+
+/* Once the drawn copy is up, the CSS one isn't needed. */
 .scenery.is-swaying {
 	background-image: none;
+	filter: none;
+
+	&::before {
+		content: none;
+	}
 }
 
 /* The light masks and the flicker plane only cover the strip of the city that
@@ -2267,7 +2256,7 @@ body {
 	}
 
 	.scenery[data-scenery="distant-jerusalem"] {
-		--texture: url("./assets/mobile/jerusalem-v5.avif");
+		--texture: url("./assets/mobile/jerusalem-v6.avif");
 	}
 
 	.scenery[data-scenery="golgotha-ridge"] {
@@ -2350,13 +2339,8 @@ body {
 		display: none;
 	}
 
-	#sky .star,
 	.lightning-bolt {
 		filter: none;
-	}
-
-	#sky .star:not(.big) {
-		box-shadow: 0 0 4px #dcefff;
 	}
 }
 
@@ -2370,9 +2354,14 @@ body {
 	pointer-events: none;
 }
 
+/* Just a point where the sky's marker sits (a full-screen box here was a
+   full-screen GPU layer for one small ring). */
 .scene-markers--sky {
 	position: fixed;
-	inset: 0;
+	top: 14dvh;
+	left: 80vw;
+	width: 0;
+	height: 0;
 }
 
 /* The glow and title reach past each marker (everything clips by default). */
@@ -2702,4 +2691,10 @@ body {
 		-webkit-backdrop-filter: blur(5px);
 		backdrop-filter: blur(5px);
 	}
+}
+
+/* Switched off when fully faded (applyTimeOfDay in app.js). */
+:root[data-no-stars] #sky .stars,
+:root[data-no-city-lights] :is(.city-light, .city-flicker-plane) {
+	display: none;
 }
