@@ -11,7 +11,12 @@
 
 <br>
 
-<img src="docs/scene.jpg" alt="The website: Christ on the cross above Golgotha at 7:15 in the morning, with Jerusalem and the Mount of Olives behind" width="100%">
+<table>
+<tr>
+<td align="center"><img src="docs/layers.webp" alt="Animation: each of the scene's ten layers shown alone, then stacked in 3D and collapsing into the finished scene" height="340"><br><sub>The website: ten layers stacked into one scene</sub></td>
+<td align="center"><img src="docs/bloch-crucifixion.jpg" alt="Carl Bloch's painting Christ at the Cross (1870)" height="340"><br><sub>Carl Bloch, <i>Christ at the Cross</i> (1870), the painting that inspired it</sub></td>
+</tr>
+</table>
 
 </div>
 
@@ -89,7 +94,7 @@ Small gold markers sit on the figure and in the landscape. Each one opens a card
 | **The Wound in His Side** | The wound He still points to as His witness (D&C 6:37; John 19:34) |
 | **Father, Forgive Them** | Forgiveness offered from the cross (D&C 19:16; D&C 64:10; Luke 23:34) |
 | **The King of the Jews** | The sign in Hebrew, Greek and Latin, with a picture of how it may have looked (Mosiah 3:8; John 19:19–20) |
-| **Lifted Up upon the Cross** | Golgotha, and the prophecies that He would be lifted up (1 Nephi 11:33; 3 Nephi 27:14; Moses 7:55; John 19:17–18; John 12:32) |
+| **Lifted Up upon the Cross** | Golgotha, and the prophecies that He would be lifted up (1 Nephi 11:33; Mosiah 15:7; 3 Nephi 27:14; Moses 7:55; John 19:17–18; John 12:32) |
 | **The Mount of Olives** | Gethsemane, the Ascension and the Second Coming (Mosiah 3:7; D&C 19:18; D&C 45:48; Luke 22:44; Acts 1:11–12) |
 | **Jerusalem** | The city He wept over (3 Nephi 10:5; Matthew 23:37; Hebrews 13:12) |
 | **Darkness over the Land** | Darkness in Jerusalem, and the storm and three days of darkness in the Americas (3 Nephi 8:5–6, 20; Moses 7:56; Luke 23:44–45) |
@@ -105,7 +110,7 @@ The gear button opens settings for the time of day, the weather (from clear skie
 ## How it's built
 
 <div align="center">
-<img src="docs/layers.webp" alt="Animation: each of the scene's ten layers shown alone, then stacked in 3D and collapsing into the finished scene" width="100%">
+<img src="docs/scene.jpg" alt="The website: Christ on the cross above Golgotha at 7:15 in the morning, with Jerusalem and the Mount of Olives behind" width="100%">
 </div>
 
 <br>
@@ -155,6 +160,7 @@ Then open [http://localhost:8123](http://localhost:8123).
 ## Credits
 
 - **Scriptures:** from the standard works of The Church of Jesus Christ of Latter-day Saints, quoted from [churchofjesuschrist.org](https://www.churchofjesuschrist.org/study/scriptures).
+- **Inspiration:** Carl Bloch's *Christ at the Cross* (1870), a painting often used by The Church of Jesus Christ of Latter-day Saints. It's public domain.
 - **Artwork:** the figure, landscape layers and sign were created with Google's Gemini image models and then cut out, colour-graded and animated in code.
 - **Code:** written with help from [Claude Code](https://claude.com/claude-code), an AI coding assistant.
 
