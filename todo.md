@@ -71,7 +71,7 @@
 # Ground
 
 - [x] Redo the two closest ground layers: higher quality, with plants and grass properly cut out
-- [] Animate those plants and grass in the wind, following the weather intensity setting
+- [x] Animate those plants and grass in the wind, following the weather intensity setting (and the ridge bushes)
 
 # Christ Figure
 

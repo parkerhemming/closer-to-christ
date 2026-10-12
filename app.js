@@ -1025,6 +1025,99 @@ function createCityLights() {
 	scheduleNextBurst();
 }
 
+// The grass and bushes on the two near land layers sway in the wind, each
+// drawn by wind.js in a worker so it keeps moving while the page's own frames
+// are held up (as Chrome does while the settings scroll). The ridge is
+// farther off and its bushes stiffer, so it moves less. Without a worker
+// canvas or WebGL, with reduced motion or on low quality, the still images
+// stay.
+function plantWind() {
+	if (
+		reducedMotion ||
+		getQuality() === "low" ||
+		!("transferControlToOffscreen" in HTMLCanvasElement.prototype)
+	) {
+		return;
+	}
+	swayLayer("ground", ".land-wind--ground", "./assets/wind/near-ground-sway-v2.png", 1);
+	swayLayer("golgotha-ridge", ".land-wind--ridge", "./assets/wind/golgotha-ridge-sway-v2.png", 0.45);
+}
+
+function swayLayer(name, canvasSelector, swayUrl, strength) {
+	const land = document.querySelector(`[data-scenery="${name}"]`);
+	const canvas = document.querySelector(canvasSelector);
+	const style = getComputedStyle(land);
+	const texture = style.backgroundImage.match(/url\("?([^")]+)"?\)/)?.[1];
+	if (!texture) return;
+
+	// The layer's CSS filters (its grade, then the time of day's light) as one
+	// colour matrix for the shader.
+	const grade = colorFilter(style.getPropertyValue("--color-grade"));
+	const conditions = () => {
+		const light = colorFilter(
+			`brightness(${lightFor("landLight")}) saturate(${lightFor("landSaturation")}) sepia(${byTime(timeCurves.landWarmth)})`,
+			grade,
+		);
+		return {
+			wind: byWeather(weatherCurves.wind),
+			grade: [0, 1, 2].flatMap((column) => light.rows.map((row) => row[column])),
+			gradeOffset: light.offset,
+		};
+	};
+	const size = () => [canvas.offsetWidth, canvas.offsetHeight, window.devicePixelRatio];
+
+	const worker = new Worker("./wind.js");
+	const offscreen = canvas.transferControlToOffscreen();
+	worker.postMessage(
+		{
+			canvas: offscreen,
+			image: texture,
+			sway: new URL(swayUrl, location.href).href,
+			strength,
+			size: size(),
+			conditions: conditions(),
+		},
+		[offscreen],
+	);
+	worker.onmessage = ({ data }) => {
+		if (data === "drawn") land.classList.add("is-swaying");
+	};
+	document.addEventListener("scenesettings", () => worker.postMessage({ conditions: conditions() }));
+	window.addEventListener("resize", () => worker.postMessage({ size: size() }), { passive: true });
+	document.addEventListener("visibilitychange", () => worker.postMessage({ hidden: document.hidden }));
+}
+
+// CSS filter functions (brightness, saturate, contrast, sepia) combined into
+// one colour matrix (rows) and offset, using the filter spec's formulas,
+// applied after `start`.
+function colorFilter(filters, start = { rows: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], offset: [0, 0, 0] }) {
+	let { rows, offset } = start;
+	for (const [, name, number, percent] of filters.matchAll(/(\w+)\(([\d.]+)(%?)\)/g)) {
+		const a = Number(number) / (percent ? 100 : 1);
+		const n = 1 - Math.min(a, 1);
+		const step = {
+			brightness: [[a, 0, 0], [0, a, 0], [0, 0, a]],
+			contrast: [[a, 0, 0], [0, a, 0], [0, 0, a]],
+			saturate: [
+				[0.213 + 0.787 * a, 0.715 - 0.715 * a, 0.072 - 0.072 * a],
+				[0.213 - 0.213 * a, 0.715 + 0.285 * a, 0.072 - 0.072 * a],
+				[0.213 - 0.213 * a, 0.715 - 0.715 * a, 0.072 + 0.928 * a],
+			],
+			sepia: [
+				[0.393 + 0.607 * n, 0.769 - 0.769 * n, 0.189 - 0.189 * n],
+				[0.349 - 0.349 * n, 0.686 + 0.314 * n, 0.168 - 0.168 * n],
+				[0.272 - 0.272 * n, 0.534 - 0.534 * n, 0.131 + 0.869 * n],
+			],
+		}[name];
+		const add = name === "contrast" ? 0.5 - 0.5 * a : 0;
+		const apply = (vector) => step.map((row) => row[0] * vector[0] + row[1] * vector[1] + row[2] * vector[2]);
+		rows = [0, 1, 2].map((i) => apply(rows.map((row) => row[i]))); // columns, transformed...
+		rows = [0, 1, 2].map((i) => rows.map((column) => column[i])); // ...back to rows
+		offset = apply(offset).map((value) => value + add);
+	}
+	return { rows, offset };
+}
+
 // Set by landShadows(); parallax() calls it each frame with the mouse/tilt
 // offset so the shadows follow the layers.
 let updateLandShadows = null;
@@ -1612,7 +1705,8 @@ function settingsPanel() {
 	const detailValues = new Map();
 
 	// The panel drops from the gear without covering the rest of the page
-	// (a non-modal dialog). The gear (an x while open) or Escape closes it. It stops
+	// (a non-modal dialog). The gear (an x while open), a click anywhere else
+	// or Escape closes it. It stops
 	// above the caption so the caption stays readable.
 	let detailsTimer;
 	button.addEventListener("click", () => {
@@ -1644,6 +1738,11 @@ function settingsPanel() {
 		if (event.key === "Escape" && dialog.open) {
 			dialog.close();
 			button.focus();
+		}
+	});
+	document.addEventListener("pointerdown", (event) => {
+		if (dialog.open && !dialog.contains(event.target) && !button.contains(event.target)) {
+			dialog.close();
 		}
 	});
 

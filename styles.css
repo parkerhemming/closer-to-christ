@@ -662,19 +662,18 @@ body {
 		--texture: url("./assets/hills-v3.avif");
 		--color-grade: brightness(33%) saturate(42%) contrast(80%) sepia(6%);
 	}
+}
 
-	/* The two near layers are cut-out images with their own skylines; the
-	   ridge's sits about 11dvh above the bottom of the screen and the near
-	   ground's about 5dvh. The ridge slopes down to the right so Jerusalem
-	   shows above it. */
-	&[data-scenery="golgotha-ridge"] {
-		--stack-order: 12;
-		--bottom: -5.984dvh;
-		--height: 20.483dvh;
-		--texture: url("./assets/golgotha-ridge-v3.avif");
-		--color-grade: brightness(46%) saturate(50%) contrast(82%) sepia(7%);
-	}
-
+/* The two near layers are cut-out images with their own skylines; the
+   ridge's sits about 11dvh above the bottom of the screen and the near
+   ground's about 5dvh. The ridge slopes down to the right so Jerusalem shows
+   above it. Each place is shared with its swaying copy (wind.js). */
+:is(.scenery[data-scenery="golgotha-ridge"], .land-wind--ridge) {
+	--stack-order: 12;
+	--bottom: -5.984dvh;
+	--height: 20.483dvh;
+	--texture: url("./assets/golgotha-ridge-v3.avif");
+	--color-grade: brightness(46%) saturate(50%) contrast(82%) sepia(7%);
 }
 
 .scenery[data-scenery="distant-jerusalem"] {
@@ -713,7 +712,7 @@ body {
 		grayscale(32%) sepia(6%);
 }
 
-:is(.scenery[data-scenery="ground"], .land-shadow--ground) {
+:is(.scenery[data-scenery="ground"], .land-shadow--ground, .land-wind--ground) {
 	--stack-order: 25;
 	--bottom: -6.028dvh;
 	--height: 15.19dvh;
@@ -725,8 +724,10 @@ body {
    canvas that lies exactly over the land it falls on (same size, place and
    parallax), just above it. Shadows are soft, so a low-resolution canvas
    stretched to fit looks the same. Built from CSS masks and transformed
-   layers instead, they made Chrome drop whole frames and Safari stall. */
-.land-shadow {
+   layers instead, they made Chrome drop whole frames and Safari stall. The
+   swaying ground (wind.js) is placed the same way. */
+.land-shadow,
+.land-wind {
 	position: absolute;
 	left: 50%;
 	bottom: var(--bottom);
@@ -735,8 +736,16 @@ body {
 	height: var(--height);
 	transform: translateX(-50%) scale(var(--parallax-overscan));
 	transform-origin: center bottom;
-	opacity: var(--shadow-strength, 0);
 	pointer-events: none;
+}
+
+.land-shadow {
+	opacity: var(--shadow-strength, 0);
+}
+
+/* Once the swaying ground has drawn, the still one isn't needed. */
+.scenery.is-swaying {
+	background-image: none;
 }
 
 /* The light masks and the flicker plane only cover the strip of the city that
@@ -1684,13 +1693,15 @@ body {
 		sans-serif;
 }
 
-/* Round buttons of their own, like the pause and settings buttons. */
+/* Round buttons of their own, filled like the settings button. */
 .caption-step {
 	display: grid;
 	place-items: center;
-	border: 1px solid rgba(255, 255, 255, 0.22);
+	border: 1px solid rgba(255, 255, 255, 0.16);
 	border-radius: 50%;
-	background: rgba(12, 28, 37, 0.5);
+	background: rgba(12, 28, 37, 0.55);
+	-webkit-backdrop-filter: blur(10px);
+	backdrop-filter: blur(10px);
 	color: #e7b477;
 	cursor: pointer;
 	touch-action: manipulation;
@@ -1711,8 +1722,10 @@ body {
 	stroke-linejoin: round;
 }
 
+/* A little darker, with a gold edge. */
 .caption-step:hover:not(:disabled) {
-	background: rgba(231, 180, 119, 0.25);
+	border-color: rgba(231, 180, 119, 0.45);
+	background: rgba(12, 28, 37, 0.72);
 }
 
 .caption-step:disabled {
@@ -2063,6 +2076,8 @@ body {
 		height: 38px;
 		/* Centred on the folded box (10px + 11px padding, border, a line). */
 		margin-bottom: calc((10px + 11px + 2px + var(--text-label) * 1.25 - 38px) / 2);
+		-webkit-backdrop-filter: blur(5px); /* like the settings button */
+		backdrop-filter: blur(5px);
 	}
 
 	.caption-step svg {
