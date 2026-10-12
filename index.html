@@ -204,6 +204,7 @@
 			<button class="clock-play" type="button" aria-label="Pause time">
 				<svg class="clock-play__pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13M16 5.5v13" /></svg>
 				<svg class="clock-play__play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" /></svg>
+				<svg class="clock-play__restart" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6l-2.5 2.5" /><path d="M3.5 3.5v5h5" /></svg>
 			</button>
 			<time class="clock-time"></time>
 		</div>
@@ -230,6 +231,7 @@
 			</button>
 			<button class="caption-step" type="button" aria-label="Next event">
 				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5" /></svg>
+				<svg class="caption-step__restart" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6l-2.5 2.5" /><path d="M3.5 3.5v5h5" /></svg>
 			</button>
 			<div id="timeline" class="timeline" hidden>
 				<p class="timeline-note">
@@ -393,6 +395,7 @@
 				createStars({ high: 300, medium: 150, low: 90 }[getQuality()]);
 				createShootingStars();
 				createStorm();
+				earthquakes();
 				createCityLights();
 				landShadows();
 				swayInWind();

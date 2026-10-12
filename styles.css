@@ -134,6 +134,12 @@ body {
 		transition: none;
 	}
 
+	/* A jump in time is already eased (goToHour in app.js); the long glide
+	   on top only left the sun crawling into place after it. */
+	:root[data-jumping] & :is(.sun, .stars) {
+		transition-duration: 150ms;
+	}
+
 	.star {
 		background-color: white;
 		aspect-ratio: 1/1;
@@ -1615,6 +1621,20 @@ body {
 
 .clock-play[data-paused] .clock-play__play {
 	display: block;
+}
+
+/* At 3 PM, pause/play (and the caption's next arrow) become restart. */
+.clock-play__restart,
+.caption-step:not([data-restart]) .caption-step__restart,
+.caption-step[data-restart] svg:not(.caption-step__restart),
+.clock-play[data-restart] :is(.clock-play__pause, .clock-play__play) {
+	display: none;
+}
+
+.clock-play[data-restart] .clock-play__restart {
+	display: block;
+	fill: none;
+	stroke-width: 2.2;
 }
 
 /* The caption, bottom centre: what is happening, like a film subtitle, with

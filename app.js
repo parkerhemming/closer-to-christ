@@ -1028,6 +1028,82 @@ function createCityLights() {
 	scheduleNextBurst();
 }
 
+// At 3 PM, as he dies, "the earth did quake, and the rocks rent" (Matthew
+// 27:51): a moment after the clock reaches 3:00 the ground shakes, then keeps
+// shaking now and then while the storm is at its height (weather 0.9 and up,
+// as it is at 3 PM unless set lower). Each tremor rolls toward the viewer: the far
+// hills jolt first, then the city, the ridge, the near ground and the cross,
+// each a moment after the one behind it and harder the nearer it is, over a
+// faint shake of the whole scene. The time, buttons and caption stay still.
+// Each jolt is an animation added on top of the layer's parallax position
+// (composite "add"), so nothing runs per frame.
+function earthquakes() {
+	if (reducedMotion || !("composite" in KeyframeEffect.prototype)) return;
+	const everything = [...document.querySelectorAll("[data-z_index]")];
+	// Far to near, by parallax depth (the land, its shadows, moving copies and
+	// markers share their layer's depth, so they shake together), with how
+	// far each jolts at full strength, in px: like the parallax, the farther
+	// away, the less it seems to move.
+	const wave = [
+		[1.5, 0.8], // distant hills
+		[2.5, 1.5], // Jerusalem
+		[4.5, 3], // Golgotha ridge
+		[8, 6.5], // near ground
+		[16, 1.5], // the cross: barely, so the figure stays steady
+	].map(([depth, reach]) => ({
+		layers: everything.filter((layer) => Number(layer.dataset.z_index) === depth),
+		reach,
+	}));
+
+	// A jolt: hits fast, rattles, settles; up and down more than side to side,
+	// like ground heaving.
+	function jolt(seconds, reach, upDown) {
+		const steps = Math.round(seconds * 18);
+		const keyframes = Array.from({ length: steps + 1 }, (_, step) => {
+			const along = step / steps;
+			const size = reach * Math.min(1, along * 6) * (1 - along) ** 1.6;
+			return { translate: `${randomBetween(-size, size)}px ${randomBetween(-size, size) * upDown}px` };
+		});
+		keyframes[0] = keyframes[steps] = { translate: "0px 0px" };
+		return keyframes;
+	}
+
+	const atThree = () => sceneSettings.hour >= 15 - 0.001;
+	let timer;
+	function shakeIn(ms, first = false) {
+		clearTimeout(timer);
+		timer = setTimeout(() => tremor(first), ms);
+	}
+
+	// The first, as 3:00 comes, is the longest and strongest.
+	function tremor(first) {
+		const strength = clamp((sceneSettings.weatherIntensity - 0.9) / 0.1, 0, 1);
+		if (atThree() && strength > 0 && !document.hidden) {
+			const scale = first ? 1 : 0.5 + 0.5 * strength;
+			const gap = randomBetween(130, 200); // ms between one layer and the next
+			const seconds = first ? 1.7 : randomBetween(0.9, 1.3);
+			const whole = jolt(seconds + (wave.length * gap) / 1000, 1.5 * scale, 0.6);
+			for (const layer of everything) {
+				layer.animate(whole, { duration: (seconds * 1000 + wave.length * gap), composite: "add" });
+			}
+			wave.forEach(({ layers, reach }, index) => {
+				const keyframes = jolt(seconds, reach * scale, 1.4);
+				for (const layer of layers) {
+					layer.animate(keyframes, { duration: seconds * 1000, delay: index * gap, composite: "add" });
+				}
+			});
+		}
+		shakeIn(randomBetween(5000, 12000));
+	}
+
+	let wasThree = atThree();
+	document.addEventListener("scenesettings", () => {
+		if (atThree() && !wasThree) shakeIn(1000, true);
+		wasThree = atThree();
+	});
+	shakeIn(2000, wasThree);
+}
+
 // The grass and bushes on the two near land layers sway in the wind, each
 // drawn by wind.js in a worker so it keeps moving while the page's own frames
 // are held up (as Chrome does while the settings scroll). The ridge is
@@ -1975,7 +2051,10 @@ function timelineClock() {
 		showCaption(timeline[index]);
 		const target = eventIndex(heading ?? hour);
 		previous.disabled = target === 0;
-		next.disabled = target === timeline.length - 1;
+		// At the last event (3 PM) the next arrow starts the day over.
+		const last = target === timeline.length - 1;
+		next.toggleAttribute("data-restart", last);
+		next.setAttribute("aria-label", last ? "Start the day again" : "Next event");
 	}
 	// The caption fades between events: "9:00 AM • Crucified at the third
 	// hour", then what happened.
@@ -2066,33 +2145,56 @@ function timelineClock() {
 	const dayStart = timeline[0].hour;
 	const dayEnd = timeline.at(-1).hour;
 	let playing = sceneSettings.clockSpeed > 0;
+	let settledAt = 0; // the clock waits until then (see goToHour)
+	// Stopped because the day reached 3 PM (not paused by hand): going back to
+	// an earlier event starts it again.
+	let dayOver = false;
 
+	// At 3 PM it becomes a restart button.
 	function showPlaying() {
+		const atEnd = sceneSettings.hour >= dayEnd - 0.001;
 		playButton.toggleAttribute("data-paused", !playing);
-		playButton.setAttribute("aria-label", playing ? "Pause time" : "Play time");
+		playButton.toggleAttribute("data-restart", atEnd);
+		playButton.setAttribute("aria-label", atEnd ? "Start the day again" : playing ? "Pause time" : "Play time");
 	}
 	showPlaying();
+	document.addEventListener("scenesettings", showPlaying);
+
+	function startOver() {
+		playing = true;
+		dayOver = false;
+		goToHour(dayStart);
+		showPlaying();
+	}
 
 	document.addEventListener("pauseclock", () => {
 		playing = false;
+		dayOver = false;
 		showPlaying();
 	});
 
 	// Play returns the weather to its hour's usual (it may have been set by
-	// hand while paused), or at 3 PM starts the day over.
+	// hand while paused); at 3 PM it starts the day over.
 	playButton.addEventListener("click", () => {
+		if (playButton.hasAttribute("data-restart")) return startOver();
 		playing = !playing;
-		if (playing) goToHour(sceneSettings.hour >= dayEnd - 0.001 ? dayStart : sceneSettings.hour);
+		dayOver = false;
+		if (playing) goToHour(sceneSettings.hour);
 		showPlaying();
 	});
 
 	setInterval(() => {
-		if (!playing || document.hidden || heading !== null) return;
+		// Not until the scene is on screen (after loading) and everything has
+		// settled after a jump: the sun glides into place for 1.2s after the
+		// light stops changing.
+		const shown = "sceneShown" in document.documentElement.dataset;
+		if (!playing || document.hidden || heading !== null || !shown || performance.now() < settledAt) return;
 		sceneSettings.hour = Math.min(dayEnd, Math.round(sceneSettings.hour * 60 + 1) / 60);
 		sceneSettings.weatherIntensity = weatherForHour(sceneSettings.hour);
 		document.dispatchEvent(new Event("scenesettings"));
 		if (sceneSettings.hour >= dayEnd) {
 			playing = false;
+			dayOver = true;
 			showPlaying();
 		}
 	}, 1000 / (sceneSettings.clockSpeed || 1.5));
@@ -2104,7 +2206,7 @@ function timelineClock() {
 		if (to) goToHour(to.hour);
 	}
 	previous.addEventListener("click", () => step(-1));
-	next.addEventListener("click", () => step(1));
+	next.addEventListener("click", () => (next.hasAttribute("data-restart") ? startOver() : step(1)));
 
 	// The list opens upward from the caption, as far as just under the time
 	// at the top, and opens at the current event.
@@ -2151,16 +2253,26 @@ function timelineClock() {
 		const from = { hour: sceneSettings.hour, weather: sceneSettings.weatherIntensity };
 		weatherLean = 0; // the event's own weather: its hour's usual
 		const to = { hour, weather: weatherForHour(hour) };
+		if (dayOver && hour < dayEnd) {
+			playing = true;
+			dayOver = false;
+			showPlaying();
+		}
 		const seconds = reducedMotion ? 0 : 1.6;
 		const start = performance.now();
 		heading = hour;
+		document.documentElement.dataset.jumping = "";
 		cancelAnimationFrame(easing);
 		function frame(now) {
 			const along = seconds ? Math.min((now - start) / 1000 / seconds, 1) : 1;
 			const eased = along < 0.5 ? 2 * along ** 2 : 1 - (2 - 2 * along) ** 2 / 2;
 			sceneSettings.hour = from.hour + (to.hour - from.hour) * eased;
 			sceneSettings.weatherIntensity = from.weather + (to.weather - from.weather) * eased;
-			if (along === 1) heading = null;
+			if (along === 1) {
+				heading = null;
+				// After a jump in time, a moment for everything to settle.
+				if (Math.abs(to.hour - from.hour) > 0.02) settledAt = performance.now() + 300;
+			}
 			// The clock moves every frame; the scene's light (which repaints
 			// the sky) changes 15 times a second, which still looks smooth.
 			if (along === 1 || now - lastSceneUpdate >= 66) {
@@ -2169,7 +2281,14 @@ function timelineClock() {
 			} else {
 				showTime();
 			}
-			if (along < 1) easing = requestAnimationFrame(frame);
+			if (along < 1) {
+				easing = requestAnimationFrame(frame);
+			} else {
+				// The sun's usual glide again, once its last step has started.
+				requestAnimationFrame(() => {
+					if (heading === null) delete document.documentElement.dataset.jumping;
+				});
+			}
 		}
 		easing = requestAnimationFrame(frame);
 	}
