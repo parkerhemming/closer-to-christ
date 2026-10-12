@@ -1,6 +1,6 @@
 // The scene's moving parts: the grass and bushes of the two near land layers
 // and the figure's hair, loincloth and breathing. A worker (one per layer,
-// handed a canvas by swayInWind in app.js) draws the layer's image with
+// handed a canvas by swayInWind in js/land.js) draws the layer's image with
 // WebGL, shifting each pixel by its motion map's red (how far it sways
 // sideways in the wind) and green (how much it rises with each breath).
 // The maps were baked from the images (plant tips most, roots and rocks not

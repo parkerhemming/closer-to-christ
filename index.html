@@ -12,7 +12,7 @@
 			// Runs before any image loads: picks a starting quality level (and
 			// with it the image size) from what the browser says about the
 			// connection and device. Unless that's already low, the scene layers
-			// stay hidden (data-probing) so no image downloads until app.js has
+			// stay hidden (data-probing) so no image downloads until js/loading.js has
 			// timed a small test download. The reason shows in the settings panel.
 			(() => {
 				const root = document.documentElement;
@@ -22,7 +22,7 @@
 				const connection = navigator.connection; // Chromium only
 				const memory = navigator.deviceMemory ?? 8; // GB; Chromium only
 				// A level picked in the settings, which sticks; otherwise a
-				// step-down saved after a slow frame rate (app.js). That key was
+				// step-down saved after a slow frame rate (js/loading.js). That key was
 				// renamed so ones saved by an older, too-strict check are ignored.
 				let chosen = null;
 				let saved = null;
@@ -124,7 +124,7 @@
 			data-scenery="far-mountains"
 			data-z_index="1.2"
 		></section>
-		<!-- The far land layers drawn by wind.js (swayInWind in app.js). -->
+		<!-- The far land layers drawn by wind.js (swayInWind in js/land.js). -->
 		<canvas class="land-wind land-wind--far" data-z_index="1.2" aria-hidden="true"></canvas>
 
 		<section
@@ -133,7 +133,7 @@
 			data-z_index="1.5"
 		></section>
 		<canvas class="land-wind land-wind--hills" data-z_index="1.5" aria-hidden="true"></canvas>
-		<!-- The mountains' shadow on the hills (landShadows in app.js). -->
+		<!-- The mountains' shadow on the hills (landShadows in js/land.js). -->
 		<canvas class="land-shadow land-shadow--hills" data-z_index="1.5" aria-hidden="true"></canvas>
 
 		<!-- The Mount of Olives, across the Kidron Valley behind the city, with
@@ -164,10 +164,10 @@
 			<span class="city-flicker-plane"></span>
 		</section>
 		<!-- The hills' shadow on the city's land, drawn by landShadows in
-		     app.js; it lies exactly over the city layer and moves with it. -->
+		     js/land.js; it lies exactly over the city layer and moves with it. -->
 		<canvas class="land-shadow land-shadow--city" data-z_index="2.5" aria-hidden="true"></canvas>
 		<!-- Markers that open what each part of the scene teaches
-		     (teachingMarkers in app.js): over the city, in the sky and on the
+		     (teachingMarkers in js/markers.js): over the city, in the sky and on the
 		     figure, each moving with its layer. -->
 		<div class="scene-markers scene-markers--city" data-z_index="2.5"></div>
 		<div class="scene-markers scene-markers--sky" data-z_index="1"></div>
@@ -407,9 +407,22 @@
 			</span>
 		</div>
 
-		<script src="./rain.js"></script>
-		<script src="./teachings.js"></script>
-		<script src="./app.js"></script>
+		<!-- Plain scripts sharing one global scope, in this order: helpers
+		     first, then each part of the scene. Workers (js/workers/) are
+		     started from them and run on their own threads; rain.js is also
+		     loaded here, for browsers that can't hand it a canvas. -->
+		<script src="./js/workers/rain.js"></script>
+		<script src="./js/utils.js"></script>
+		<script src="./js/time-and-weather.js"></script>
+		<script src="./js/loading.js"></script>
+		<script src="./js/sky.js"></script>
+		<script src="./js/storm.js"></script>
+		<script src="./js/land.js"></script>
+		<script src="./js/parallax.js"></script>
+		<script src="./js/timeline.js"></script>
+		<script src="./js/settings-panel.js"></script>
+		<script src="./js/teachings.js"></script>
+		<script src="./js/markers.js"></script>
 		<script>
 			applyTimeOfDay();
 			document.addEventListener("scenesettings", applyTimeOfDay);

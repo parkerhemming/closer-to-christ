@@ -76,7 +76,7 @@ body {
 	contain: layout paint;
 
 	/* The sky's colours: a small canvas, stretched (a smooth gradient looks
-	   the same), that drawSky in app.js repaints as the light changes. A CSS
+	   the same), that drawSky in js/time-and-weather.js repaints as the light changes. A CSS
 	   gradient this size had to be repainted in full each second, and that
 	   spike in graphics memory made Chrome drop every layer for a frame. */
 	.sky-gradient {
@@ -86,7 +86,7 @@ body {
 		height: 100%;
 	}
 
-	/* The stars (createStars in app.js): the still ones painted into one
+	/* The stars (createStars in js/sky.js): the still ones painted into one
 	   canvas, the twinkling ones tiny elements of their own. Each fades by
 	   itself as the sky lightens; fading the whole starfield as a group made
 	   the browser redraw it all every frame. The clock updates the light
@@ -159,7 +159,7 @@ body {
 
 	/* The sun is just placed until the scene is up (gliding then could start
 	   it from wherever the page first put it, a corner) and during a jump in
-	   time, when goToHour in app.js places it every frame along the jump's
+	   time, when goToHour in js/timeline.js places it every frame along the jump's
 	   own easing (short glides restarting 15 times a second made it pulse). */
 	:root:is(:not([data-scene-shown]), [data-jumping]) & .sun {
 		transition: none;
@@ -388,7 +388,7 @@ body {
 	--cloud-opacity: 0.64;
 }
 
-/* Drawn into a canvas by wind.js (swayInWind in app.js), colour and all
+/* Drawn into a canvas by wind.js (swayInWind in js/land.js), colour and all
    (once it's up, the background and the live filter go: a filter on these
    drifting, near full-screen layers was redone every frame, the scene's
    biggest cost). */
@@ -422,7 +422,7 @@ body {
 	pointer-events: none;
 }
 
-/* Rain canvases fill the screen (see startRain in app.js). */
+/* Rain canvases fill the screen (see startRain in js/storm.js). */
 .rain-layer {
 	width: 100%;
 	height: 100%;
@@ -737,7 +737,7 @@ body {
 	--color-grade: brightness(42%) saturate(72%) contrast(98%) sepia(8%);
 }
 
-/* Cast shadows of the ridges, drawn by landShadows in app.js into a small
+/* Cast shadows of the ridges, drawn by landShadows in js/land.js into a small
    canvas that lies exactly over the land it falls on (same size, place and
    parallax), just above it. Shadows are soft, so a low-resolution canvas
    stretched to fit looks the same. Built from CSS masks and transformed
@@ -1294,7 +1294,7 @@ body {
 }
 
 /* A panel that drops from the gear, over the scene but leaving the time,
-   the gear and the caption visible (app.js keeps it above the caption). */
+   the gear and the caption visible (js/settings-panel.js keeps it above the caption). */
 .settings {
 	position: fixed;
 	inset: calc(max(20px, env(safe-area-inset-top)) + 88px)
@@ -1662,7 +1662,7 @@ body {
 /* The caption, bottom centre: what is happening, like a film subtitle, with
    arrows to step between events; clicking it opens the list of them all
    upward. It folds to one line a few seconds after each event and opens
-   again on hover or a tap (timelineClock in app.js). */
+   again on hover or a tap (timelineClock in js/timeline.js). */
 .caption {
 	position: fixed;
 	bottom: max(28px, env(safe-area-inset-bottom));
@@ -1810,7 +1810,7 @@ body {
 }
 
 /* The list of the day's events opens upward from the caption, as wide as
-   it. app.js sets its height to the space above. */
+   it. js/timeline.js sets its height to the space above. */
 .timeline {
 	position: absolute;
 	bottom: calc(100% + 10px);
@@ -2347,7 +2347,7 @@ body {
 
 /* Markers: a small gold ring over the scene's layers (above the rain and
    storm wash, below the caption and panels). Faint until the mouse comes
-   near (teachingMarkers in app.js); hovering one makes it pulse, lights up
+   near (teachingMarkers in js/markers.js); hovering one makes it pulse, lights up
    the area around it and shows its title.
    The button is bigger than the ring so it's easy to tap. */
 .scene-markers {
@@ -2380,7 +2380,7 @@ body {
 	border: 0;
 	border-radius: 50%;
 	background: none;
-	/* Faint, brightening as the mouse comes near (--near, from app.js). */
+	/* Faint, brightening as the mouse comes near (--near, from js/markers.js). */
 	opacity: calc(0.3 + 0.7 * var(--near, 0));
 	cursor: pointer;
 	pointer-events: auto;
@@ -2500,7 +2500,7 @@ body {
 	}
 }
 
-/* The card a marker opens: placed beside it by teachingMarkers in app.js. */
+/* The card a marker opens: placed beside it by teachingMarkers in js/markers.js. */
 .teaching {
 	box-sizing: border-box; /* its max-height includes the border */
 	inset: auto;
@@ -2533,7 +2533,7 @@ body {
 /* A pointer from the card's side to its marker: a square in the card's
    colour, turned 45deg and centred on the card's edge. Its inner half covers
    that stretch of the card's border and only its two outer sides have one,
-   so a single outline runs round the card and the point. app.js sets the
+   so a single outline runs round the card and the point. js/markers.js sets the
    side and --pointer-y. */
 .teaching[data-pointer]::before {
 	position: absolute;
@@ -2694,7 +2694,7 @@ body {
 	}
 }
 
-/* Switched off when fully faded (applyTimeOfDay in app.js). */
+/* Switched off when fully faded (applyTimeOfDay in js/time-and-weather.js). */
 :root[data-no-stars] #sky .stars,
 :root[data-no-city-lights] :is(.city-light, .city-flicker-plane) {
 	display: none;

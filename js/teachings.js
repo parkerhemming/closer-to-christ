@@ -1,4 +1,4 @@
-// What each marker in the scene teaches (markers in app.js). Scriptures are
+// What each marker in the scene teaches (js/markers.js). Scriptures are
 // listed restoration first (Book of Mormon, Doctrine and Covenants, Pearl of
 // Great Price), then the Bible, and quoted from the Church's editions.
 //

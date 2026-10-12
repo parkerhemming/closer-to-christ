@@ -5,7 +5,7 @@
 // band is drawn in one go, so a downpour of hundreds of drops costs about as
 // much as a drizzle.
 //
-// It runs in a worker (startRain in app.js hands it the canvases), so it keeps
+// It runs in a worker (startRain in js/storm.js hands it the canvases), so it keeps
 // falling even when the page's own frames are held up, as Chrome does while
 // the settings panel scrolls. Where a canvas can't be handed to a worker, the
 // page runs it instead (this file is also loaded as a script).
