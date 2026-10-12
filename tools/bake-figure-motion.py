@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage as nd
 
-SOURCE = "assets/source/christ-realistic-v5.png"
+SOURCE = "assets/source/christ-realistic-v6.png"
 OUTPUT = "assets/christ/christ-motion-v1.png"
 
 image = np.asarray(Image.open(SOURCE).convert("RGBA")).astype(np.float32) / 255
