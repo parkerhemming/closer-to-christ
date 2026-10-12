@@ -10,7 +10,7 @@ SHAPES = [
     ("assets/far-mountains-v2.avif", "assets/shadows/far-mountains-shape-v2.webp"),
     ("assets/hills-v5.avif", "assets/shadows/hills-shape-v3.webp"),
     ("assets/olives-v2.avif", "assets/shadows/olives-shape-v2.webp"),
-    ("assets/jerusalem-v6.avif", "assets/shadows/jerusalem-land-v2.webp"),
+    ("assets/jerusalem-v7.avif", "assets/shadows/jerusalem-land-v2.webp"),
 ]
 for source, output in SHAPES:
     image = Image.open(source).convert("RGBA")

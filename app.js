@@ -280,6 +280,13 @@ function applyTimeOfDay() {
 	});
 	setStyle("#sky .stars", { "--starlight": lightFor("starlight") });
 	setStyle("#christ", { "--figure-light": lightFor("figureLight") });
+	placeSun();
+}
+
+// The sun's place and brightness for the hour. As the clock runs, the CSS
+// glides it between ticks; during a jump in time goToHour places it every
+// frame, so it follows the jump's own easing.
+function placeSun() {
 	setStyle("#sky .sun", {
 		"--sun-opacity": lightFor("sunOpacity"),
 		"--sun-top": `${byTime(timeCurves.sunHeight) * 100}vh`,
@@ -288,10 +295,11 @@ function applyTimeOfDay() {
 }
 
 // Sets CSS variables on every element a selector matches, but only once a
-// value has moved enough to see (1.5% for the light, 0.3 units for the sun's
-// place): the clock nudges them all a tiny step every tick, and each change
-// makes the browser redraw the layers that use it. All of them on every tick
-// cost Safari a stall of 50-100ms; most ticks now change nothing.
+// value has moved enough to see (1.5%): the clock nudges them all a tiny step
+// every tick, and each change makes the browser redraw the layers that use
+// it. All of them on every tick cost Safari a stall of 50-100ms; most ticks
+// now change nothing. The sun's place is set every tick: it only moves its
+// own GPU layer, and skipped steps made it lurch and stop.
 const appliedStyle = new WeakMap();
 function setStyle(selector, properties) {
 	for (const element of document.querySelectorAll(selector)) {
@@ -300,8 +308,8 @@ function setStyle(selector, properties) {
 		for (const [name, value] of Object.entries(properties)) {
 			const now = parseFloat(value);
 			const before = applied[name];
-			const step = name.startsWith("--sun-") ? 0.3 : Math.max(0.015 * Math.abs(before), 0.004);
-			if (before !== undefined && Math.abs(now - before) < step) continue;
+			const step = name === "--sun-top" || name === "--sun-left" ? 0 : Math.max(0.015 * Math.abs(before), 0.004);
+			if (before !== undefined && Math.abs(now - before) <= step) continue;
 			applied[name] = now;
 			element.style.setProperty(name, value);
 		}
@@ -1265,7 +1273,7 @@ function swayInWind() {
 		...plants,
 		strength: 0.45,
 	});
-	swayLayer("#christ", ".christ-wind", "./assets/christ/christ-motion-v1.png", {
+	swayLayer("#christ", ".christ-wind", "./assets/christ/christ-motion-v2.png", {
 		light: () => `brightness(${lightFor("figureLight")})`,
 		strength: 0.3,
 		flutterFrequency: [0, -30, 0, 13],
@@ -2516,6 +2524,7 @@ function timelineClock() {
 				document.dispatchEvent(new Event("scenesettings"));
 			} else {
 				showTime();
+				placeSun();
 			}
 			if (along < 1) {
 				easing = requestAnimationFrame(frame);
