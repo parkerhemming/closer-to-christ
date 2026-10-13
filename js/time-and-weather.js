@@ -132,7 +132,7 @@ const darkLight = {
 	cloudLight: 0.8,
 	figureLight: 0.88,
 	sunOpacity: 0.25,
-	cityGlow: 0.6,
+	cityGlow: 0.9,
 };
 
 // A light's value for the hour, dimmed by the noon darkness.
@@ -158,7 +158,7 @@ const timeCurves = {
 	// at 6 AM (0.4) and gone by about 7.
 	starlight: [[0, 1], [0.3, 1], [0.4, 0.85], [0.5, 0.2], [0.6, 0], [1, 0]],
 	// The city's window and lantern lights go out in daylight.
-	cityGlow: [[0, 1], [0.3, 1], [0.5, 0.35], [0.65, 0], [1, 0]],
+	cityGlow: [[0, 1], [0.42, 1], [0.55, 0.35], [0.68, 0], [1, 0]], // full until sunrise
 	// The figure's brightness.
 	figureLight: [[0, 0.75], [0.3, 1], [0.6, 1.12], [1, 1.18]],
 	// The sun: hidden until after 0.32, rising from behind the left hills.
@@ -266,7 +266,10 @@ function applyTimeOfDay() {
 		"--land-saturation": lightFor("landSaturation"),
 		"--land-warmth": byTime(timeCurves.landWarmth),
 	});
-	setStyle(".city-light, .city-flicker-plane", { "--city-glow": lightFor("cityGlow") });
+	// The lights' own opacity, not a variable: on their glowing (filtered)
+	// group a variable change made Safari redraw it.
+	setStyle(".city-lights", { opacity: lightFor("cityGlow") });
+	setStyle(".city-flicker-plane", { "--city-glow": lightFor("cityGlow") });
 	setStyle(".storm-cloud", {
 		"--cloud-light": lightFor("cloudLight"),
 		"--cloud-warmth": byTime(timeCurves.cloudWarmth),

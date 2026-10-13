@@ -24,7 +24,7 @@ function createCityLights() {
 	];
 	const colors = ["#ff9a3d", "#ffb35f", "#f47f2f", "#ffc174"];
 
-	const shuffled = [...candidates].sort(() => Math.random() - 0.5).slice(0, 20);
+	const shuffled = [...candidates].sort(() => Math.random() - 0.5).slice(0, 40);
 	const lights = shuffled.map(([x, y, width, height], index) => {
 		const light = document.createElement("span");
 		light.className = "city-flicker-light";
