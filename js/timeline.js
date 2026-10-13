@@ -190,6 +190,19 @@ function timelineClock() {
 	}
 	// The caption fades between events: "9:00 AM • Crucified at the third
 	// hour", then what happened.
+	// The loading screen and, on phones, the question about motion cover the
+	// scene at first: the clock, and the first caption's open seconds, wait
+	// until they've gone.
+	const coverUp = () =>
+		document.querySelector(
+			"#loading:not(.is-done), #motion-prompt:not([hidden])",
+		);
+	function whenUncovered(then) {
+		if (coverUp()) setTimeout(() => whenUncovered(then), 250);
+		else setTimeout(then, 400);
+	}
+	const phone = window.matchMedia("(max-width: 600px)");
+
 	let captioned = null;
 	let captionTimer;
 	let captionEvent = null; // the event whose words are up
@@ -201,6 +214,9 @@ function timelineClock() {
 		clearTimeout(captionTimer);
 		captionTimer = setTimeout(
 			() => {
+				// On a phone the caption stays folded while something covers
+				// the scene, and opens once it's gone.
+				const covered = phone.matches && coverUp();
 				resizeSmoothly(() => {
 					const time = element("span", "caption-time", "");
 					time.append(...timeParts(event.hour), " • ");
@@ -209,8 +225,17 @@ function timelineClock() {
 					captionEvent = event;
 					captionShownAt = performance.now();
 					caption.classList.remove("is-changing");
-					caption.classList.remove("is-folded");
+					caption.classList.toggle("is-folded", Boolean(covered));
 				});
+				if (covered) {
+					whenUncovered(() => {
+						if (captioned !== event) return;
+						holding = true;
+						setFolded(false);
+						foldLater(3.5);
+					});
+					return;
+				}
 				holding = true;
 				foldLater(3.5);
 			},
@@ -259,7 +284,7 @@ function timelineClock() {
 	// first caption's seconds start once the loading screen goes.
 	function foldLater(seconds) {
 		clearTimeout(foldTimer);
-		if (document.querySelector("#loading:not(.is-done)")) {
+		if (coverUp()) {
 			foldTimer = setTimeout(() => foldLater(seconds), 250);
 			return;
 		}
@@ -355,7 +380,8 @@ function timelineClock() {
 	});
 
 	function tick() {
-		// Not until the scene is on screen (after loading) and everything has
+		// Not until the scene is on screen (after loading and the motion
+		// question) and everything has
 		// settled after a jump: the sun glides into place for 1.2s after the
 		// light stops changing.
 		const shown = "sceneShown" in document.documentElement.dataset;
@@ -364,6 +390,7 @@ function timelineClock() {
 			document.hidden ||
 			heading !== null ||
 			!shown ||
+			coverUp() ||
 			performance.now() < settledAt
 		)
 			return;
