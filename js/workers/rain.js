@@ -49,15 +49,23 @@ function createRain(layers, conditions, onCount) {
 	}
 
 	// A drop starts somewhere above the top edge (or anywhere on screen when
-	// the rain first appears, so it doesn't arrive as one sheet).
-	function newDrop(layer, anywhere) {
+	// the rain first appears, so it doesn't arrive as one sheet). The wind
+	// carries it right as it falls, so it may start as far left as it will
+	// drift before reaching the bottom: otherwise the lower left corner,
+	// which only drops from off the screen reach, stays nearly dry.
+	function newDrop(layer, anywhere, wind) {
 		const fallSeconds = between(...layer.fallSeconds);
+		const y = anywhere
+			? between(-0.4, 1) * height
+			: between(-0.4, 0) * height;
+		const drift = between(...layer.drift) / (1.5 * height); // sideways per px fallen
+		const travel = drift * wind * (height - y);
 		return {
-			x: between(-0.08, 1.04) * width,
-			y: anywhere ? between(-0.4, 1) * height : between(-0.4, 0) * height,
+			x: between(-0.08 * width - travel, 1.04 * width),
+			y,
 			// The original drops fell 150% of the screen height in fallSeconds.
 			speed: (1.5 * height) / fallSeconds,
-			drift: between(...layer.drift) / (1.5 * height), // sideways per px fallen
+			drift,
 			length: between(...layer.length),
 			band: Math.floor(Math.random() * brightnessBands * widthBands),
 		};
@@ -81,9 +89,15 @@ function createRain(layers, conditions, onCount) {
 
 		for (const layer of layers) {
 			const share = low ? layer.lowQualityShare : 1;
-			const target = Math.round(layer.count * rain * share * gust);
+			// More drops for the wider band they start across (see newDrop),
+			// so as many land on the screen.
+			const [least, most] = layer.drift;
+			const spread = 1 + (0.8 * ((least + most) / 2) * wind) / width;
+			const target = Math.round(
+				layer.count * rain * share * gust * spread,
+			);
 			while (layer.drops.length < target) {
-				layer.drops.push(newDrop(layer, firstFrame));
+				layer.drops.push(newDrop(layer, firstFrame, wind));
 			}
 			// No rain: clear the canvas once, then leave it alone (an untouched
 			// canvas costs nothing to show).
@@ -112,7 +126,7 @@ function createRain(layers, conditions, onCount) {
 					// Fallen off the bottom: start again at the top, or stop if
 					// the rain has eased off.
 					if (layer.drops.length > target) layer.drops.splice(i, 1);
-					else layer.drops[i] = newDrop(layer, false);
+					else layer.drops[i] = newDrop(layer, false, wind);
 					continue;
 				}
 				// A streak along the fall direction (the 7deg lean plus its wind
