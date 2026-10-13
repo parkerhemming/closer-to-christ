@@ -41,7 +41,13 @@ function createStars(count) {
 	// Painted as the stars' CSS was: each glow is the star itself blurred
 	// (a box-shadow's blur radius is twice the spread, as a canvas shadowBlur
 	// is), so a tiny star has a tiny, faint glow.
-	const glows = lowQuality ? [[4, "#dcefff"]] : [[20, "#8ebce0"], [10, "#dcefff"], [4, "white"]];
+	const glows = lowQuality
+		? [[4, "#dcefff"]]
+		: [
+				[20, "#8ebce0"],
+				[10, "#dcefff"],
+				[4, "white"],
+			];
 	// Just a shape's glow: the shape is drawn off the canvas and its shadow
 	// thrown back onto it.
 	function glow(context, draw, blur, colour, scale) {
@@ -57,24 +63,59 @@ function createStars(count) {
 	// The big stars: a four-pointed sparkle, glowing as their CSS
 	// drop-shadows did (each glow is of everything before it), painted once.
 	const sparkle = [
-		[50, 0], [52, 37], [58, 41], [72, 27], [61, 44], [64, 48], [100, 50], [64, 52],
-		[61, 56], [72, 73], [58, 59], [52, 63], [50, 100], [48, 63], [42, 59], [28, 73],
-		[39, 56], [36, 52], [0, 50], [36, 48], [39, 44], [28, 27], [42, 41], [48, 37],
+		[50, 0],
+		[52, 37],
+		[58, 41],
+		[72, 27],
+		[61, 44],
+		[64, 48],
+		[100, 50],
+		[64, 52],
+		[61, 56],
+		[72, 73],
+		[58, 59],
+		[52, 63],
+		[50, 100],
+		[48, 63],
+		[42, 59],
+		[28, 73],
+		[39, 56],
+		[36, 52],
+		[0, 50],
+		[36, 48],
+		[39, 44],
+		[28, 27],
+		[42, 41],
+		[48, 37],
 	];
 	function sparkleImage(width, scale) {
 		const reach = width / 2 + 24; // the glows' reach, in CSS pixels
 		const image = document.createElement("canvas");
 		image.width = image.height = Math.ceil(reach * 2 * scale);
 		const context = image.getContext("2d");
-		context.setTransform(scale, 0, 0, scale, image.width / 2, image.height / 2);
+		context.setTransform(
+			scale,
+			0,
+			0,
+			scale,
+			image.width / 2,
+			image.height / 2,
+		);
 		context.beginPath();
-		for (const [x, y] of sparkle) context.lineTo(((x - 50) / 100) * width, ((y - 50) / 100) * width);
+		for (const [x, y] of sparkle)
+			context.lineTo(((x - 50) / 100) * width, ((y - 50) / 100) * width);
 		context.closePath();
 		context.fillStyle = "white";
 		context.fill();
 		context.setTransform(1, 0, 0, 1, 0, 0);
 		context.globalCompositeOperation = "destination-over";
-		for (const [blur, colour] of lowQuality ? [] : [[1.5, "white"], [4, "#dcefff"], [8, "#8ebce0"]]) {
+		for (const [blur, colour] of lowQuality
+			? []
+			: [
+					[1.5, "white"],
+					[4, "#dcefff"],
+					[8, "#8ebce0"],
+				]) {
 			const copy = document.createElement("canvas");
 			copy.width = copy.height = image.width;
 			copy.getContext("2d").drawImage(image, 0, 0);
@@ -99,7 +140,13 @@ function createStars(count) {
 			context.globalAlpha = star.opacity;
 			if (star.big) {
 				const { image, reach } = sparkleImage(star.width, scale);
-				context.drawImage(image, x - reach, y - reach, reach * 2, reach * 2);
+				context.drawImage(
+					image,
+					x - reach,
+					y - reach,
+					reach * 2,
+					reach * 2,
+				);
 				continue;
 			}
 			const dot = () => {
@@ -108,7 +155,8 @@ function createStars(count) {
 				context.fillStyle = "white";
 				context.fill();
 			};
-			for (const [blur, colour] of glows) glow(context, dot, blur, colour, scale);
+			for (const [blur, colour] of glows)
+				glow(context, dot, blur, colour, scale);
 			dot();
 		}
 	}
@@ -207,7 +255,8 @@ function createShootingStars() {
 			"--shooting-tail-width": `${randomBetween(...profile.width)}px`,
 			"--shooting-thickness": `${randomBetween(...profile.thickness)}px`,
 			// Fainter as the sky lightens (they no longer sit in a fading layer).
-			"--shooting-opacity": randomBetween(...profile.opacity) * lightFor("starlight"),
+			"--shooting-opacity":
+				randomBetween(...profile.opacity) * lightFor("starlight"),
 			"--shooting-head-size": `${randomBetween(...profile.head)}px`,
 		});
 
@@ -215,9 +264,13 @@ function createShootingStars() {
 			shootingStar.classList.add("shooting-star--stretch");
 		}
 
-		shootingStar.addEventListener("animationend", () => shootingStar.remove(), {
-			once: true,
-		});
+		shootingStar.addEventListener(
+			"animationend",
+			() => shootingStar.remove(),
+			{
+				once: true,
+			},
+		);
 		sky.appendChild(shootingStar);
 		scheduleShootingStar();
 	}
@@ -234,7 +287,9 @@ function sunGlide() {
 	function update() {
 		delete root.dataset.sceneShown;
 		if (document.hidden) return;
-		requestAnimationFrame(() => requestAnimationFrame(() => (root.dataset.sceneShown = "")));
+		requestAnimationFrame(() =>
+			requestAnimationFrame(() => (root.dataset.sceneShown = "")),
+		);
 	}
 	update();
 	document.addEventListener("visibilitychange", update);

@@ -780,7 +780,13 @@ body {
 /* The clock changes the light a step at a time; these glide between the
    steps, on the GPU (the drawn layers glide in wind.js, the sky and the
    shadows' angles in the page). A jump in time is already eased. */
-:is(.storm-cloud, .storm-tone, .land-shadow, .city-lights, .city-flicker-plane) {
+:is(
+	.storm-cloud,
+	.storm-tone,
+	.land-shadow,
+	.city-lights,
+	.city-flicker-plane
+) {
 	transition: opacity 1.2s linear;
 
 	:root[data-jumping] & {
@@ -792,7 +798,12 @@ body {
    whole pixels whenever it is only moved, so with the parallax each layer
    stepped a pixel at a time, out of step with the others. Any rotation
    stops the snapping; this one is far too small to see. */
-:is(.land-wind, .land-wind--city, .christ-wind, .storm-cloud__texture > canvas) {
+:is(
+	.land-wind,
+	.land-wind--city,
+	.christ-wind,
+	.storm-cloud__texture > canvas
+) {
 	rotate: 0.0001deg;
 }
 
@@ -951,7 +962,8 @@ body {
 	   of the crossbar's middle, so it's shifted halfway between the two. */
 	transform: translateX(-51.77%) rotate(0.5deg);
 	transform-origin: center center;
-	filter: drop-shadow(0 0 1px rgba(24, 14, 10, 0.42)) brightness(var(--figure-light, 1));
+	filter: drop-shadow(0 0 1px rgba(24, 14, 10, 0.42))
+		brightness(var(--figure-light, 1));
 }
 
 /* The figure's markers lie over it, turning and moving with it. */
@@ -2814,7 +2826,13 @@ body {
 
 /* Every round button looks alike: the same dark glass, edge and hover (a
    little darker, with a gold edge). Icons are gold, except pause/play's. */
-:is(.settings-button, .clock-play, .clock-speed, .caption-step, .teaching-close) {
+:is(
+	.settings-button,
+	.clock-play,
+	.clock-speed,
+	.caption-step,
+	.teaching-close
+) {
 	border: 1px solid rgba(255, 255, 255, 0.16);
 	background: rgba(12, 28, 37, 0.55);
 	-webkit-backdrop-filter: blur(10px);
@@ -2824,15 +2842,25 @@ body {
 		border-color 150ms ease;
 }
 
-:is(.settings-button, .clock-play, .clock-speed, .caption-step, .teaching-close):hover:not(
-		:disabled
-	) {
+:is(
+		.settings-button,
+		.clock-play,
+		.clock-speed,
+		.caption-step,
+		.teaching-close
+	):hover:not(:disabled) {
 	border-color: rgba(231, 180, 119, 0.45);
 	background: rgba(12, 28, 37, 0.72);
 }
 
 @media (min-width: 601px) {
-	:is(.settings-button, .clock-play, .clock-speed, .caption-step, .teaching-close) {
+	:is(
+		.settings-button,
+		.clock-play,
+		.clock-speed,
+		.caption-step,
+		.teaching-close
+	) {
 		-webkit-backdrop-filter: blur(5px);
 		backdrop-filter: blur(5px);
 	}

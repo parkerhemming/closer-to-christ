@@ -28,8 +28,12 @@ function setStyle(selector, properties) {
 		for (const [name, value] of Object.entries(properties)) {
 			const now = parseFloat(value);
 			const before = applied[name];
-			const step = name === "--sun-top" || name === "--sun-left" ? 0 : Math.max(0.015 * Math.abs(before), 0.004);
-			if (before !== undefined && Math.abs(now - before) <= step) continue;
+			const step =
+				name === "--sun-top" || name === "--sun-left"
+					? 0
+					: Math.max(0.015 * Math.abs(before), 0.004);
+			if (before !== undefined && Math.abs(now - before) <= step)
+				continue;
 			applied[name] = now;
 			element.style.setProperty(name, value);
 		}
@@ -54,15 +58,38 @@ function setStyleProperties(element, properties) {
 // combined into one colour matrix (rows) and offset, using the filter spec's
 // formulas, applied after `start`. The browser clamps each step's colours;
 // this only clamps the end (within 2/255 of it on the clouds).
-function colorFilter(filters, start = { rows: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], offset: [0, 0, 0] }) {
+function colorFilter(
+	filters,
+	start = {
+		rows: [
+			[1, 0, 0],
+			[0, 1, 0],
+			[0, 0, 1],
+		],
+		offset: [0, 0, 0],
+	},
+) {
 	let { rows, offset } = start;
-	for (const [, name, number, unit] of filters.matchAll(/([\w-]+)\(([\d.]+)(%|deg)?\)/g)) {
+	for (const [, name, number, unit] of filters.matchAll(
+		/([\w-]+)\(([\d.]+)(%|deg)?\)/g,
+	)) {
 		const a = Number(number) / (unit === "%" ? 100 : 1);
 		const n = 1 - Math.min(a, 1);
-		const [cos, sin] = [Math.cos((a * Math.PI) / 180), Math.sin((a * Math.PI) / 180)];
+		const [cos, sin] = [
+			Math.cos((a * Math.PI) / 180),
+			Math.sin((a * Math.PI) / 180),
+		];
 		const step = {
-			brightness: [[a, 0, 0], [0, a, 0], [0, 0, a]],
-			contrast: [[a, 0, 0], [0, a, 0], [0, 0, a]],
+			brightness: [
+				[a, 0, 0],
+				[0, a, 0],
+				[0, 0, a],
+			],
+			contrast: [
+				[a, 0, 0],
+				[0, a, 0],
+				[0, 0, a],
+			],
 			saturate: [
 				[0.213 + 0.787 * a, 0.715 - 0.715 * a, 0.072 - 0.072 * a],
 				[0.213 - 0.213 * a, 0.715 + 0.285 * a, 0.072 - 0.072 * a],
@@ -74,13 +101,31 @@ function colorFilter(filters, start = { rows: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
 				[0.272 - 0.272 * n, 0.534 - 0.534 * n, 0.131 + 0.869 * n],
 			],
 			"hue-rotate": [
-				[0.213 + cos * 0.787 - sin * 0.213, 0.715 - cos * 0.715 - sin * 0.715, 0.072 - cos * 0.072 + sin * 0.928],
-				[0.213 - cos * 0.213 + sin * 0.143, 0.715 + cos * 0.285 + sin * 0.14, 0.072 - cos * 0.072 - sin * 0.283],
-				[0.213 - cos * 0.213 - sin * 0.787, 0.715 - cos * 0.715 + sin * 0.715, 0.072 + cos * 0.928 + sin * 0.072],
+				[
+					0.213 + cos * 0.787 - sin * 0.213,
+					0.715 - cos * 0.715 - sin * 0.715,
+					0.072 - cos * 0.072 + sin * 0.928,
+				],
+				[
+					0.213 - cos * 0.213 + sin * 0.143,
+					0.715 + cos * 0.285 + sin * 0.14,
+					0.072 - cos * 0.072 - sin * 0.283,
+				],
+				[
+					0.213 - cos * 0.213 - sin * 0.787,
+					0.715 - cos * 0.715 + sin * 0.715,
+					0.072 + cos * 0.928 + sin * 0.072,
+				],
 			],
 		}[name];
 		const add = name === "contrast" ? 0.5 - 0.5 * a : 0;
-		const apply = (vector) => step.map((row) => row[0] * vector[0] + row[1] * vector[1] + row[2] * vector[2]);
+		const apply = (vector) =>
+			step.map(
+				(row) =>
+					row[0] * vector[0] +
+					row[1] * vector[1] +
+					row[2] * vector[2],
+			);
 		rows = [0, 1, 2].map((i) => apply(rows.map((row) => row[i]))); // columns, transformed...
 		rows = [0, 1, 2].map((i) => rows.map((column) => column[i])); // ...back to rows
 		offset = apply(offset).map((value) => value + add);
@@ -112,12 +157,14 @@ function glider(paint, { seconds = 0.5, fps = 30 } = {}) {
 		}
 		const elapsed = last ? Math.min((now - last) / 1000, 0.25) : 1 / fps;
 		last = now;
-		const settle = "jumping" in document.documentElement.dataset ? 0.08 : seconds;
+		const settle =
+			"jumping" in document.documentElement.dataset ? 0.08 : seconds;
 		const share = 1 - Math.exp(-elapsed / settle);
 		let moving = false;
 		shown = shown.map((value, i) => {
 			const gap = target[i] - value;
-			if (Math.abs(gap) < 0.0005 * (Math.abs(target[i]) + 1)) return target[i];
+			if (Math.abs(gap) < 0.0005 * (Math.abs(target[i]) + 1))
+				return target[i];
 			moving = true;
 			return value + gap * share;
 		});

@@ -30,7 +30,11 @@ const reducedMotion = window.matchMedia(
 	"(prefers-reduced-motion: reduce)",
 ).matches;
 
-const savedSettingNames = ["parallax", "parallaxSmoothing", "clockSpeedMultiplier"];
+const savedSettingNames = [
+	"parallax",
+	"parallaxSmoothing",
+	"clockSpeedMultiplier",
+];
 
 try {
 	const saved = JSON.parse(localStorage.getItem("sceneSettings")) ?? {};
@@ -55,26 +59,68 @@ function saveSettings() {
 // 0.7 is exactly the original storm.
 const weatherCurves = {
 	// Amount of rain: none until 0.35, a downpour (14x the original) at 1.
-	rain: [[0, 0], [0.35, 0], [0.7, 1], [1, 14]],
+	rain: [
+		[0, 0],
+		[0.35, 0],
+		[0.7, 1],
+		[1, 14],
+	],
 	// Streak length: long streaks in heavy rain read as sheets of water.
-	rainLength: [[0, 1], [0.7, 1], [1, 1.9]],
+	rainLength: [
+		[0, 1],
+		[0.7, 1],
+		[1, 1.9],
+	],
 	// Streak brightness.
-	rainBrightness: [[0, 1], [0.7, 1], [1, 1.25]],
+	rainBrightness: [
+		[0, 1],
+		[0.7, 1],
+		[1, 1.25],
+	],
 	// How often lightning strikes: none until 0.55, 2.5x as often at 1.
-	lightning: [[0, 0], [0.55, 0], [0.7, 1], [1, 2.5]],
+	lightning: [
+		[0, 0],
+		[0.55, 0],
+		[0.7, 1],
+		[1, 2.5],
+	],
 	// Cloud opacity: faint wisps when clear, thin at partly cloudy, much
 	// thicker than the original at 1.
-	clouds: [[0, 0.08], [0.4, 0.38], [0.7, 1], [1, 1.7]],
+	clouds: [
+		[0, 0.08],
+		[0.4, 0.38],
+		[0.7, 1],
+		[1, 1.7],
+	],
 	// Cloud brightness: light, fair-weather clouds when clear; dark at 1.
-	cloudShade: [[0, 1.45], [0.4, 1.2], [0.7, 1], [1, 0.72]],
+	cloudShade: [
+		[0, 1.45],
+		[0.4, 1.2],
+		[0.7, 1],
+		[1, 0.72],
+	],
 	// Wind: how fast the clouds drift and how far the rain slants.
-	wind: [[0, 0.35], [0.7, 1], [1, 1.9]],
+	wind: [
+		[0, 0.35],
+		[0.7, 1],
+		[1, 1.9],
+	],
 	// Direct sunlight getting through the clouds (it sets how strong the
 	// ridges' shadows are).
-	sunlight: [[0, 1], [0.5, 0.8], [0.7, 0.45], [1, 0.15]],
+	sunlight: [
+		[0, 1],
+		[0.5, 0.8],
+		[0.7, 0.45],
+		[1, 0.15],
+	],
 	// The dark storm wash over the whole scene (its opacity: the wash is
 	// twice the original strength, so 0.5 is the original and 1 is double).
-	gloom: [[0, 0], [0.4, 0.22], [0.7, 0.5], [1, 1]],
+	gloom: [
+		[0, 0],
+		[0.4, 0.22],
+		[0.7, 0.5],
+		[1, 1],
+	],
 };
 
 function byWeather(points) {
@@ -86,19 +132,38 @@ function byWeather(points) {
 const hourCurves = {
 	// The daylight level the timeCurves read: 0 night, 1 full day. The sun is
 	// rising at 6 and high by noon.
-	daylight: [[6, 0.4], [7, 0.55], [9, 0.78], [11.5, 1], [15, 1]],
+	daylight: [
+		[6, 0.4],
+		[7, 0.55],
+		[9, 0.78],
+		[11.5, 1],
+		[15, 1],
+	],
 	// From noon "there was darkness over the whole land until the ninth hour"
 	// (Mark 15:33) and "the sun was darkened" (Luke 23:45): an unnatural dimming
 	// of the day, not night. It falls fast just before noon, so it's already
 	// dark at 12, and deepens to its darkest at 3 PM. 0 is none; at 1 the
 	// light reaches darkLight.
-	darkness: [[6, 0], [11.75, 0], [12, 0.65], [15, 1]],
+	darkness: [
+		[6, 0],
+		[11.75, 0],
+		[12, 0.65],
+		[15, 1],
+	],
 	// The usual weather: often stormy in the dim early morning (sometimes
 	// clear enough for the stars) and in the darkness, calmer through the
 	// bright morning, then building from 2:30 to the fiercest storm at 3 PM,
 	// when he died and the earth quaked (past 1, so even a calm lean reaches
 	// a full storm). weatherForHour adds the visit's random lean.
-	weather: [[6, 0.55], [7.5, 0.45], [9, 0.3], [11.5, 0.25], [12, 0.7], [14.5, 0.8], [15, 1.2]],
+	weather: [
+		[6, 0.55],
+		[7.5, 0.45],
+		[9, 0.3],
+		[11.5, 0.25],
+		[12, 0.7],
+		[14.5, 0.8],
+		[15, 1.2],
+	],
 };
 
 // How much stormier (or calmer) than usual the weather is: random for each
@@ -138,7 +203,9 @@ const darkLight = {
 // A light's value for the hour, dimmed by the noon darkness.
 function lightFor(name) {
 	const value = byTime(timeCurves[name]);
-	return name in darkLight ? value + (darkLight[name] - value) * darkness() : value;
+	return name in darkLight
+		? value + (darkLight[name] - value) * darkness()
+		: value;
 }
 
 // How the light follows the daylight level, as [daylight, value] points.
@@ -148,41 +215,152 @@ function lightFor(name) {
 const timeCurves = {
 	// Brightness, colour and sunrise warmth of the land layers. At sunrise the
 	// sun is behind the hills, so the land stays dim (backlit) a while longer.
-	landLight: [[0, 0.6], [0.3, 1], [0.45, 1.12], [0.6, 1.7], [1, 2.3]],
-	landSaturation: [[0, 0.8], [0.3, 1], [0.6, 1.4], [1, 1.6]],
-	landWarmth: [[0, 0], [0.3, 0], [0.45, 0.35], [0.6, 0.15], [1, 0]],
+	landLight: [
+		[0, 0.6],
+		[0.3, 1],
+		[0.45, 1.12],
+		[0.6, 1.7],
+		[1, 2.3],
+	],
+	landSaturation: [
+		[0, 0.8],
+		[0.3, 1],
+		[0.6, 1.4],
+		[1, 1.6],
+	],
+	landWarmth: [
+		[0, 0],
+		[0.3, 0],
+		[0.45, 0.35],
+		[0.6, 0.15],
+		[1, 0],
+	],
 	// Clouds: dark at night, glowing warm at sunrise, bright by day.
-	cloudLight: [[0, 0.55], [0.3, 1], [0.45, 1.3], [0.6, 1.6], [1, 1.9]],
-	cloudWarmth: [[0, 0], [0.3, 0], [0.42, 0.45], [0.6, 0.15], [1, 0]],
+	cloudLight: [
+		[0, 0.55],
+		[0.3, 1],
+		[0.45, 1.3],
+		[0.6, 1.6],
+		[1, 1.9],
+	],
+	cloudWarmth: [
+		[0, 0],
+		[0.3, 0],
+		[0.42, 0.45],
+		[0.6, 0.15],
+		[1, 0],
+	],
 	// Stars (and shooting stars) fade as the sky lightens; they're still out
 	// at 6 AM (0.4) and gone by about 7.
-	starlight: [[0, 1], [0.3, 1], [0.4, 0.85], [0.5, 0.2], [0.6, 0], [1, 0]],
+	starlight: [
+		[0, 1],
+		[0.3, 1],
+		[0.4, 0.85],
+		[0.5, 0.2],
+		[0.6, 0],
+		[1, 0],
+	],
 	// The city's window and lantern lights go out in daylight.
-	cityGlow: [[0, 1], [0.42, 1], [0.55, 0.35], [0.68, 0], [1, 0]], // full until sunrise
+	cityGlow: [
+		[0, 1],
+		[0.42, 1],
+		[0.55, 0.35],
+		[0.68, 0],
+		[1, 0],
+	], // full until sunrise
 	// The figure's brightness.
-	figureLight: [[0, 0.75], [0.3, 1], [0.6, 1.12], [1, 1.18]],
+	figureLight: [
+		[0, 0.75],
+		[0.3, 1],
+		[0.6, 1.12],
+		[1, 1.18],
+	],
 	// The sun: hidden until after 0.32, rising from behind the left hills.
-	sunOpacity: [[0, 0], [0.32, 0], [0.4, 1], [1, 1]],
+	sunOpacity: [
+		[0, 0],
+		[0.32, 0],
+		[0.4, 1],
+		[1, 1],
+	],
 	// How dark the ridges' cast shadows are: none before the sun is up,
 	// strongest just after sunrise, a little softer through the day. Their
 	// length and angle come from the sun's place (landShadows).
-	shadowStrength: [[0, 0], [0.38, 0], [0.44, 0.8], [0.7, 0.65], [1, 0.55]],
+	shadowStrength: [
+		[0, 0],
+		[0.38, 0],
+		[0.44, 0.8],
+		[0.7, 0.65],
+		[1, 0.55],
+	],
 	// Of screen height; the left hills' ridge is at about 0.7, so the sun is
 	// half behind them at 0.45.
-	sunHeight: [[0, 0.85], [0.35, 0.84], [0.45, 0.7], [0.55, 0.58], [0.7, 0.42], [1, 0.14]],
-	sunLeft: [[0, 0.2], [0.45, 0.2], [1, 0.3]], // of screen width
+	sunHeight: [
+		[0, 0.85],
+		[0.35, 0.84],
+		[0.45, 0.7],
+		[0.55, 0.58],
+		[0.7, 0.42],
+		[1, 0.14],
+	],
+	sunLeft: [
+		[0, 0.2],
+		[0.45, 0.2],
+		[1, 0.3],
+	], // of screen width
 };
 
 // Sky colours at each time as [time, [r, g, b, a]]: the gradient from the
 // horizon up, plus the sunrise glow low on the left. 0.3 is the original sky.
 const skyColors = {
-	horizon: [[0, [26, 37, 51, 1]], [0.3, [81, 85, 101, 1]], [0.45, [232, 164, 115, 1]], [0.6, [233, 201, 165, 1]], [1, [201, 224, 239, 1]]],
-	low: [[0, [16, 28, 40, 1]], [0.3, [48, 59, 72, 1]], [0.45, [122, 112, 128, 1]], [0.6, [150, 174, 196, 1]], [1, [127, 177, 222, 1]]],
-	middle: [[0, [11, 26, 38, 1]], [0.3, [23, 40, 52, 1]], [0.45, [76, 98, 122, 1]], [0.6, [110, 150, 190, 1]], [1, [88, 145, 205, 1]]],
-	zenith: [[0, [5, 14, 22, 1]], [0.3, [9, 23, 32, 1]], [0.45, [42, 74, 102, 1]], [0.6, [79, 127, 174, 1]], [1, [61, 120, 184, 1]]],
-	glowCore: [[0, [239, 174, 112, 0]], [0.3, [239, 174, 112, 0.38]], [0.45, [255, 190, 120, 0.75]], [0.6, [255, 228, 190, 0.4]], [1, [255, 250, 235, 0.15]]],
-	glowMiddle: [[0, [166, 111, 98, 0]], [0.3, [166, 111, 98, 0.2]], [0.45, [240, 150, 110, 0.45]], [0.6, [250, 205, 170, 0.2]], [1, [255, 245, 230, 0.06]]],
-	glowEdge: [[0, [58, 61, 76, 0]], [0.3, [58, 61, 76, 0.07]], [0.45, [180, 120, 120, 0.15]], [0.6, [200, 190, 200, 0.06]], [1, [240, 240, 240, 0]]],
+	horizon: [
+		[0, [26, 37, 51, 1]],
+		[0.3, [81, 85, 101, 1]],
+		[0.45, [232, 164, 115, 1]],
+		[0.6, [233, 201, 165, 1]],
+		[1, [201, 224, 239, 1]],
+	],
+	low: [
+		[0, [16, 28, 40, 1]],
+		[0.3, [48, 59, 72, 1]],
+		[0.45, [122, 112, 128, 1]],
+		[0.6, [150, 174, 196, 1]],
+		[1, [127, 177, 222, 1]],
+	],
+	middle: [
+		[0, [11, 26, 38, 1]],
+		[0.3, [23, 40, 52, 1]],
+		[0.45, [76, 98, 122, 1]],
+		[0.6, [110, 150, 190, 1]],
+		[1, [88, 145, 205, 1]],
+	],
+	zenith: [
+		[0, [5, 14, 22, 1]],
+		[0.3, [9, 23, 32, 1]],
+		[0.45, [42, 74, 102, 1]],
+		[0.6, [79, 127, 174, 1]],
+		[1, [61, 120, 184, 1]],
+	],
+	glowCore: [
+		[0, [239, 174, 112, 0]],
+		[0.3, [239, 174, 112, 0.38]],
+		[0.45, [255, 190, 120, 0.75]],
+		[0.6, [255, 228, 190, 0.4]],
+		[1, [255, 250, 235, 0.15]],
+	],
+	glowMiddle: [
+		[0, [166, 111, 98, 0]],
+		[0.3, [166, 111, 98, 0.2]],
+		[0.45, [240, 150, 110, 0.45]],
+		[0.6, [250, 205, 170, 0.2]],
+		[1, [255, 245, 230, 0.06]],
+	],
+	glowEdge: [
+		[0, [58, 61, 76, 0]],
+		[0.3, [58, 61, 76, 0.07]],
+		[0.45, [180, 120, 120, 0.15]],
+		[0.6, [200, 190, 200, 0.06]],
+		[1, [240, 240, 240, 0]],
+	],
 };
 
 function byTime(points) {
@@ -193,7 +371,11 @@ function byTime(points) {
 function skyColor(points, glow = false) {
 	const dark = darkness();
 	return alongCurve(points, daylight()).map((value, i) =>
-		i < 3 ? value + (darkLight.sky[i] - value) * dark : glow ? value * (1 - dark) : value,
+		i < 3
+			? value + (darkLight.sky[i] - value) * dark
+			: glow
+				? value * (1 - dark)
+				: value,
 	);
 }
 
@@ -207,19 +389,38 @@ function clockTime(hour) {
 // The hour as the Gospels count it, from sunrise at 6: 9 AM ends the third
 // hour (Mark 15:25), noon the sixth and 3 PM the ninth (Mark 15:33-34).
 function gospelHour(hour) {
-	const ordinals = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth"];
+	const ordinals = [
+		"First",
+		"Second",
+		"Third",
+		"Fourth",
+		"Fifth",
+		"Sixth",
+		"Seventh",
+		"Eighth",
+		"Ninth",
+	];
 	return `${ordinals[clamp(Math.ceil(hour - 6 - 0.001), 1, 9) - 1]} hour`;
 }
 
 // Paints the sky's small canvas: the gradient from the horizon up, and the
 // sunrise glow, an ellipse as wide and tall as the sky centred low on the
 // left. Its colours glide between the clock's ticks.
-const skyStops = ["horizon", "low", "middle", "zenith", "glowCore", "glowMiddle", "glowEdge"];
+const skyStops = [
+	"horizon",
+	"low",
+	"middle",
+	"zenith",
+	"glowCore",
+	"glowMiddle",
+	"glowEdge",
+];
 const glideSky = glider((values) => {
-	const [horizon, low, middle, zenith, glowCore, glowMiddle, glowEdge] = skyStops.map((_, i) => {
-		const [r, g, b, a] = values.slice(i * 4, i * 4 + 4);
-		return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a.toFixed(3)})`;
-	});
+	const [horizon, low, middle, zenith, glowCore, glowMiddle, glowEdge] =
+		skyStops.map((_, i) => {
+			const [r, g, b, a] = values.slice(i * 4, i * 4 + 4);
+			return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a.toFixed(3)})`;
+		});
 	const canvas = document.querySelector(".sky-gradient");
 	const context = canvas.getContext("2d");
 	const { width, height } = canvas;
@@ -245,7 +446,11 @@ const glideSky = glider((values) => {
 });
 
 function drawSky() {
-	glideSky(skyStops.flatMap((name) => skyColor(skyColors[name], name.startsWith("glow"))));
+	glideSky(
+		skyStops.flatMap((name) =>
+			skyColor(skyColors[name], name.startsWith("glow")),
+		),
+	);
 }
 
 // Sets the light for the clock's hour as CSS variables on the land, clouds,

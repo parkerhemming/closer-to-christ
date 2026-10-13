@@ -46,7 +46,10 @@ function parallax() {
 		currentY += (goalY - currentY) * share;
 		moveLayers(currentX, currentY);
 
-		if (Math.abs(goalX - currentX) > 0.1 || Math.abs(goalY - currentY) > 0.1) {
+		if (
+			Math.abs(goalX - currentX) > 0.1 ||
+			Math.abs(goalY - currentY) > 0.1
+		) {
 			requestParallaxFrame();
 		}
 	}
@@ -220,7 +223,8 @@ function parallax() {
 		window.matchMedia("(pointer: coarse)").matches;
 	// iPhones ask for permission (needs a tap); Android just works.
 	const needsPermission =
-		hasTiltScreen && typeof DeviceOrientationEvent.requestPermission === "function";
+		hasTiltScreen &&
+		typeof DeviceOrientationEvent.requestPermission === "function";
 
 	function enableTilt() {
 		if (needsPermission) requestMotionPermission();
@@ -230,7 +234,8 @@ function parallax() {
 	// Switching parallax on in the settings panel is a tap, so tilt can be
 	// enabled (and permission asked) right there.
 	document.addEventListener("scenesettings", () => {
-		if (sceneSettings.parallax && hasTiltScreen && !motionEnabled) enableTilt();
+		if (sceneSettings.parallax && hasTiltScreen && !motionEnabled)
+			enableTilt();
 		requestParallaxFrame();
 	});
 

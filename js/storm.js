@@ -11,7 +11,9 @@ function createStorm() {
 	// (Chrome holds them while the settings panel scrolls). Elsewhere it runs
 	// here. Either way this sends it the weather and the window size.
 	function startRain(layers) {
-		const canvases = layers.map((layer) => document.getElementById(layer.id));
+		const canvases = layers.map((layer) =>
+			document.getElementById(layer.id),
+		);
 		const conditions = () => ({
 			rain: byWeather(weatherCurves.rain),
 			wind: byWeather(weatherCurves.wind),
@@ -19,26 +21,42 @@ function createStorm() {
 			brightness: byWeather(weatherCurves.rainBrightness),
 			low: getQuality() === "low",
 		});
-		const size = () => [window.innerWidth, window.innerHeight, window.devicePixelRatio];
+		const size = () => [
+			window.innerWidth,
+			window.innerHeight,
+			window.devicePixelRatio,
+		];
 		const countDrops = (total) => (renderStats.raindrops = total);
 
 		if ("transferControlToOffscreen" in HTMLCanvasElement.prototype) {
 			const worker = new Worker("./js/workers/rain.js");
-			const offscreen = canvases.map((canvas) => canvas.transferControlToOffscreen());
+			const offscreen = canvases.map((canvas) =>
+				canvas.transferControlToOffscreen(),
+			);
 			worker.postMessage(
 				{
-					layers: layers.map((layer, i) => ({ ...layer, canvas: offscreen[i] })),
+					layers: layers.map((layer, i) => ({
+						...layer,
+						canvas: offscreen[i],
+					})),
 					size: size(),
 					conditions: conditions(),
 				},
 				offscreen,
 			);
 			worker.onmessage = ({ data }) => countDrops(data);
-			const sendConditions = () => worker.postMessage({ conditions: conditions() });
+			const sendConditions = () =>
+				worker.postMessage({ conditions: conditions() });
 			document.addEventListener("scenesettings", sendConditions);
 			setInterval(sendConditions, 2000); // picks up a change of quality too
-			window.addEventListener("resize", () => worker.postMessage({ size: size() }), { passive: true });
-			document.addEventListener("visibilitychange", () => worker.postMessage({ hidden: document.hidden }));
+			window.addEventListener(
+				"resize",
+				() => worker.postMessage({ size: size() }),
+				{ passive: true },
+			);
+			document.addEventListener("visibilitychange", () =>
+				worker.postMessage({ hidden: document.hidden }),
+			);
 		} else {
 			const rain = createRain(
 				layers.map((layer, i) => ({ ...layer, canvas: canvases[i] })),
@@ -46,8 +64,12 @@ function createStorm() {
 				countDrops,
 			);
 			rain.resize(...size());
-			window.addEventListener("resize", () => rain.resize(...size()), { passive: true });
-			document.addEventListener("visibilitychange", () => rain.pause(document.hidden));
+			window.addEventListener("resize", () => rain.resize(...size()), {
+				passive: true,
+			});
+			document.addEventListener("visibilitychange", () =>
+				rain.pause(document.hidden),
+			);
 		}
 	}
 
@@ -156,7 +178,9 @@ function createStorm() {
 				segment++
 			) {
 				branchX = clamp(
-					branchX + direction * randomBetween(7, 16) + randomBetween(-3, 3),
+					branchX +
+						direction * randomBetween(7, 16) +
+						randomBetween(-3, 3),
 					10,
 					90,
 				);
@@ -271,7 +295,9 @@ function createStorm() {
 			const wind = byWeather(weatherCurves.wind);
 			if (Math.abs(wind - appliedWind) < appliedWind * 0.05) return;
 			appliedWind = wind;
-			for (const texture of storm.querySelectorAll(".storm-cloud__texture")) {
+			for (const texture of storm.querySelectorAll(
+				".storm-cloud__texture",
+			)) {
 				for (const animation of texture.getAnimations()) {
 					animation.updatePlaybackRate(wind);
 				}

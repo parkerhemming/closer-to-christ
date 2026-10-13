@@ -37,7 +37,8 @@ function lowerQuality(options) {
 function sceneImageUrls() {
 	const urls = new Set();
 	const addUrls = (value) => {
-		for (const [, url] of value.matchAll(/url\("?([^")]+)"?\)/g)) urls.add(url);
+		for (const [, url] of value.matchAll(/url\("?([^")]+)"?\)/g))
+			urls.add(url);
 	};
 
 	for (const element of document.querySelectorAll("body *")) {
@@ -72,9 +73,13 @@ async function loadScene() {
 		renderStats.connectionTestMs = testMs;
 		// About 3G or slower takes over 1.5s for 48KB; slow 4G, over 0.8s.
 		if (testMs > 1500) {
-			setQuality("low", { reason: `slow connection (test took ${testMs}ms)` });
+			setQuality("low", {
+				reason: `slow connection (test took ${testMs}ms)`,
+			});
 		} else if (testMs > 800 && getQuality() === "high") {
-			setQuality("medium", { reason: `slowish connection (test took ${testMs}ms)` });
+			setQuality("medium", {
+				reason: `slowish connection (test took ${testMs}ms)`,
+			});
 		}
 		delete root.dataset.probing; // the scene layers appear and start loading
 	}
@@ -101,7 +106,9 @@ async function loadScene() {
 	await Promise.race([images, wait(25000)]);
 	renderStats.loadSeconds = performance.now() / 1000;
 
-	await wait((sceneSettings.minimumLoadingSeconds - renderStats.loadSeconds) * 1000);
+	await wait(
+		(sceneSettings.minimumLoadingSeconds - renderStats.loadSeconds) * 1000,
+	);
 	loading.classList.add("is-done");
 	loading.addEventListener("transitionend", () => loading.remove(), {
 		once: true,

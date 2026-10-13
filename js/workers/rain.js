@@ -21,7 +21,8 @@ function createRain(layers, conditions, onCount) {
 	const nextFrame = self.requestAnimationFrame
 		? (frame) => self.requestAnimationFrame(frame)
 		: (frame) => setTimeout(() => frame(performance.now()), 16);
-	const between = (minimum, maximum) => minimum + Math.random() * (maximum - minimum);
+	const between = (minimum, maximum) =>
+		minimum + Math.random() * (maximum - minimum);
 	let width = 0;
 	let height = 0;
 	let lastTime = performance.now();
@@ -72,7 +73,10 @@ function createRain(layers, conditions, onCount) {
 		const { rain, wind, lengthScale, brightness, low } = conditions();
 		const seconds = now / 1000;
 		// Gusts: the amount of rain swells and eases a little over time.
-		const gust = 1 + 0.18 * Math.sin(seconds * 0.7) + 0.1 * Math.sin(seconds * 1.9 + 1);
+		const gust =
+			1 +
+			0.18 * Math.sin(seconds * 0.7) +
+			0.1 * Math.sin(seconds * 1.9 + 1);
 		let total = 0;
 
 		for (const layer of layers) {
@@ -91,8 +95,14 @@ function createRain(layers, conditions, onCount) {
 			layer.blank = false;
 
 			// One faint tail path and one brighter head path per band.
-			const tails = Array.from({ length: brightnessBands * widthBands }, () => new Path2D());
-			const heads = Array.from({ length: brightnessBands * widthBands }, () => new Path2D());
+			const tails = Array.from(
+				{ length: brightnessBands * widthBands },
+				() => new Path2D(),
+			);
+			const heads = Array.from(
+				{ length: brightnessBands * widthBands },
+				() => new Path2D(),
+			);
 			for (let i = layer.drops.length - 1; i >= 0; i--) {
 				const drop = layer.drops[i];
 				drop.y += drop.speed * elapsed;
@@ -120,13 +130,16 @@ function createRain(layers, conditions, onCount) {
 			const context = layer.context;
 			context.clearRect(0, 0, width, height);
 			for (let band = 0; band < tails.length; band++) {
-				const brightnessStep = ((band % brightnessBands) + 0.5) / brightnessBands;
-				const widthStep = (Math.floor(band / brightnessBands) + 0.5) / widthBands;
+				const brightnessStep =
+					((band % brightnessBands) + 0.5) / brightnessBands;
+				const widthStep =
+					(Math.floor(band / brightnessBands) + 0.5) / widthBands;
 				const [lowOpacity, highOpacity] = layer.opacity;
 				const [thin, thick] = layer.width;
 				const alpha = Math.min(
 					1,
-					(lowOpacity + (highOpacity - lowOpacity) * brightnessStep) * brightness,
+					(lowOpacity + (highOpacity - lowOpacity) * brightnessStep) *
+						brightness,
 				);
 				context.lineWidth = thin + (thick - thin) * widthStep;
 				context.strokeStyle = `rgba(203, 222, 233, ${alpha * 0.3})`;
@@ -156,11 +169,21 @@ function createRain(layers, conditions, onCount) {
 // weather and whether the tab is hidden whenever they change.
 if (typeof window === "undefined") {
 	let rain = null;
-	let weather = { rain: 0, wind: 1, lengthScale: 1, brightness: 1, low: false };
+	let weather = {
+		rain: 0,
+		wind: 1,
+		lengthScale: 1,
+		brightness: 1,
+		low: false,
+	};
 	self.onmessage = ({ data }) => {
 		if (data.conditions) weather = data.conditions;
 		if (data.layers) {
-			rain = createRain(data.layers, () => weather, (total) => self.postMessage(total));
+			rain = createRain(
+				data.layers,
+				() => weather,
+				(total) => self.postMessage(total),
+			);
 		}
 		if (data.size) rain?.resize(...data.size);
 		if ("hidden" in data) rain?.pause(data.hidden);

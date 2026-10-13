@@ -41,11 +41,14 @@ function settingsPanel() {
 	function showDetails() {
 		const root = document.documentElement;
 		const connection = navigator.connection;
-		const visibleClouds = [...document.querySelectorAll(".storm-cloud")].filter(
-			(cloud) => cloud.getClientRects().length,
-		).length;
+		const visibleClouds = [
+			...document.querySelectorAll(".storm-cloud"),
+		].filter((cloud) => cloud.getClientRects().length).length;
 		const rows = [
-			["Quality", `${root.dataset.quality}: ${root.dataset.qualityReason}`],
+			[
+				"Quality",
+				`${root.dataset.quality}: ${root.dataset.qualityReason}`,
+			],
 			renderStats.connectionTestMs !== null && [
 				"Connection test",
 				`${renderStats.connectionTestMs}ms for 48KB`,
@@ -58,9 +61,14 @@ function settingsPanel() {
 			],
 			[
 				"Loaded in",
-				renderStats.loadSeconds ? `${renderStats.loadSeconds.toFixed(1)}s` : "...",
+				renderStats.loadSeconds
+					? `${renderStats.loadSeconds.toFixed(1)}s`
+					: "...",
 			],
-			["Frame rate", framesPerSecond === null ? "..." : `${framesPerSecond} fps`],
+			[
+				"Frame rate",
+				framesPerSecond === null ? "..." : `${framesPerSecond} fps`,
+			],
 			["Screen", `${innerWidth}x${innerHeight} @${devicePixelRatio}x`],
 			// Chrome's own guess; often wrong, so it doesn't pick the quality.
 			connection && [
@@ -76,7 +84,9 @@ function settingsPanel() {
 			],
 			[
 				"Offline cache",
-				navigator.serviceWorker?.controller ? "on" : "off until next visit",
+				navigator.serviceWorker?.controller
+					? "on"
+					: "off until next visit",
 			],
 		].filter(Boolean);
 		// Changes only the values that differ: rebuilding the whole list each
@@ -90,7 +100,8 @@ function settingsPanel() {
 				details.append(term, description);
 				detailValues.set(name, description);
 			}
-			if (description.textContent !== value) description.textContent = value;
+			if (description.textContent !== value)
+				description.textContent = value;
 		}
 	}
 	const detailValues = new Map();
@@ -132,7 +143,11 @@ function settingsPanel() {
 		}
 	});
 	document.addEventListener("pointerdown", (event) => {
-		if (dialog.open && !dialog.contains(event.target) && !button.contains(event.target)) {
+		if (
+			dialog.open &&
+			!dialog.contains(event.target) &&
+			!button.contains(event.target)
+		) {
 			dialog.close();
 		}
 	});
@@ -163,7 +178,9 @@ function settingsPanel() {
 		}
 		sceneSettings.hour = Number(hour.value);
 		sceneSettings.weatherIntensity = Number(weatherIntensity.value);
-		weatherLean = sceneSettings.weatherIntensity - alongCurve(hourCurves.weather, sceneSettings.hour);
+		weatherLean =
+			sceneSettings.weatherIntensity -
+			alongCurve(hourCurves.weather, sceneSettings.hour);
 		sceneSettings.parallax = parallax.checked;
 		sceneSettings.parallaxSmoothing = Number(parallaxSmoothing.value);
 		saveSettings();

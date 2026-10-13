@@ -78,7 +78,11 @@ let uniforms = {};
 let imageAspect = 1;
 let cssSize = [0, 0];
 let tile = null; // [left, top, height] of a tiled image; otherwise full height, centred
-let conditions = { wind: 1, grade: [1, 0, 0, 0, 1, 0, 0, 0, 1], gradeOffset: [0, 0, 0] };
+let conditions = {
+	wind: 1,
+	grade: [1, 0, 0, 0, 1, 0, 0, 0, 1],
+	gradeOffset: [0, 0, 0],
+};
 let wind = null; // eases toward conditions.wind
 let strength = 1; // how far this layer bends in the same wind
 let maximumScale = 2; // canvas pixels per CSS pixel, at most
@@ -98,7 +102,9 @@ const nextFrame = self.requestAnimationFrame
 
 async function loadTexture(url, unit) {
 	const blob = await fetch(url).then((response) => response.blob());
-	const bitmap = await createImageBitmap(blob, { premultiplyAlpha: "premultiply" });
+	const bitmap = await createImageBitmap(blob, {
+		premultiplyAlpha: "premultiply",
+	});
 	const texture = gl.createTexture();
 	gl.activeTexture(gl.TEXTURE0 + unit);
 	gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -115,7 +121,8 @@ function compile(type, source) {
 	const shader = gl.createShader(type);
 	gl.shaderSource(shader, source);
 	gl.compileShader(shader);
-	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader));
+	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+		throw new Error(gl.getShaderInfoLog(shader));
 	return shader;
 }
 
@@ -123,7 +130,17 @@ function compile(type, source) {
 function blankTexture(unit) {
 	gl.activeTexture(gl.TEXTURE0 + unit);
 	gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+	gl.texImage2D(
+		gl.TEXTURE_2D,
+		0,
+		gl.RGBA,
+		1,
+		1,
+		0,
+		gl.RGBA,
+		gl.UNSIGNED_BYTE,
+		new Uint8Array(4),
+	);
 }
 
 async function setup({
@@ -137,7 +154,10 @@ async function setup({
 }) {
 	strength = layerStrength;
 	still = isStill;
-	gl = canvas.getContext("webgl", { premultipliedAlpha: true, antialias: false });
+	gl = canvas.getContext("webgl", {
+		premultipliedAlpha: true,
+		antialias: false,
+	});
 	if (!gl) throw new Error("no WebGL");
 	const program = gl.createProgram();
 	gl.attachShader(program, compile(gl.VERTEX_SHADER, vertexShader));
@@ -146,21 +166,38 @@ async function setup({
 	gl.useProgram(program);
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+	gl.bufferData(
+		gl.ARRAY_BUFFER,
+		new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+		gl.STATIC_DRAW,
+	);
 	const corner = gl.getAttribLocation(program, "corner");
 	gl.enableVertexAttribArray(corner);
 	gl.vertexAttribPointer(corner, 2, gl.FLOAT, false, 0, 0);
 
 	for (const name of [
-		"land", "sway", "canvasSize", "placement", "tiled", "time", "wind", "grade", "gradeOffset",
-		"flutterFrequency", "breathing", "breathCentre",
+		"land",
+		"sway",
+		"canvasSize",
+		"placement",
+		"tiled",
+		"time",
+		"wind",
+		"grade",
+		"gradeOffset",
+		"flutterFrequency",
+		"breathing",
+		"breathCentre",
 	]) {
 		uniforms[name] = gl.getUniformLocation(program, name);
 	}
 	gl.uniform4fv(uniforms.flutterFrequency, flutterFrequency);
 	gl.uniform1f(uniforms.breathing, breathing);
 	gl.uniform1f(uniforms.breathCentre, breathCentre);
-	const [image] = await Promise.all([loadTexture(landImage, 0), sway ? loadTexture(sway, 1) : blankTexture(1)]);
+	const [image] = await Promise.all([
+		loadTexture(landImage, 0),
+		sway ? loadTexture(sway, 1) : blankTexture(1),
+	]);
 	imageAspect = image.width / image.height;
 	gl.uniform1i(uniforms.land, 0);
 	gl.uniform1i(uniforms.sway, 1);
@@ -176,7 +213,10 @@ function frame(now) {
 	const elapsed = Math.min((now - lastTime) / 1000, 0.1);
 	lastTime = now;
 	const target = conditions.wind * strength;
-	wind = wind === null ? target : wind + (target - wind) * Math.min(1, elapsed * 1.5);
+	wind =
+		wind === null
+			? target
+			: wind + (target - wind) * Math.min(1, elapsed * 1.5);
 	glide(now);
 	draw(now);
 }
@@ -221,7 +261,11 @@ function draw(now) {
 	gl.clearColor(0, 0, 0, 0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	gl.uniform2f(uniforms.canvasSize, ...cssSize);
-	const [left, top, height] = tile ?? [(cssSize[0] - cssSize[1] * imageAspect) / 2, 0, cssSize[1]];
+	const [left, top, height] = tile ?? [
+		(cssSize[0] - cssSize[1] * imageAspect) / 2,
+		0,
+		cssSize[1],
+	];
 	gl.uniform4f(uniforms.placement, left, top, height * imageAspect, height);
 	gl.uniform1i(uniforms.tiled, tile ? 1 : 0);
 	gl.uniform1f(uniforms.time, now / 1000);
@@ -254,5 +298,8 @@ self.onmessage = ({ data }) => {
 		}
 	}
 	if (data.size || data.conditions) requestDraw();
-	if (data.canvas) setup(data).catch((error) => self.postMessage({ failed: String(error) }));
+	if (data.canvas)
+		setup(data).catch((error) =>
+			self.postMessage({ failed: String(error) }),
+		);
 };

@@ -1,30 +1,71 @@
 function createCityLights() {
 	const plane = document.querySelector(".city-flicker-plane");
 	const candidates = [
-		[2846, 1540, 6, 9], [2350, 1644, 6, 5], [3602, 1544, 6, 13],
-		[2392, 1587, 5, 5], [3598, 1516, 6, 9], [2093, 1546, 5, 5],
-		[4024, 1608, 5, 5], [2977, 1606, 5, 5], [3731, 1588, 10, 6],
-		[2204, 1534, 6, 12], [3662, 1546, 5, 8], [2093, 1537, 5, 4],
-		[2946, 1493, 6, 8], [2781, 1504, 5, 5], [3862, 1664, 5, 5],
-		[2261, 1546, 6, 8], [3076, 1543, 5, 6], [3784, 1560, 6, 15],
-		[1798, 1551, 5, 5], [3976, 1616, 5, 4], [2522, 1613, 6, 6],
-		[2322, 1546, 6, 5], [3293, 1494, 8, 5], [3952, 1539, 6, 8],
-		[2510, 1562, 6, 13], [2033, 1516, 10, 6], [2991, 1618, 5, 4],
-		[2607, 1542, 7, 9], [2428, 1534, 5, 5], [2700, 1616, 6, 8],
-		[3343, 1629, 5, 5], [4058, 1537, 6, 15], [2370, 1535, 5, 5],
-		[2038, 1587, 5, 5], [2456, 1572, 14, 7], [3776, 1500, 10, 13],
-		[3920, 1616, 5, 5], [3031, 1594, 5, 5], [2882, 1497, 4, 4],
-		[2661, 1543, 6, 9], [2313, 1545, 6, 5], [3652, 1548, 5, 5],
-		[2351, 1633, 5, 5], [3207, 1570, 5, 5], [1791, 1550, 5, 5],
-		[3977, 1631, 5, 4], [2206, 1516, 6, 7], [3736, 1557, 5, 5],
-		[2818, 1619, 6, 10], [2593, 1479, 11, 10], [2235, 1594, 5, 5],
-		[2773, 1537, 5, 5], [2385, 1615, 5, 5], [2590, 1512, 7, 12],
-		[2671, 1479, 5, 5], [3541, 1478, 6, 5], [3682, 1579, 5, 5],
-		[3985, 1519, 6, 8], [2009, 1521, 6, 15],
+		[2846, 1540, 6, 9],
+		[2350, 1644, 6, 5],
+		[3602, 1544, 6, 13],
+		[2392, 1587, 5, 5],
+		[3598, 1516, 6, 9],
+		[2093, 1546, 5, 5],
+		[4024, 1608, 5, 5],
+		[2977, 1606, 5, 5],
+		[3731, 1588, 10, 6],
+		[2204, 1534, 6, 12],
+		[3662, 1546, 5, 8],
+		[2093, 1537, 5, 4],
+		[2946, 1493, 6, 8],
+		[2781, 1504, 5, 5],
+		[3862, 1664, 5, 5],
+		[2261, 1546, 6, 8],
+		[3076, 1543, 5, 6],
+		[3784, 1560, 6, 15],
+		[1798, 1551, 5, 5],
+		[3976, 1616, 5, 4],
+		[2522, 1613, 6, 6],
+		[2322, 1546, 6, 5],
+		[3293, 1494, 8, 5],
+		[3952, 1539, 6, 8],
+		[2510, 1562, 6, 13],
+		[2033, 1516, 10, 6],
+		[2991, 1618, 5, 4],
+		[2607, 1542, 7, 9],
+		[2428, 1534, 5, 5],
+		[2700, 1616, 6, 8],
+		[3343, 1629, 5, 5],
+		[4058, 1537, 6, 15],
+		[2370, 1535, 5, 5],
+		[2038, 1587, 5, 5],
+		[2456, 1572, 14, 7],
+		[3776, 1500, 10, 13],
+		[3920, 1616, 5, 5],
+		[3031, 1594, 5, 5],
+		[2882, 1497, 4, 4],
+		[2661, 1543, 6, 9],
+		[2313, 1545, 6, 5],
+		[3652, 1548, 5, 5],
+		[2351, 1633, 5, 5],
+		[3207, 1570, 5, 5],
+		[1791, 1550, 5, 5],
+		[3977, 1631, 5, 4],
+		[2206, 1516, 6, 7],
+		[3736, 1557, 5, 5],
+		[2818, 1619, 6, 10],
+		[2593, 1479, 11, 10],
+		[2235, 1594, 5, 5],
+		[2773, 1537, 5, 5],
+		[2385, 1615, 5, 5],
+		[2590, 1512, 7, 12],
+		[2671, 1479, 5, 5],
+		[3541, 1478, 6, 5],
+		[3682, 1579, 5, 5],
+		[3985, 1519, 6, 8],
+		[2009, 1521, 6, 15],
 	];
 	const colors = ["#ff9a3d", "#ffb35f", "#f47f2f", "#ffc174"];
 
-	const shuffled = [...candidates].sort(() => Math.random() - 0.5).slice(0, 40);
+	const shuffled = [...candidates]
+		.sort(() => Math.random() - 0.5)
+		.slice(0, 40);
 	const lights = shuffled.map(([x, y, width, height], index) => {
 		const light = document.createElement("span");
 		light.className = "city-flicker-light";
@@ -34,7 +75,10 @@ function createCityLights() {
 		light.style.setProperty("--flicker-y", `${((y - 1408) / 320) * 100}%`);
 		light.style.setProperty("--flicker-width", `${(width / 4096) * 100}%`);
 		light.style.setProperty("--flicker-height", `${(height / 320) * 100}%`);
-		light.style.setProperty("--flicker-color", colors[index % colors.length]);
+		light.style.setProperty(
+			"--flicker-color",
+			colors[index % colors.length],
+		);
 		light.dataset.activity = randomBetween(0.35, 2.4);
 		plane.appendChild(light);
 		return light;
@@ -63,7 +107,10 @@ function createCityLights() {
 	}
 
 	function startBurst() {
-		if (document.hidden || document.documentElement.hasAttribute("data-no-city-lights")) {
+		if (
+			document.hidden ||
+			document.documentElement.hasAttribute("data-no-city-lights")
+		) {
 			scheduleNextBurst(); // nothing to flicker for in a hidden tab
 			return;
 		}
@@ -80,10 +127,13 @@ function createCityLights() {
 
 			light.style.opacity = randomBetween(0.28, 0.82);
 			pulses -= 1;
-			window.setTimeout(() => {
-				light.style.opacity = randomBetween(0.06, 0.18);
-				window.setTimeout(pulse, randomBetween(45, 140));
-			}, randomBetween(45, 115));
+			window.setTimeout(
+				() => {
+					light.style.opacity = randomBetween(0.06, 0.18);
+					window.setTimeout(pulse, randomBetween(45, 140));
+				},
+				randomBetween(45, 115),
+			);
 		}
 
 		pulse();
@@ -117,7 +167,9 @@ function earthquakes() {
 		[8, 6.5], // near ground
 		[16, 1.5], // the cross: barely, so the figure stays steady
 	].map(([depth, reach]) => ({
-		layers: everything.filter((layer) => Number(layer.dataset.z_index) === depth),
+		layers: everything.filter(
+			(layer) => Number(layer.dataset.z_index) === depth,
+		),
 		reach,
 	}));
 
@@ -128,7 +180,9 @@ function earthquakes() {
 		const keyframes = Array.from({ length: steps + 1 }, (_, step) => {
 			const along = step / steps;
 			const size = reach * Math.min(1, along * 6) * (1 - along) ** 1.6;
-			return { translate: `${randomBetween(-size, size)}px ${randomBetween(-size, size) * upDown}px` };
+			return {
+				translate: `${randomBetween(-size, size)}px ${randomBetween(-size, size) * upDown}px`,
+			};
 		});
 		keyframes[0] = keyframes[steps] = { translate: "0px 0px" };
 		return keyframes;
@@ -143,19 +197,34 @@ function earthquakes() {
 
 	// The first, as 3:00 comes, is the longest and strongest.
 	function tremor(first) {
-		const strength = clamp((sceneSettings.weatherIntensity - 0.9) / 0.1, 0, 1);
+		const strength = clamp(
+			(sceneSettings.weatherIntensity - 0.9) / 0.1,
+			0,
+			1,
+		);
 		if (atThree() && strength > 0 && !document.hidden) {
 			const scale = first ? 1 : 0.5 + 0.5 * strength;
 			const gap = randomBetween(130, 200); // ms between one layer and the next
 			const seconds = first ? 1.7 : randomBetween(0.9, 1.3);
-			const whole = jolt(seconds + (wave.length * gap) / 1000, 1.5 * scale, 0.6);
+			const whole = jolt(
+				seconds + (wave.length * gap) / 1000,
+				1.5 * scale,
+				0.6,
+			);
 			for (const layer of everything) {
-				layer.animate(whole, { duration: (seconds * 1000 + wave.length * gap), composite: "add" });
+				layer.animate(whole, {
+					duration: seconds * 1000 + wave.length * gap,
+					composite: "add",
+				});
 			}
 			wave.forEach(({ layers, reach }, index) => {
 				const keyframes = jolt(seconds, reach * scale, 1.4);
 				for (const layer of layers) {
-					layer.animate(keyframes, { duration: seconds * 1000, delay: index * gap, composite: "add" });
+					layer.animate(keyframes, {
+						duration: seconds * 1000,
+						delay: index * gap,
+						composite: "add",
+					});
 				}
 			});
 		}
@@ -204,7 +273,12 @@ function swayInWind() {
 		maximumScale: 1,
 	};
 	for (const cloud of ["far", "deep", "middle", "midband", "lower", "near"]) {
-		swayLayer(`.storm-cloud--${cloud} .storm-cloud__texture`, `.storm-cloud--${cloud} canvas`, null, clouds);
+		swayLayer(
+			`.storm-cloud--${cloud} .storm-cloud__texture`,
+			`.storm-cloud--${cloud} canvas`,
+			null,
+			clouds,
+		);
 	}
 	if (getQuality() === "low") return;
 	// ...and the far land layers.
@@ -214,30 +288,55 @@ function swayInWind() {
 	swayLayer('[data-scenery="far-mountains"]', ".land-wind--far", null, far);
 	swayLayer('[data-scenery="distant-hills"]', ".land-wind--hills", null, far);
 	swayLayer('[data-scenery="olives"]', ".land-wind--olives", null, far);
-	swayLayer('[data-scenery="distant-jerusalem"]', ".land-wind--city", null, far);
+	swayLayer(
+		'[data-scenery="distant-jerusalem"]',
+		".land-wind--city",
+		null,
+		far,
+	);
 	// Plants flutter each on their own (waves across the image); the cloth
 	// and hair ripple downward.
 	// Drawn below retina sharpness (maximumScale): every pixel is redrawn
 	// each frame, and these dark, moving layers look the same with fewer.
 	// With reduced motion they're drawn still too.
-	const plants = { light: landLight, flutterFrequency: [140, 0, 57, 0], maximumScale: 1.25, still: reducedMotion };
-	swayLayer('[data-scenery="ground"]', ".land-wind--ground", "./assets/wind/near-ground-sway-v2.png", {
-		...plants,
-		strength: 1,
-	});
-	swayLayer('[data-scenery="golgotha-ridge"]', ".land-wind--ridge", "./assets/wind/golgotha-ridge-sway-v2.png", {
-		...plants,
-		strength: 0.45,
-	});
-	swayLayer("#christ", ".christ-wind", "./assets/christ/christ-motion-v2.png", {
-		light: () => `brightness(${lightFor("figureLight")})`,
-		strength: 0.3,
-		flutterFrequency: [0, -30, 0, 13],
-		breathing: 1,
-		breathCentre: 625 / 1186, // the middle of the chest
-		maximumScale: 1.5,
+	const plants = {
+		light: landLight,
+		flutterFrequency: [140, 0, 57, 0],
+		maximumScale: 1.25,
 		still: reducedMotion,
-	});
+	};
+	swayLayer(
+		'[data-scenery="ground"]',
+		".land-wind--ground",
+		"./assets/wind/near-ground-sway-v2.png",
+		{
+			...plants,
+			strength: 1,
+		},
+	);
+	swayLayer(
+		'[data-scenery="golgotha-ridge"]',
+		".land-wind--ridge",
+		"./assets/wind/golgotha-ridge-sway-v2.png",
+		{
+			...plants,
+			strength: 0.45,
+		},
+	);
+	swayLayer(
+		"#christ",
+		".christ-wind",
+		"./assets/christ/christ-motion-v2.png",
+		{
+			light: () => `brightness(${lightFor("figureLight")})`,
+			strength: 0.3,
+			flutterFrequency: [0, -30, 0, 13],
+			breathing: 1,
+			breathCentre: 625 / 1186, // the middle of the chest
+			maximumScale: 1.5,
+			still: reducedMotion,
+		},
+	);
 }
 
 let stillLayers = 0;
@@ -246,7 +345,12 @@ let stillLayers = 0;
 // light(): the time of day's CSS filters for it. swayUrl: its motion map, or
 // null for a still layer. tiled: the image repeats across, placed by the
 // layer's background position and size (the clouds).
-function swayLayer(layer, canvasSelector, swayUrl, { light, tiled, ...motion }) {
+function swayLayer(
+	layer,
+	canvasSelector,
+	swayUrl,
+	{ light, tiled, ...motion },
+) {
 	const land = document.querySelector(layer);
 	const canvas = document.querySelector(canvasSelector);
 	if (!land || !canvas || !land.getClientRects().length) return; // hidden at this quality
@@ -255,7 +359,9 @@ function swayLayer(layer, canvasSelector, swayUrl, { light, tiled, ...motion }) 
 	// --texture its ::before shows.
 	const source =
 		land.currentSrc ||
-		(style.backgroundImage + style.getPropertyValue("--texture")).match(/url\("?([^")]+)"?\)/)?.[1];
+		(style.backgroundImage + style.getPropertyValue("--texture")).match(
+			/url\("?([^")]+)"?\)/,
+		)?.[1];
 	if (!source) return;
 	const texture = new URL(source, document.baseURI).href;
 
@@ -266,17 +372,32 @@ function swayLayer(layer, canvasSelector, swayUrl, { light, tiled, ...motion }) 
 		const filters = colorFilter(light(), grade);
 		return {
 			wind: byWeather(weatherCurves.wind),
-			grade: [0, 1, 2].flatMap((column) => filters.rows.map((row) => row[column])),
+			grade: [0, 1, 2].flatMap((column) =>
+				filters.rows.map((row) => row[column]),
+			),
 			gradeOffset: filters.offset,
 			// How long its colour glides to this (a jump in time is already eased).
-			settle: !glideBigCanvases ? 0 : "jumping" in document.documentElement.dataset ? 0.08 : 0.5,
+			settle: !glideBigCanvases
+				? 0
+				: "jumping" in document.documentElement.dataset
+					? 0.08
+					: 0.5,
 		};
 	};
-	const size = () => [canvas.offsetWidth, canvas.offsetHeight, window.devicePixelRatio];
+	const size = () => [
+		canvas.offsetWidth,
+		canvas.offsetHeight,
+		window.devicePixelRatio,
+	];
 	const tile = () => {
 		if (!tiled) return undefined;
-		const { backgroundPositionX, backgroundPositionY, backgroundSize } = getComputedStyle(land);
-		return [backgroundPositionX, backgroundPositionY, backgroundSize.split(" ")[1]].map(parseFloat);
+		const { backgroundPositionX, backgroundPositionY, backgroundSize } =
+			getComputedStyle(land);
+		return [
+			backgroundPositionX,
+			backgroundPositionY,
+			backgroundSize.split(" ")[1],
+		].map(parseFloat);
 	};
 
 	const worker = new Worker("./js/workers/wind.js");
@@ -306,12 +427,25 @@ function swayLayer(layer, canvasSelector, swayUrl, { light, tiled, ...motion }) 
 	document.addEventListener("scenesettings", () => {
 		const next = conditions();
 		const numbers = [next.wind, ...next.grade, ...next.gradeOffset];
-		if (numbers.every((number, i) => Math.abs(number - sent[i]) < Math.max(0.015 * Math.abs(sent[i]), 0.004))) return;
+		if (
+			numbers.every(
+				(number, i) =>
+					Math.abs(number - sent[i]) <
+					Math.max(0.015 * Math.abs(sent[i]), 0.004),
+			)
+		)
+			return;
 		sent = numbers;
 		setTimeout(() => worker.postMessage({ conditions: next }), delay);
 	});
-	window.addEventListener("resize", () => worker.postMessage({ size: size(), tile: tile() }), { passive: true });
-	document.addEventListener("visibilitychange", () => worker.postMessage({ hidden: document.hidden }));
+	window.addEventListener(
+		"resize",
+		() => worker.postMessage({ size: size(), tile: tile() }),
+		{ passive: true },
+	);
+	document.addEventListener("visibilitychange", () =>
+		worker.postMessage({ hidden: document.hidden }),
+	);
 }
 
 // Ridges cast shadows on the land in front of them while the sun is up (it
@@ -373,7 +507,11 @@ function landShadows() {
 		};
 	});
 	const landScale =
-		Number(getComputedStyle(document.documentElement).getPropertyValue("--parallax-overscan")) || 1.2;
+		Number(
+			getComputedStyle(document.documentElement).getPropertyValue(
+				"--parallax-overscan",
+			),
+		) || 1.2;
 	const canvasWidth = 640; // the shadows are soft; this is plenty
 	// Where the land meets the sky, as a share of the screen's height: the
 	// sun's height above it sets how long the shadows are.
@@ -385,7 +523,12 @@ function landShadows() {
 		const [dx = 0, dy = 0] = (element.style.translate || "")
 			.split(" ")
 			.map((value) => parseFloat(value) || 0);
-		return { left: rect.left - dx, top: rect.top - dy, width: rect.width, height: rect.height };
+		return {
+			left: rect.left - dx,
+			top: rect.top - dy,
+			width: rect.width,
+			height: rect.height,
+		};
 	}
 
 	// An outline's top edge, column by column, as a share of its height (1
@@ -397,7 +540,12 @@ function landShadows() {
 		});
 		const context = canvas.getContext("2d", { willReadFrequently: true });
 		context.drawImage(image, 0, 0);
-		const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
+		const { data, width, height } = context.getImageData(
+			0,
+			0,
+			canvas.width,
+			canvas.height,
+		);
 		const tops = new Float32Array(width).fill(1);
 		for (let x = 0; x < width; x++) {
 			for (let y = 0; y < height; y++) {
@@ -414,7 +562,9 @@ function landShadows() {
 	// each stretch of 31 columns, the edge at the lower quarter.
 	function groundEdge(tops) {
 		return tops.map((_, x) => {
-			const near = [...tops.slice(Math.max(0, x - 15), x + 16)].sort((a, b) => a - b);
+			const near = [...tops.slice(Math.max(0, x - 15), x + 16)].sort(
+				(a, b) => a - b,
+			);
 			return near[Math.floor(near.length * 0.75)];
 		});
 	}
@@ -425,7 +575,12 @@ function landShadows() {
 		const aspect = image.naturalWidth / image.naturalHeight;
 		const width = byWidth ? box.width : box.height * aspect;
 		const height = byWidth ? box.width / aspect : box.height;
-		return { left: box.left + (box.width - width) / 2, top: box.top + box.height - height, width, height };
+		return {
+			left: box.left + (box.width - width) / 2,
+			top: box.top + box.height - height,
+			width,
+			height,
+		};
 	}
 
 	// The top edge of a placed outline at x, or null off its sides.
@@ -444,7 +599,12 @@ function landShadows() {
 			const ridge = restingRect(pair.ridge);
 			const land = restingRect(pair.land);
 			pair.landRect = land;
-			pair.box = { left: 0, top: 0, width: land.width / landScale, height: land.height / landScale };
+			pair.box = {
+				left: 0,
+				top: 0,
+				width: land.width / landScale,
+				height: land.height / landScale,
+			};
 			const outline = {
 				left: (ridge.left - land.left) / landScale,
 				top: (ridge.top - land.top) / landScale,
@@ -452,9 +612,16 @@ function landShadows() {
 				height: ridge.height / landScale,
 			};
 			pair.ridgePlace = placement(pair.ridgeShape, outline, false);
-			pair.landPlace = placement(pair.landShape, pair.box, pair.landSizedByWidth);
+			pair.landPlace = placement(
+				pair.landShape,
+				pair.box,
+				pair.landSizedByWidth,
+			);
 			pair.canvas.width = canvasWidth;
-			pair.canvas.height = Math.max(1, Math.round((canvasWidth * pair.box.height) / pair.box.width));
+			pair.canvas.height = Math.max(
+				1,
+				Math.round((canvasWidth * pair.box.height) / pair.box.width),
+			);
 		}
 	}
 
@@ -465,7 +632,14 @@ function landShadows() {
 		context.clearRect(0, 0, pair.canvas.width, pair.canvas.height);
 		if (pair.canvas.hidden || !pair.ridgeTops) return;
 		const { box } = pair;
-		context.setTransform(pair.canvas.width / box.width, 0, 0, pair.canvas.width / box.width, 0, 0);
+		context.setTransform(
+			pair.canvas.width / box.width,
+			0,
+			0,
+			pair.canvas.width / box.width,
+			0,
+			0,
+		);
 
 		// The sun, in land units, and its height above the horizon: how long
 		// a shadow is for each unit of ridge above the land's edge.
@@ -492,10 +666,15 @@ function landShadows() {
 		context.fillStyle = "rgba(14, 18, 32, 0.24)";
 		for (const share of [1, 0.78, 0.56, 0.36]) {
 			context.beginPath();
-			bases.forEach(([px, py], i) => (i ? context.lineTo(px, py) : context.moveTo(px, py)));
+			bases.forEach(([px, py], i) =>
+				i ? context.lineTo(px, py) : context.moveTo(px, py),
+			);
 			for (let i = tips.length - 1; i >= 0; i--) {
 				const [bx, by] = bases[i];
-				context.lineTo(bx + (tips[i][0] - bx) * share, by + (tips[i][1] - by) * share);
+				context.lineTo(
+					bx + (tips[i][0] - bx) * share,
+					by + (tips[i][1] - by) * share,
+				);
 			}
 			context.fill();
 		}
@@ -513,15 +692,23 @@ function landShadows() {
 		sun = at;
 		for (const pair of pairs) draw(pair, sun);
 	}
-	const glideShadows = glideBigCanvases ? glider(drawAll, { fps: 20 }) : drawAll;
+	const glideShadows = glideBigCanvases
+		? glider(drawAll, { fps: 20 })
+		: drawAll;
 
 	function applyLight() {
 		const strength =
-			byTime(timeCurves.shadowStrength) * byWeather(weatherCurves.sunlight) * (1 - darkness());
-		for (const pair of pairs) pair.canvas.style.setProperty("--shadow-strength", strength);
+			byTime(timeCurves.shadowStrength) *
+			byWeather(weatherCurves.sunlight) *
+			(1 - darkness());
+		for (const pair of pairs)
+			pair.canvas.style.setProperty("--shadow-strength", strength);
 		// No sun to cast them: hide the canvases and skip drawing.
 		for (const pair of pairs) pair.canvas.hidden = strength < 0.01;
-		glideShadows([byTime(timeCurves.sunLeft), byTime(timeCurves.sunHeight)]);
+		glideShadows([
+			byTime(timeCurves.sunLeft),
+			byTime(timeCurves.sunHeight),
+		]);
 	}
 
 	measure();

@@ -42,7 +42,9 @@ function teachingMarkers() {
 			openAtPress = openFor === marker && card.matches(":popover-open");
 		});
 		marker.addEventListener("click", () => {
-			const again = openAtPress || (openFor === marker && card.matches(":popover-open"));
+			const again =
+				openAtPress ||
+				(openFor === marker && card.matches(":popover-open"));
 			openAtPress = false;
 			if (again) {
 				if (card.matches(":popover-open")) card.hidePopover();
@@ -54,7 +56,8 @@ function teachingMarkers() {
 	}
 
 	card.addEventListener("toggle", (event) => {
-		if (event.newState === "closed") openFor?.removeAttribute("aria-expanded");
+		if (event.newState === "closed")
+			openFor?.removeAttribute("aria-expanded");
 	});
 
 	function show(teaching, marker) {
@@ -63,7 +66,8 @@ function teachingMarkers() {
 		if (teaching.picture) {
 			picture.querySelector("img").src = teaching.picture.src;
 			picture.querySelector("img").alt = teaching.picture.alt;
-			picture.querySelector("figcaption").textContent = teaching.picture.caption;
+			picture.querySelector("figcaption").textContent =
+				teaching.picture.caption;
 		}
 		title.textContent = teaching.title;
 		text.textContent = teaching.text;
@@ -91,9 +95,13 @@ function teachingMarkers() {
 	// the folded box's top would be (the arrows sit centred on that box).
 	function place(marker) {
 		const edge = 20;
-		const captionBox = document.querySelector(".caption-content").getBoundingClientRect();
+		const captionBox = document
+			.querySelector(".caption-content")
+			.getBoundingClientRect();
 		const arrow = document.querySelector(".caption-step");
-		const foldedHeight = arrow.offsetHeight + 2 * parseFloat(getComputedStyle(arrow).marginBottom);
+		const foldedHeight =
+			arrow.offsetHeight +
+			2 * parseFloat(getComputedStyle(arrow).marginBottom);
 		const bottom = captionBox.bottom - foldedHeight - 12;
 		if (phone.matches) {
 			card.style.left = card.style.top = "";
@@ -114,9 +122,13 @@ function teachingMarkers() {
 		card.style.left = `${clamp(left, edge, innerWidth - edge - size.width)}px`;
 		card.style.top = `${top}px`;
 		// No pointer when the window is too narrow for it to sit beside it.
-		if (onRight || onLeft) card.dataset.pointer = onRight ? "left" : "right";
+		if (onRight || onLeft)
+			card.dataset.pointer = onRight ? "left" : "right";
 		else delete card.dataset.pointer;
-		card.style.setProperty("--pointer-y", `${clamp(middle - top, 22, size.height - 22)}px`);
+		card.style.setProperty(
+			"--pointer-y",
+			`${clamp(middle - top, 22, size.height - 22)}px`,
+		);
 	}
 
 	// --near: 1 with the mouse on a marker, fading to 0 about 150px away
@@ -139,13 +151,22 @@ function teachingMarkers() {
 					measuredAt = now;
 					centres = markers.map((marker) => {
 						const box = marker.getBoundingClientRect();
-						return [box.left + box.width / 2, box.top + box.height / 2];
+						return [
+							box.left + box.width / 2,
+							box.top + box.height / 2,
+						];
 					});
 				}
 				markers.forEach((marker, i) => {
-					const distance = Math.hypot(pointer.clientX - centres[i][0], pointer.clientY - centres[i][1]);
-					const near = clamp(1 - (distance - 20) / 130, 0, 1).toFixed(2);
-					if (marker.style.getPropertyValue("--near") !== near) marker.style.setProperty("--near", near);
+					const distance = Math.hypot(
+						pointer.clientX - centres[i][0],
+						pointer.clientY - centres[i][1],
+					);
+					const near = clamp(1 - (distance - 20) / 130, 0, 1).toFixed(
+						2,
+					);
+					if (marker.style.getPropertyValue("--near") !== near)
+						marker.style.setProperty("--near", near);
 				});
 			});
 		},

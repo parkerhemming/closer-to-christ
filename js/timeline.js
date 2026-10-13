@@ -20,7 +20,7 @@ const timeline = [
 		hour: 7,
 		about: true,
 		title: "Barabbas is released",
-		text: "The crowd asked for Barabbas and cried, \"Let him be crucified.\" Pilate washed his hands before them.",
+		text: 'The crowd asked for Barabbas and cried, "Let him be crucified." Pilate washed his hands before them.',
 		references: "Matthew 27:15-26",
 	},
 	{
@@ -33,7 +33,7 @@ const timeline = [
 	{
 		hour: 8,
 		about: true,
-		title: "\"Behold the man!\"",
+		title: '"Behold the man!"',
 		text: "Pilate brought him out wearing the crown of thorns and the purple robe, then delivered him to be crucified.",
 		references: "John 19:4-16",
 	},
@@ -41,14 +41,15 @@ const timeline = [
 		hour: 8.5,
 		about: true,
 		title: "The road to Golgotha",
-		text: "Bearing his cross, he went out to Golgotha. Simon of Cyrene was made to carry it, and Jesus told the women weeping for him, \"Weep not for me.\"",
+		text: 'Bearing his cross, he went out to Golgotha. Simon of Cyrene was made to carry it, and Jesus told the women weeping for him, "Weep not for me."',
 		references: "Mark 15:20-22; Luke 23:26-31; John 19:17",
 	},
 	{
 		hour: 9,
 		title: "Crucified at the third hour",
-		text: "He was nailed to the cross between two thieves, and prayed, \"Father, forgive them; for they know not what they do.\"",
-		references: "1 Nephi 11:33; 3 Nephi 27:14; Mark 15:25-28; Luke 23:33-34",
+		text: 'He was nailed to the cross between two thieves, and prayed, "Father, forgive them; for they know not what they do."',
+		references:
+			"1 Nephi 11:33; 3 Nephi 27:14; Mark 15:25-28; Luke 23:33-34",
 	},
 	{
 		hour: 9.5,
@@ -61,20 +62,20 @@ const timeline = [
 		hour: 10.25,
 		about: true,
 		title: "Mocked on the cross",
-		text: "Passersby, chief priests and scribes railed on him: \"He saved others; himself he cannot save.\"",
+		text: 'Passersby, chief priests and scribes railed on him: "He saved others; himself he cannot save."',
 		references: "Mark 15:29-32; Luke 23:35-37",
 	},
 	{
 		hour: 10.75,
 		about: true,
-		title: "\"To day shalt thou be with me in paradise\"",
+		title: '"To day shalt thou be with me in paradise"',
 		text: "One of the thieves asked Jesus to remember him. Jesus promised he would be with him that day in paradise, the world of spirits.",
 		references: "Alma 40:11-12; D&C 138:18-19; Luke 23:39-43",
 	},
 	{
 		hour: 11.25,
 		about: true,
-		title: "\"Behold thy mother!\"",
+		title: '"Behold thy mother!"',
 		text: "Seeing his mother and the disciple whom he loved by the cross, he gave her into that disciple's care.",
 		references: "John 19:25-27",
 	},
@@ -87,21 +88,21 @@ const timeline = [
 	{
 		hour: 14.75,
 		about: true,
-		title: "\"Why hast thou forsaken me?\"",
-		text: "About the ninth hour he cried with a loud voice, \"My God, my God, why hast thou forsaken me?\" He trod the winepress alone.",
+		title: '"Why hast thou forsaken me?"',
+		text: 'About the ninth hour he cried with a loud voice, "My God, my God, why hast thou forsaken me?" He trod the winepress alone.',
 		references: "D&C 76:107; D&C 133:50; Matthew 27:46; Mark 15:34",
 	},
 	{
 		hour: 14.92,
 		about: true,
-		title: "\"It is finished\"",
-		text: "After a sponge of vinegar he said, \"It is finished,\" and, \"Father, into thy hands I commend my spirit,\" and gave up the ghost.",
+		title: '"It is finished"',
+		text: 'After a sponge of vinegar he said, "It is finished," and, "Father, into thy hands I commend my spirit," and gave up the ghost.',
 		references: "Mosiah 15:7; D&C 19:18-19; Luke 23:46; John 19:28-30",
 	},
 	{
 		hour: 15,
 		title: "The earth quakes, the veil is torn",
-		text: "The temple veil tore from top to bottom and the earth shook. The centurion said, \"Truly this was the Son of God.\" In the Americas, storms, earthquakes and three days of darkness marked his death, as Samuel the Lamanite had prophesied.",
+		text: 'The temple veil tore from top to bottom and the earth shook. The centurion said, "Truly this was the Son of God." In the Americas, storms, earthquakes and three days of darkness marked his death, as Samuel the Lamanite had prophesied.',
 		references: "Helaman 14:20-27; 3 Nephi 8:5-23; Matthew 27:51-54",
 	},
 ];
@@ -142,7 +143,11 @@ function timelineClock() {
 		const choice = document.createElement("button");
 		choice.type = "button";
 		choice.append(
-			element("span", "timeline-event-time", `${event.about ? "About " : ""}${clockTime(event.hour)}`),
+			element(
+				"span",
+				"timeline-event-time",
+				`${event.about ? "About " : ""}${clockTime(event.hour)}`,
+			),
 			element("strong", "timeline-event-title", event.title),
 			element("span", "timeline-event-text", event.text),
 			element("cite", "timeline-event-references", event.references),
@@ -168,7 +173,8 @@ function timelineClock() {
 		clock.replaceChildren(...timeParts(hour));
 		const index = eventIndex(hour);
 		choices.forEach((item, i) => {
-			if (i === index) item.firstChild.setAttribute("aria-current", "true");
+			if (i === index)
+				item.firstChild.setAttribute("aria-current", "true");
 			else item.firstChild.removeAttribute("aria-current");
 		});
 		showCaption(timeline[index]);
@@ -177,7 +183,10 @@ function timelineClock() {
 		// At the last event (3 PM) the next arrow starts the day over.
 		const last = target === timeline.length - 1;
 		next.toggleAttribute("data-restart", last);
-		next.setAttribute("aria-label", last ? "Start the day again" : "Next event");
+		next.setAttribute(
+			"aria-label",
+			last ? "Start the day again" : "Next event",
+		);
 	}
 	// The caption fades between events: "9:00 AM • Crucified at the third
 	// hour", then what happened.
@@ -188,18 +197,21 @@ function timelineClock() {
 		captioned = event;
 		caption.classList.add("is-changing");
 		clearTimeout(captionTimer);
-		captionTimer = setTimeout(() => {
-			resizeSmoothly(() => {
-				const time = element("span", "caption-time", "");
-				time.append(...timeParts(event.hour), " • ");
-				title.replaceChildren(time, event.title);
-				text.textContent = event.text;
-				caption.classList.remove("is-changing");
-				caption.classList.remove("is-folded");
-			});
-			holding = true;
-			foldLater(3.5);
-		}, captioned && title.textContent ? 400 : 0);
+		captionTimer = setTimeout(
+			() => {
+				resizeSmoothly(() => {
+					const time = element("span", "caption-time", "");
+					time.append(...timeParts(event.hour), " • ");
+					title.replaceChildren(time, event.title);
+					text.textContent = event.text;
+					caption.classList.remove("is-changing");
+					caption.classList.remove("is-folded");
+				});
+				holding = true;
+				foldLater(3.5);
+			},
+			captioned && title.textContent ? 400 : 0,
+		);
 	}
 
 	// Whenever the caption changes height (a new event, folding, opening), it
@@ -230,7 +242,11 @@ function timelineClock() {
 	let hovered = false;
 	let holding = false;
 	function setFolded(folded) {
-		if (folded === caption.classList.contains("is-folded") || (folded && holding)) return;
+		if (
+			folded === caption.classList.contains("is-folded") ||
+			(folded && holding)
+		)
+			return;
 		clearTimeout(foldTimer);
 		resizeSmoothly(() => caption.classList.toggle("is-folded", folded));
 		if (folded) document.dispatchEvent(new Event("captionfolded"));
@@ -279,7 +295,14 @@ function timelineClock() {
 		const atEnd = sceneSettings.hour >= dayEnd - 0.001;
 		playButton.toggleAttribute("data-paused", !playing);
 		playButton.toggleAttribute("data-restart", atEnd);
-		playButton.setAttribute("aria-label", atEnd ? "Start the day again" : playing ? "Pause time" : "Play time");
+		playButton.setAttribute(
+			"aria-label",
+			atEnd
+				? "Start the day again"
+				: playing
+					? "Pause time"
+					: "Play time",
+		);
 	}
 	showPlaying();
 	document.addEventListener("scenesettings", showPlaying);
@@ -311,7 +334,8 @@ function timelineClock() {
 	// the choice is saved with the other settings.
 	const speedButton = document.querySelector(".clock-speed");
 	const speeds = [1, 1.5, 2, 5];
-	if (!speeds.includes(sceneSettings.clockSpeedMultiplier)) sceneSettings.clockSpeedMultiplier = 1;
+	if (!speeds.includes(sceneSettings.clockSpeedMultiplier))
+		sceneSettings.clockSpeedMultiplier = 1;
 	function showSpeed() {
 		const speed = sceneSettings.clockSpeedMultiplier;
 		speedButton.textContent = `${speed}x`;
@@ -320,7 +344,8 @@ function timelineClock() {
 	showSpeed();
 	speedButton.addEventListener("click", () => {
 		const speed = sceneSettings.clockSpeedMultiplier;
-		sceneSettings.clockSpeedMultiplier = speeds[(speeds.indexOf(speed) + 1) % speeds.length];
+		sceneSettings.clockSpeedMultiplier =
+			speeds[(speeds.indexOf(speed) + 1) % speeds.length];
 		showSpeed();
 		saveSettings();
 	});
@@ -330,8 +355,18 @@ function timelineClock() {
 		// settled after a jump: the sun glides into place for 1.2s after the
 		// light stops changing.
 		const shown = "sceneShown" in document.documentElement.dataset;
-		if (!playing || document.hidden || heading !== null || !shown || performance.now() < settledAt) return;
-		sceneSettings.hour = Math.min(dayEnd, Math.round(sceneSettings.hour * 60 + 1) / 60);
+		if (
+			!playing ||
+			document.hidden ||
+			heading !== null ||
+			!shown ||
+			performance.now() < settledAt
+		)
+			return;
+		sceneSettings.hour = Math.min(
+			dayEnd,
+			Math.round(sceneSettings.hour * 60 + 1) / 60,
+		);
 		sceneSettings.weatherIntensity = weatherForHour(sceneSettings.hour);
 		document.dispatchEvent(new Event("scenesettings"));
 		if (sceneSettings.hour >= dayEnd) {
@@ -342,17 +377,25 @@ function timelineClock() {
 	}
 	(function run() {
 		tick();
-		setTimeout(run, 1000 / ((sceneSettings.clockSpeed || 1.5) * sceneSettings.clockSpeedMultiplier));
+		setTimeout(
+			run,
+			1000 /
+				((sceneSettings.clockSpeed || 1.5) *
+					sceneSettings.clockSpeedMultiplier),
+		);
 	})();
 
 	// The arrows go a whole event back or forward, however far the clock has
 	// run into the current one.
 	function step(direction) {
-		const to = timeline[eventIndex(heading ?? sceneSettings.hour) + direction];
+		const to =
+			timeline[eventIndex(heading ?? sceneSettings.hour) + direction];
 		if (to) goToHour(to.hour);
 	}
 	previous.addEventListener("click", () => step(-1));
-	next.addEventListener("click", () => (next.hasAttribute("data-restart") ? startOver() : step(1)));
+	next.addEventListener("click", () =>
+		next.hasAttribute("data-restart") ? startOver() : step(1),
+	);
 
 	// The list opens upward from the caption, as far as just under the time
 	// at the top, and opens at the current event.
@@ -366,10 +409,14 @@ function timelineClock() {
 			return;
 		}
 		setFolded(false);
-		const above = caption.getBoundingClientRect().top - clock.getBoundingClientRect().bottom - 30;
+		const above =
+			caption.getBoundingClientRect().top -
+			clock.getBoundingClientRect().bottom -
+			30;
 		list.style.maxHeight = `${above}px`;
 		const current = list.querySelector("[aria-current]");
-		list.scrollTop = current.offsetTop - (list.clientHeight - current.offsetHeight) / 2;
+		list.scrollTop =
+			current.offsetTop - (list.clientHeight - current.offsetHeight) / 2;
 	}
 	// Folded (a tap), it opens the caption; open, it opens the list of events.
 	toggle.addEventListener("click", () => {
@@ -400,7 +447,10 @@ function timelineClock() {
 	let easing = 0;
 	let lastSceneUpdate = 0;
 	function goToHour(hour) {
-		const from = { hour: sceneSettings.hour, weather: sceneSettings.weatherIntensity };
+		const from = {
+			hour: sceneSettings.hour,
+			weather: sceneSettings.weatherIntensity,
+		};
 		weatherLean = 0; // the event's own weather: its hour's usual
 		const to = { hour, weather: weatherForHour(hour) };
 		if (dayOver && hour < dayEnd) {
@@ -414,14 +464,19 @@ function timelineClock() {
 		document.documentElement.dataset.jumping = "";
 		cancelAnimationFrame(easing);
 		function frame(now) {
-			const along = seconds ? Math.min((now - start) / 1000 / seconds, 1) : 1;
-			const eased = along < 0.5 ? 2 * along ** 2 : 1 - (2 - 2 * along) ** 2 / 2;
+			const along = seconds
+				? Math.min((now - start) / 1000 / seconds, 1)
+				: 1;
+			const eased =
+				along < 0.5 ? 2 * along ** 2 : 1 - (2 - 2 * along) ** 2 / 2;
 			sceneSettings.hour = from.hour + (to.hour - from.hour) * eased;
-			sceneSettings.weatherIntensity = from.weather + (to.weather - from.weather) * eased;
+			sceneSettings.weatherIntensity =
+				from.weather + (to.weather - from.weather) * eased;
 			if (along === 1) {
 				heading = null;
 				// After a jump in time, a moment for everything to settle.
-				if (Math.abs(to.hour - from.hour) > 0.02) settledAt = performance.now() + 300;
+				if (Math.abs(to.hour - from.hour) > 0.02)
+					settledAt = performance.now() + 300;
 			}
 			// The clock moves every frame; the scene's light (which repaints
 			// the sky) changes 15 times a second, which still looks smooth.
@@ -437,7 +492,8 @@ function timelineClock() {
 			} else {
 				// The sun's usual glide again, once its last step has started.
 				requestAnimationFrame(() => {
-					if (heading === null) delete document.documentElement.dataset.jumping;
+					if (heading === null)
+						delete document.documentElement.dataset.jumping;
 				});
 			}
 		}
