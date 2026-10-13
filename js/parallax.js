@@ -20,7 +20,7 @@ function parallax() {
 
 	function moveLayers(x, y) {
 		const depthScale = tiltActive ? 0.00044 : 0.0009;
-		const vertical = 1.2; // up and down a little more than side to side
+		const vertical = 2; // up and down more than side to side
 		for (const { layer, depth } of layerSettings) {
 			const scale = depth * depthScale;
 			layer.style.translate = `${x * scale}px ${y * scale * vertical}px`;

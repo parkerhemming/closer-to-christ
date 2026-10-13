@@ -2052,6 +2052,14 @@ body {
 		height: 38px;
 	}
 
+	/* The time centred at the top, between the buttons on either side. */
+	.clock-time {
+		position: fixed;
+		top: calc(max(20px, env(safe-area-inset-top)) + 19px);
+		left: 50%;
+		translate: -50% -50%;
+	}
+
 	.clock-speed {
 		font-size: 13px;
 	}
