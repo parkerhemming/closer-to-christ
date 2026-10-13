@@ -142,16 +142,6 @@ closer-to-christ/
 └── docs/                    the pictures in this README
 ```
 
-### Running it yourself
-
-Any static file server works:
-
-```bash
-python3 -m http.server 8123
-```
-
-Then open [http://localhost:8123](http://localhost:8123).
-
 <br>
 
 ## Credits
@@ -160,7 +150,7 @@ Then open [http://localhost:8123](http://localhost:8123).
 - **Inspiration:** Carl Bloch's _Christ at the Cross_ (1870), a painting often used by The Church of Jesus Christ of Latter-day Saints. It's public domain.
 - **Artwork:** the figure, landscape layers and sign were created with Google's Gemini image models and then cut out, colour-graded and animated in code.
 - **Sounds:** recordings from [Freesound](https://freesound.org), all public domain (CC0) except one: the crowd, the angry mob and the soldiers' laughter from craigsmith's transfers of classic Hollywood studio effects; "Group_Cry_Lementations" by thepaganpanda ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)) and crying by AlucardsBride; gasps by HowardV and a panicking crowd by IENBA; a heartbeat by daandraait; morning birds by richwise; crickets by keng-wai-chane-chick-te; light rain by \_lynks; hammering on wood by obbus; and tearing cloth by ChristopherJngs. Each was trimmed and its level evened out.
-- **Code:** written with help from [Claude Code](https://claude.com/claude-code), an AI coding assistant.
+- **Code:** written with some help from [Claude Code](https://claude.com/claude-code), an AI coding assistant.
 
 <br>
 
