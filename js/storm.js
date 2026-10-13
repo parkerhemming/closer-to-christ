@@ -246,6 +246,10 @@ function createStorm() {
 		const strikeX = randomBetween(8, 92);
 
 		createCloudFlash(lightningLayer, strikeX, distance);
+		// Thunder follows (sound.js).
+		document.dispatchEvent(
+			new CustomEvent("lightning", { detail: { distance, x: strikeX } }),
+		);
 
 		if (visibleBolt) createLightningBolt(lightningLayer, strikeX, distance);
 		if (Math.random() > 0.66) {

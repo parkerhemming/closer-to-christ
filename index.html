@@ -378,6 +378,23 @@
 			</div>
 		</section>
 
+		<!-- Sound on or muted, just left of the gear (js/sound.js). -->
+		<button
+			class="sound-toggle"
+			type="button"
+			aria-label="Sound"
+			aria-pressed="false"
+		>
+			<svg viewBox="0 0 24 24" aria-hidden="true">
+				<path d="M3.5 9.5h3.5l4.5-4v13l-4.5-4H3.5z" />
+				<path
+					class="sound-on"
+					d="M15 9a4 4 0 0 1 0 6M17.5 6.5a7.5 7.5 0 0 1 0 11"
+				/>
+				<path class="sound-off" d="M15.5 9.5l5 5M20.5 9.5l-5 5" />
+			</svg>
+		</button>
+
 		<button
 			id="settings-button"
 			class="settings-button"
@@ -685,6 +702,7 @@
 		<script src="./js/settings-panel.js"></script>
 		<script src="./js/teachings.js"></script>
 		<script src="./js/markers.js"></script>
+		<script src="./js/sound.js"></script>
 		<script>
 			applyTimeOfDay();
 			document.addEventListener("scenesettings", applyTimeOfDay);
@@ -701,6 +719,7 @@
 				settingsPanel();
 				teachingMarkers();
 				sunGlide();
+				soundscape();
 			});
 		</script>
 	</body>

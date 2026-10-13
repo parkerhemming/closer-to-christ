@@ -206,6 +206,16 @@ function earthquakes() {
 			const scale = first ? 1 : 0.5 + 0.5 * strength;
 			const gap = randomBetween(130, 200); // ms between one layer and the next
 			const seconds = first ? 1.7 : randomBetween(0.9, 1.3);
+			// Its rumble (sound.js) lasts until the nearest layer settles.
+			document.dispatchEvent(
+				new CustomEvent("earthquake", {
+					detail: {
+						seconds: seconds + (wave.length * gap) / 1000,
+						strength: scale,
+						first,
+					},
+				}),
+			);
 			const whole = jolt(
 				seconds + (wave.length * gap) / 1000,
 				1.5 * scale,

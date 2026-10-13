@@ -72,6 +72,7 @@ You can let the day play out, pause it, or jump straight to any event. Times mar
 - **Movement:** grass and bushes sway in the wind, and the Savior's hair and loincloth move as He breathes.
 - **3:00 PM:** an earthquake rolls through the land when He dies, as the Gospels and 3 Nephi 8 describe.
 - **Depth:** the whole scene shifts as you move the mouse or tilt your phone.
+- **Sound:** turn it on with the speaker button. Wind, rain from single drops to a downpour, and thunder after every flash, nearer or farther. A crowd follows the day's events: murmuring at the trials, a mob roaring when Barabbas is released and at "Behold the man!", jeering at the cross and weeping on the road to Golgotha. Birds sing in the morning and crickets come out in the darkness. You hear hammer blows at the third hour and a heartbeat that stops at "It is finished". At 3:00 the temple veil tears and the earthquake rumbles.
 
 ### ✝️ Places to stop and learn
 
@@ -113,6 +114,7 @@ It's a hand-built website made with plain HTML, CSS and JavaScript, with no fram
 - **Light and colour:** the colour of every layer is worked out from the hour and the weather, through a set of curves for daylight, warmth, darkness and storm.
 - **GPU drawing:** the moving parts (swaying plants, the figure's hair, cloth and breathing, the rain) and the large still layers are drawn with WebGL in background workers. That keeps animation off the page's main thread.
 - **Speed:** it was benchmarked to run smoothly in Safari, Chrome and Firefox: about 60 frames per second in Safari and 120 in Chrome and Firefox on a 120 Hz display. Slower phones automatically get a lighter version.
+- **Sound:** the wind, heavy rain, thunder and earthquake are made in the browser with the Web Audio API, so they follow the weather exactly. The crowd, birds, crickets, light rain and the day's moments are short recordings (2.5 MB in all) that load only when sound is turned on. All of it plays on the browser's audio thread.
 - **Offline cache:** a service worker keeps the images on your device, so later visits load almost instantly.
 
 ```
@@ -132,10 +134,11 @@ closer-to-christ/
 │   ├── settings-panel.js    the settings panel
 │   ├── teachings.js         what each marker teaches (the scriptures)
 │   ├── markers.js           the markers and their cards
+│   ├── sound.js             the wind, rain, thunder, crowd and the day's sounds
 │   └── workers/
 │       ├── wind.js          draws the swaying and still layers on the GPU
 │       └── rain.js          draws the rain
-├── assets/                  the images
+├── assets/                  the images and sounds
 └── docs/                    the pictures in this README
 ```
 
@@ -156,6 +159,7 @@ Then open [http://localhost:8123](http://localhost:8123).
 - **Scriptures:** from the standard works of The Church of Jesus Christ of Latter-day Saints, quoted from [churchofjesuschrist.org](https://www.churchofjesuschrist.org/study/scriptures).
 - **Inspiration:** Carl Bloch's _Christ at the Cross_ (1870), a painting often used by The Church of Jesus Christ of Latter-day Saints. It's public domain.
 - **Artwork:** the figure, landscape layers and sign were created with Google's Gemini image models and then cut out, colour-graded and animated in code.
+- **Sounds:** recordings from [Freesound](https://freesound.org), all public domain (CC0) except one: the crowd, the angry mob and the soldiers' laughter from craigsmith's transfers of classic Hollywood studio effects; "Group_Cry_Lementations" by thepaganpanda ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)) and crying by AlucardsBride; gasps by HowardV and a panicking crowd by IENBA; a heartbeat by daandraait; morning birds by richwise; crickets by keng-wai-chane-chick-te; light rain by \_lynks; hammering by aidansamuel; and tearing cloth by ChristopherJngs. Each was trimmed and its level evened out.
 - **Code:** written with help from [Claude Code](https://claude.com/claude-code), an AI coding assistant.
 
 <br>

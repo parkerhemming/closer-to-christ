@@ -22,6 +22,8 @@ const sceneSettings = {
 	// the way in this many seconds, starting at once and slowing as it
 	// arrives. 0 follows exactly.
 	parallaxSmoothing: 0.2,
+	// Whether the scene's sound is on (the speaker button by the gear).
+	sound: false,
 	// The loading screen stays up at least this long so its verse can be read.
 	minimumLoadingSeconds: 4,
 };
@@ -34,6 +36,7 @@ const savedSettingNames = [
 	"parallax",
 	"parallaxSmoothing",
 	"clockSpeedMultiplier",
+	"sound",
 ];
 
 try {

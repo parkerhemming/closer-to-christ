@@ -93,7 +93,7 @@ const timeline = [
 		references: "D&C 76:107; D&C 133:50; Matthew 27:46; Mark 15:34",
 	},
 	{
-		hour: 14.92,
+		hour: 14 + 55 / 60, // 2:55, on the clock's minute
 		about: true,
 		title: '"It is finished"',
 		text: 'After a sponge of vinegar he said, "It is finished," and, "Father, into thy hands I commend my spirit," and gave up the ghost.',
@@ -192,6 +192,8 @@ function timelineClock() {
 	// hour", then what happened.
 	let captioned = null;
 	let captionTimer;
+	let captionEvent = null; // the event whose words are up
+	let captionShownAt = 0; // and when they appeared
 	function showCaption(event) {
 		if (event === captioned) return;
 		captioned = event;
@@ -204,6 +206,8 @@ function timelineClock() {
 					time.append(...timeParts(event.hour), " • ");
 					title.replaceChildren(time, event.title);
 					text.textContent = event.text;
+					captionEvent = event;
+					captionShownAt = performance.now();
 					caption.classList.remove("is-changing");
 					caption.classList.remove("is-folded");
 				});
@@ -363,10 +367,23 @@ function timelineClock() {
 			performance.now() < settledAt
 		)
 			return;
-		sceneSettings.hour = Math.min(
+		const next = Math.min(
 			dayEnd,
 			Math.round(sceneSettings.hour * 60 + 1) / 60,
 		);
+		// The caption keeps up with the clock, even at the faster speeds: the
+		// clock stays on an event's minute until its words have faded in, and
+		// events only minutes apart (2:45, 2:55 and 3:00), which would flash
+		// past, wait to be reached until the caption before has been up a few
+		// seconds.
+		const index = eventIndex(sceneSettings.hour);
+		if (
+			timeline[index] !== captionEvent ||
+			(eventIndex(next) !== index &&
+				performance.now() < captionShownAt + 4000)
+		)
+			return;
+		sceneSettings.hour = next;
 		sceneSettings.weatherIntensity = weatherForHour(sceneSettings.hour);
 		document.dispatchEvent(new Event("scenesettings"));
 		if (sceneSettings.hour >= dayEnd) {
