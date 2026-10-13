@@ -19,7 +19,7 @@ const sceneSettings = {
 	// How softly the parallax follows the mouse or tilt: it covers about 63% of
 	// the way in this many seconds, starting at once and slowing as it
 	// arrives. 0 follows exactly.
-	parallaxSmoothing: 0.12,
+	parallaxSmoothing: 0.2,
 	// The loading screen stays up at least this long so its verse can be read.
 	minimumLoadingSeconds: 4,
 };
