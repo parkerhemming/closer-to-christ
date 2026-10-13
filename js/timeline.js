@@ -307,7 +307,17 @@ function timelineClock() {
 		showPlaying();
 	});
 
-	setInterval(() => {
+	// The speed button beside it steps through these multiples of clockSpeed.
+	const speedButton = document.querySelector(".clock-speed");
+	const speeds = [1, 1.5, 2, 5];
+	let speed = 1;
+	speedButton.addEventListener("click", () => {
+		speed = speeds[(speeds.indexOf(speed) + 1) % speeds.length];
+		speedButton.textContent = `${speed}x`;
+		speedButton.setAttribute("aria-label", `Clock speed: ${speed}x`);
+	});
+
+	function tick() {
 		// Not until the scene is on screen (after loading) and everything has
 		// settled after a jump: the sun glides into place for 1.2s after the
 		// light stops changing.
@@ -321,7 +331,11 @@ function timelineClock() {
 			dayOver = true;
 			showPlaying();
 		}
-	}, 1000 / (sceneSettings.clockSpeed || 1.5));
+	}
+	(function run() {
+		tick();
+		setTimeout(run, 1000 / ((sceneSettings.clockSpeed || 1.5) * speed));
+	})();
 
 	// The arrows go a whole event back or forward, however far the clock has
 	// run into the current one.

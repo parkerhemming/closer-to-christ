@@ -1628,7 +1628,7 @@ body {
 		0 2px 16px rgba(0, 0, 0, 0.45);
 }
 
-.clock-play {
+:is(.clock-play, .clock-speed) {
 	display: grid;
 	place-items: center;
 	width: 76px;
@@ -1640,7 +1640,7 @@ body {
 	touch-action: manipulation;
 }
 
-.clock-play:focus-visible {
+:is(.clock-play, .clock-speed):focus-visible {
 	outline: 2px solid #e7b477;
 	outline-offset: 2px;
 }
@@ -1657,6 +1657,16 @@ body {
 
 .clock-play__pause {
 	fill: none;
+}
+
+/* Close beside pause/play: half the gap the time keeps from them. */
+.clock-speed {
+	margin-left: -6px;
+	font:
+		600 26px/1 system-ui,
+		sans-serif;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: -0.02em;
 }
 
 /* Paused, it shows play. */
@@ -1934,9 +1944,13 @@ body {
 }
 
 @media (max-width: 600px) {
-	.clock-play {
+	:is(.clock-play, .clock-speed) {
 		width: 38px;
 		height: 38px;
+	}
+
+	.clock-speed {
+		font-size: 13px;
 	}
 
 	.clock-play svg {
@@ -2229,9 +2243,13 @@ body {
 		gap: 12px;
 	}
 
-	.clock-play {
+	:is(.clock-play, .clock-speed) {
 		width: 38px;
 		height: 38px;
+	}
+
+	.clock-speed {
+		font-size: 13px;
 	}
 
 	.clock-play svg {
@@ -2786,7 +2804,7 @@ body {
 
 /* Every round button looks alike: the same dark glass, edge and hover (a
    little darker, with a gold edge). Icons are gold, except pause/play's. */
-:is(.settings-button, .clock-play, .caption-step, .teaching-close) {
+:is(.settings-button, .clock-play, .clock-speed, .caption-step, .teaching-close) {
 	border: 1px solid rgba(255, 255, 255, 0.16);
 	background: rgba(12, 28, 37, 0.55);
 	-webkit-backdrop-filter: blur(10px);
@@ -2796,7 +2814,7 @@ body {
 		border-color 150ms ease;
 }
 
-:is(.settings-button, .clock-play, .caption-step, .teaching-close):hover:not(
+:is(.settings-button, .clock-play, .clock-speed, .caption-step, .teaching-close):hover:not(
 		:disabled
 	) {
 	border-color: rgba(231, 180, 119, 0.45);
@@ -2804,7 +2822,7 @@ body {
 }
 
 @media (min-width: 601px) {
-	:is(.settings-button, .clock-play, .caption-step, .teaching-close) {
+	:is(.settings-button, .clock-play, .clock-speed, .caption-step, .teaching-close) {
 		-webkit-backdrop-filter: blur(5px);
 		backdrop-filter: blur(5px);
 	}
