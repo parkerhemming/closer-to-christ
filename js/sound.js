@@ -20,7 +20,8 @@
 //   at the earthquake.
 // - The day's moments: hammer blows at the third hour, a heartbeat from "Why
 //   hast thou forsaken me?" that slows and stops at "It is finished", a
-//   hush, then at 3 PM the temple veil tearing.
+//   hush from which the storm rises back to its height at 3 PM, then the
+//   temple veil tearing.
 function soundscape() {
 	const button = document.querySelector(".sound-toggle");
 	if (!window.AudioContext) {
@@ -230,7 +231,7 @@ function soundscape() {
 		"gasp",
 		"panic",
 		"heartbeat",
-		"hammer",
+		"hammer-v2",
 		"tear",
 	];
 	function loadRecordings() {
@@ -437,7 +438,6 @@ function soundscape() {
 				old.echoes.disconnect();
 			}, 2000);
 			events = newEvents();
-			hushUntil = 0;
 		}
 		wasJumping = jumping();
 		const ease = wasJumping ? 2 : 0.5;
@@ -482,15 +482,17 @@ function soundscape() {
 			glide(tone.frequency, hour < 8.45 ? 1400 : 3200, 3);
 		}
 		passMoments();
-		// The world falls away under the heartbeat, and almost silent for a
-		// few breaths at "It is finished".
+		// The world falls away under the heartbeat and goes almost silent at
+		// "It is finished" (2:55); then the wind and rain rise back with each
+		// minute, slowly at first, to the full storm at 3:00.
+		const finished = 14 + 55 / 60;
 		const quiet =
-			audio.currentTime < hushUntil
-				? 0.15
+			hour >= finished && hour < 15
+				? 0.15 + 0.85 * ((hour - finished) / (15 - finished)) ** 1.5
 				: heartbeatAt(hour) < 1
 					? 0.4
 					: 1;
-		glide(ambience.gain, quiet, 1.5);
+		glide(ambience.gain, quiet, 2);
 	}
 
 	// The wind swells and eases over a few seconds, never jumping.
@@ -667,7 +669,6 @@ function soundscape() {
 		[7, mob], // "Barabbas is released"
 		[8, mob], // "Behold the man!"
 		[9, nails], // "Crucified at the third hour"
-		[14 + 55 / 60, hush], // "It is finished" (2:55)
 	];
 	let lastHour = sceneSettings.hour;
 	function passMoments() {
@@ -681,26 +682,16 @@ function soundscape() {
 		lastHour = hour;
 	}
 
-	// Two sets of hammer blows, far off, echoing off the hills.
+	// Hammer blows, far off, echoing off the hills.
 	function nails(at) {
-		if (!recordings.hammer) return;
+		if (!recordings["hammer-v2"]) return;
 		const far = filter("lowpass", 3200);
 		const place = new StereoPannerNode(audio, { pan: -0.15 });
 		chain(far, place, events.bus);
 		place.connect(events.echoes);
-		play(recordings.hammer, at, far, { loud: 0.35, seconds: 1.85 });
-		play(recordings.hammer, at + 3.4, far, {
-			loud: 0.35,
-			from: 1.85,
-			seconds: 1.9,
-		});
-	}
-
-	// "It is finished": everything falls quiet for a few breaths.
-	let hushUntil = 0;
-	function hush(at) {
-		hushUntil = at + 6;
-		setTimeout(update, 6500);
+		// Two runs of steady blows on wood with a pause between (one blow
+		// repeated, then another), pitched down to weigh more.
+		play(recordings["hammer-v2"], at, far, { loud: 0.35 });
 	}
 
 	// Each tremor (earthquakes() in land.js shakes the scene at the same

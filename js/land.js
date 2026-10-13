@@ -272,15 +272,17 @@ function earthquakes() {
 function swayInWind() {
 	if (!("transferControlToOffscreen" in HTMLCanvasElement.prototype)) return;
 	// Drawn still (see wind.js), so their light changes without the browser
-	// redrawing them in full each tick: the clouds, at CSS-pixel resolution
-	// (their images are soft and half-size anyway), each image repeated across
-	// as its CSS background is, drifting with the layer's animation...
+	// redrawing them in full each tick: the clouds, below CSS-pixel resolution
+	// (their images are soft and half-size anyway, and each layer is a whole
+	// image wider than the screen, see .storm-cloud__texture), each image
+	// repeated across as its CSS background is, drifting with the layer's
+	// animation...
 	const clouds = {
 		light: () =>
 			`brightness(${byWeather(weatherCurves.cloudShade)}) brightness(${lightFor("cloudLight")}) sepia(${byTime(timeCurves.cloudWarmth)})`,
 		still: true,
 		tiled: true,
-		maximumScale: 1,
+		maximumScale: 0.7,
 	};
 	for (const cloud of ["far", "deep", "middle", "midband", "lower", "near"]) {
 		swayLayer(

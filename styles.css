@@ -287,7 +287,13 @@ body {
    clouds land exactly where a full-size layer would put them, with a fraction
    of the GPU memory. Each layer's top and bottom fade is baked into its
    image: a CSS mask here was a second full-size GPU layer per cloud in
-   Chrome. */
+   Chrome.
+
+   Each drifts exactly one width of its repeating image (its height times
+   the image's width over height), so when the drift starts over the clouds
+   are where they began and the loop has no seam; a shorter drift made them
+   jump back each time round. --cloud-speed is that whole width's crossing,
+   at the speed the layer always had. */
 .storm-cloud__texture {
 	display: block;
 	position: absolute;
@@ -313,8 +319,8 @@ body {
 	--cloud-bottom: calc(var(--cloud-frame) * 0.74);
 	--cloud-image-height: 110dvh;
 	--cloud-y: 0dvh;
-	--cloud-drift: -13vw;
-	--cloud-speed: 450s;
+	--cloud-drift: calc(var(--cloud-image-height) * -1536 / 768);
+	--cloud-speed: 4760s;
 	--color-grade: brightness(62%) contrast(116%) sepia(16%) saturate(80%)
 		hue-rotate(154deg);
 	z-index: 2;
@@ -326,8 +332,8 @@ body {
 	--cloud-bottom: calc(var(--cloud-frame) * 0.66);
 	--cloud-image-height: 55dvh;
 	--cloud-y: 5dvh;
-	--cloud-drift: -15vw;
-	--cloud-speed: 360s;
+	--cloud-drift: calc(var(--cloud-image-height) * -1280 / 455);
+	--cloud-speed: 2320s;
 	--color-grade: brightness(54%) contrast(116%) saturate(48%)
 		hue-rotate(158deg);
 	z-index: 4;
@@ -339,8 +345,8 @@ body {
 	--cloud-bottom: calc(var(--cloud-frame) * 0.7);
 	--cloud-image-height: 88dvh;
 	--cloud-y: -2dvh;
-	--cloud-drift: -12vw;
-	--cloud-speed: 286s;
+	--cloud-drift: calc(var(--cloud-image-height) * -1);
+	--cloud-speed: 1311s;
 	--color-grade: brightness(64%) contrast(116%) sepia(12%) saturate(70%)
 		hue-rotate(150deg);
 	z-index: 8;
@@ -353,8 +359,8 @@ body {
 	--cloud-bottom: calc(var(--cloud-frame) * 0.49);
 	--cloud-image-height: 64dvh;
 	--cloud-y: 16dvh;
-	--cloud-drift: -11vw;
-	--cloud-speed: 247s;
+	--cloud-drift: calc(var(--cloud-image-height) * -1);
+	--cloud-speed: 898s;
 	--color-grade: brightness(56%) contrast(118%) sepia(10%) saturate(64%)
 		hue-rotate(154deg);
 	z-index: 12;
@@ -367,8 +373,8 @@ body {
 	--cloud-bottom: calc(var(--cloud-frame) * 0.7);
 	--cloud-image-height: 25dvh;
 	--cloud-y: 58dvh;
-	--cloud-drift: -10vw;
-	--cloud-speed: 226s;
+	--cloud-drift: calc(var(--cloud-image-height) * -1280 / 455);
+	--cloud-speed: 993s;
 	--color-grade: brightness(72%) contrast(108%) saturate(52%)
 		hue-rotate(154deg);
 	z-index: 24;
@@ -380,8 +386,8 @@ body {
 	--cloud-bottom: calc(var(--cloud-frame) * 0.62);
 	--cloud-image-height: 46dvh;
 	--cloud-y: 9dvh;
-	--cloud-drift: -16vw;
-	--cloud-speed: 90s;
+	--cloud-drift: calc(var(--cloud-image-height) * -1280 / 455);
+	--cloud-speed: 455s;
 	--color-grade: brightness(50%) contrast(120%) saturate(45%)
 		hue-rotate(160deg);
 	z-index: 35;
