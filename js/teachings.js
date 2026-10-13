@@ -213,7 +213,11 @@ const teachings = [
 	},
 	{
 		id: "jerusalem",
-		at: { layer: "city", style: "left: 75%; bottom: 12vw" },
+		at: {
+			layer: "city",
+			// On the walls, wherever the city is drawn (see --city-width).
+			style: "left: var(--city-marker-left); bottom: calc(var(--city-width) * 0.12)",
+		},
 		title: "Jerusalem",
 		text: "The Savior was crucified just outside the walls of Jerusalem, the city of the temple and of the prophets. He wept over it, longing to gather its people as a hen gathers her chickens.",
 		scriptures: [

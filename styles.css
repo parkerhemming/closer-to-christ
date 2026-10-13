@@ -194,6 +194,7 @@ body {
 		);
 		filter: drop-shadow(0 0 3px rgba(218, 239, 255, 0.76));
 		pointer-events: none;
+		opacity: 0; /* only the animation shows it */
 		transform-origin: right center;
 		animation: shooting-star var(--shooting-duration) ease-out forwards;
 		will-change: transform, opacity;
@@ -626,7 +627,7 @@ body {
 .scenery {
 	position: absolute;
 	left: 50%;
-	width: 100%;
+	width: var(--width, 100%);
 	height: var(--height);
 	bottom: var(--bottom);
 	z-index: var(--stack-order);
@@ -684,7 +685,7 @@ body {
 	--stack-order: 38;
 	--bottom: -8dvh;
 	--height: 38dvh;
-	--texture: url("./assets/olives-v2.avif");
+	--texture: url("./assets/olives-v3.avif");
 	--color-grade: brightness(35%) saturate(85%) contrast(90%) sepia(6%);
 }
 
@@ -699,6 +700,22 @@ body {
 	--height: 40.688dvh;
 	--texture: url("./assets/hills-v5.avif");
 	--color-grade: brightness(30%) saturate(60%) contrast(84%) sepia(6%);
+}
+
+/* On phones and small tablets the hills sit a little lower and the
+   mountains beyond them a little higher, so more of the far horizon shows. */
+@media (max-width: 900px) {
+	:is(.scenery[data-scenery="far-mountains"], .land-wind--far) {
+		--bottom: 12dvh;
+	}
+
+	:is(
+		.scenery[data-scenery="distant-hills"],
+		.land-wind--hills,
+		.land-shadow--hills
+	) {
+		--bottom: -16.4dvh;
+	}
 }
 
 /* The two near layers are cut-out images with their own skylines; the
@@ -743,11 +760,29 @@ body {
 	.scene-markers--city
 ) {
 	--stack-order: 39;
-	--bottom: clamp(-14dvh, calc(16dvh - 14vw), 8dvh);
+	/* As wide as the screen, but never less than about the screen's height:
+	   on narrow screens (phones, a narrowed window) it stops shrinking, its
+	   ends cut off, rather than sinking behind the land in front. */
+	--city-width: max(100vw, 106dvh);
+	--width: var(--city-width);
+	/* The bigger it is beyond the screen's width, the lower it sits, so it
+	   stays on the ridge rather than floating. */
+	--bottom: calc(
+		clamp(-14dvh, calc(16dvh - 14vw), 8dvh) - (var(--city-width) - 100vw) *
+			0.1
+	);
+	/* The city's marker (js/teachings.js): three quarters across, or nearer
+	   the middle when that would come within 110px (17% on narrow phones,
+	   so it stays clear of the cross) of the screen's right edge, allowing
+	   for the parallax's enlargement. */
+	--city-marker-left: min(
+		75%,
+		calc(50% + 50vw / var(--parallax-overscan) - min(110px, 17vw))
+	);
 	/* Exactly the image's height (it's sized by width, anchored at the
 	   bottom): a taller box was mostly empty but still took four large
 	   GPU layers (the city, its shadow, its lights' box and its marker). */
-	--height: calc(100vw * 708 / 4096);
+	--height: calc(var(--city-width) * 708 / 4096);
 	--texture: url("./assets/jerusalem-v7.avif");
 	--texture-size: 100% auto;
 	/* Warm like the hills behind it (it was greyed out before). */
@@ -776,7 +811,7 @@ body {
 	left: 50%;
 	bottom: var(--bottom);
 	z-index: var(--stack-order);
-	width: 100%;
+	width: var(--width, 100%);
 	height: var(--height);
 	transform: translateX(-50%) scale(var(--parallax-overscan));
 	transform-origin: center bottom;
@@ -975,7 +1010,7 @@ body {
 	transform: translateX(-51.77%) rotate(0.5deg);
 	transform-origin: center center;
 	filter: drop-shadow(0 0 1px rgba(24, 14, 10, 0.42))
-		brightness(var(--figure-light, 1));
+		brightness(var(--figure-light, 1)) saturate(var(--figure-saturation, 1));
 }
 
 /* The figure's markers lie over it, turning and moving with it. */
@@ -2527,7 +2562,7 @@ body {
 	}
 
 	.scenery[data-scenery="olives"] {
-		--texture: url("./assets/mobile/olives-v2.avif");
+		--texture: url("./assets/mobile/olives-v3.avif");
 	}
 
 	.scenery[data-scenery="distant-jerusalem"] {
@@ -2762,7 +2797,7 @@ body {
 	letter-spacing: 0.02em;
 	white-space: nowrap;
 	opacity: 0;
-	translate: -50% 4px;
+	translate: calc(-50% + var(--nudge, 0px)) 4px; /* --nudge: js/markers.js */
 	pointer-events: none;
 	transition:
 		opacity 150ms ease,
@@ -2771,7 +2806,7 @@ body {
 
 .marker:is(:hover, :focus-visible):not([aria-expanded="true"]) .marker-label {
 	opacity: 1;
-	translate: -50% 0;
+	translate: calc(-50% + var(--nudge, 0px)) 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

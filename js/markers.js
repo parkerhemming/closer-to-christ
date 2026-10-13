@@ -29,6 +29,20 @@ function teachingMarkers() {
 		label.textContent = teaching.title;
 		label.setAttribute("aria-hidden", "true");
 		marker.append(label);
+		// Centred over the marker, but nudged sideways to stay on the screen
+		// (12px in) near its edges. Measured as it's about to show, inside
+		// the layer's parallax scale.
+		const keepLabelOnScreen = () => {
+			label.style.removeProperty("--nudge");
+			const box = label.getBoundingClientRect();
+			const scale = box.width / label.offsetWidth || 1;
+			const over =
+				Math.max(0, 12 - box.left) -
+				Math.max(0, box.right - (innerWidth - 12));
+			if (over) label.style.setProperty("--nudge", `${over / scale}px`);
+		};
+		marker.addEventListener("pointerenter", keepLabelOnScreen);
+		marker.addEventListener("focus", keepLabelOnScreen);
 		const { figure, layer = "figure", style } = teaching.at;
 		if (figure) {
 			marker.style.left = `${(figure[0] / 1186) * 100}%`;

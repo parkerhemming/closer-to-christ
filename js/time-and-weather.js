@@ -185,6 +185,13 @@ function daylight() {
 	return alongCurve(hourCurves.daylight, sceneSettings.hour);
 }
 
+// After he gives up the ghost at "It is finished" (2:55), the figure grows
+// pale, fully so by 3 PM: 0 before, 1 from 3 PM.
+function pallor() {
+	const finished = 14 + 55 / 60;
+	return clamp((sceneSettings.hour - finished) / (15 - finished), 0, 1);
+}
+
 function darkness() {
 	return alongCurve(hourCurves.darkness, sceneSettings.hour);
 }
@@ -483,7 +490,10 @@ function applyTimeOfDay() {
 		"--cloud-warmth": byTime(timeCurves.cloudWarmth),
 	});
 	setStyle("#sky .stars", { "--starlight": lightFor("starlight") });
-	setStyle("#christ", { "--figure-light": lightFor("figureLight") });
+	setStyle("#christ", {
+		"--figure-light": lightFor("figureLight") * (1 + 0.065 * pallor()),
+		"--figure-saturation": 1 - 0.375 * pallor(),
+	});
 	placeSun();
 }
 

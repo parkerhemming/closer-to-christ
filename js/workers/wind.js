@@ -78,6 +78,8 @@ let uniforms = {};
 let imageAspect = 1;
 let cssSize = [0, 0];
 let tile = null; // [left, top, height] of a tiled image; otherwise full height, centred
+let breaths = 0; // how deeply the figure breathes (0: not at all)
+let breathingNow = 0;
 let conditions = {
 	wind: 1,
 	grade: [1, 0, 0, 0, 1, 0, 0, 0, 1],
@@ -154,6 +156,7 @@ async function setup({
 }) {
 	strength = layerStrength;
 	still = isStill;
+	breaths = breathing;
 	gl = canvas.getContext("webgl", {
 		premultipliedAlpha: true,
 		antialias: false,
@@ -218,6 +221,13 @@ function frame(now) {
 			? target
 			: wind + (target - wind) * Math.min(1, elapsed * 1.5);
 	glide(now);
+	// The breathing fades out over a few seconds when the page says it has
+	// stopped (he has died), and back in if the time is turned back.
+	if (breaths) {
+		const target = conditions.alive === false ? 0 : breaths;
+		breathingNow += (target - breathingNow) * Math.min(1, elapsed / 1.5);
+		gl.uniform1f(uniforms.breathing, breathingNow);
+	}
 	draw(now);
 }
 

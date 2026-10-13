@@ -340,7 +340,9 @@ function swayInWind() {
 		".christ-wind",
 		"./assets/christ/christ-motion-v2.png",
 		{
-			light: () => `brightness(${lightFor("figureLight")})`,
+			// Paler after he dies (pallor in js/time-and-weather.js).
+			light: () =>
+				`brightness(${lightFor("figureLight") * (1 + 0.065 * pallor())}) saturate(${1 - 0.375 * pallor()})`,
 			strength: 0.3,
 			flutterFrequency: [0, -30, 0, 13],
 			breathing: 1,
@@ -388,6 +390,9 @@ function swayLayer(
 				filters.rows.map((row) => row[column]),
 			),
 			gradeOffset: filters.offset,
+			// He gives up the ghost at "It is finished" (2:55): the figure
+			// stops breathing (wind.js).
+			alive: sceneSettings.hour < 14 + 55 / 60,
 			// How long its colour glides to this (a jump in time is already eased).
 			settle: !glideBigCanvases
 				? 0
@@ -438,7 +443,12 @@ function swayLayer(
 	let sent = [];
 	document.addEventListener("scenesettings", () => {
 		const next = conditions();
-		const numbers = [next.wind, ...next.grade, ...next.gradeOffset];
+		const numbers = [
+			next.wind,
+			next.alive ? 1 : 0,
+			...next.grade,
+			...next.gradeOffset,
+		];
 		if (
 			numbers.every(
 				(number, i) =>
@@ -496,6 +506,9 @@ function landShadows() {
 			landShape: "./assets/shadows/jerusalem-land-v2.webp",
 			canvas: ".land-shadow--city",
 			landSizedByWidth: true, // the city image is sized by width
+			// Lighter: at full strength the low morning sun left the city
+			// dark and grey below the sunlit Mount of Olives.
+			strength: 0.45,
 		},
 		{
 			ridge: '[data-scenery="golgotha-ridge"]',
@@ -714,7 +727,10 @@ function landShadows() {
 			byWeather(weatherCurves.sunlight) *
 			(1 - darkness());
 		for (const pair of pairs)
-			pair.canvas.style.setProperty("--shadow-strength", strength);
+			pair.canvas.style.setProperty(
+				"--shadow-strength",
+				strength * (pair.strength ?? 1),
+			);
 		// No sun to cast them: hide the canvases and skip drawing.
 		for (const pair of pairs) pair.canvas.hidden = strength < 0.01;
 		glideShadows([

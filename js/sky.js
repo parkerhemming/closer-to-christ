@@ -242,6 +242,7 @@ function createShootingStars() {
 			: 20 + Math.random() * 18;
 
 		const travel = randomBetween(...profile.travel);
+		const duration = randomBetween(...profile.duration);
 
 		shootingStar.className = "shooting-star";
 		shootingStar.setAttribute("aria-hidden", "true");
@@ -251,7 +252,7 @@ function createShootingStars() {
 			"--shooting-angle": `${angle}deg`,
 			"--shooting-distance": `${travel}vw`,
 			"--shooting-mid-distance": `${travel * 0.72}vw`,
-			"--shooting-duration": `${randomBetween(...profile.duration)}ms`,
+			"--shooting-duration": `${duration}ms`,
 			"--shooting-tail-width": `${randomBetween(...profile.width)}px`,
 			"--shooting-thickness": `${randomBetween(...profile.thickness)}px`,
 			// Fainter as the sky lightens (they no longer sit in a fading layer).
@@ -264,13 +265,9 @@ function createShootingStars() {
 			shootingStar.classList.add("shooting-star--stretch");
 		}
 
-		shootingStar.addEventListener(
-			"animationend",
-			() => shootingStar.remove(),
-			{
-				once: true,
-			},
-		);
+		// Removed on a timer, not on animationend: an animation that is cancelled
+		// or stalls never fires it, and the star would stay stuck in the sky.
+		window.setTimeout(() => shootingStar.remove(), duration + 500);
 		sky.appendChild(shootingStar);
 		scheduleShootingStar();
 	}
