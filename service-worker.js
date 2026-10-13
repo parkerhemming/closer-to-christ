@@ -6,7 +6,7 @@
 //
 // Replacing an image in place (same filename)? Bump CACHE so visitors get
 // the new file; the old cache is deleted when the new worker activates.
-const CACHE = "closer-to-christ-v1";
+const CACHE = "closer-to-christ-v2";
 
 self.addEventListener("install", () => self.skipWaiting());
 
@@ -16,7 +16,9 @@ self.addEventListener("activate", (event) => {
 			.keys()
 			.then((keys) =>
 				Promise.all(
-					keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)),
+					keys
+						.filter((key) => key !== CACHE)
+						.map((key) => caches.delete(key)),
 				),
 			)
 			.then(() => self.clients.claim()),
@@ -29,7 +31,9 @@ self.addEventListener("fetch", (event) => {
 	if (request.method !== "GET" || url.origin !== location.origin) return;
 
 	event.respondWith(
-		url.pathname.includes("/assets/") ? cacheFirst(request) : networkFirst(request),
+		url.pathname.includes("/assets/")
+			? cacheFirst(request)
+			: networkFirst(request),
 	);
 });
 
@@ -46,7 +50,8 @@ async function networkFirst(request) {
 		// Always check with the server: without this the browser's own cache
 		// could hand back an old page or stylesheet after an edit.
 		const response = await fetch(request, { cache: "no-cache" });
-		if (response.ok) (await caches.open(CACHE)).put(request, response.clone());
+		if (response.ok)
+			(await caches.open(CACHE)).put(request, response.clone());
 		return response;
 	} catch {
 		return (await caches.match(request)) ?? Response.error();
