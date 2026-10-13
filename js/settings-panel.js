@@ -186,4 +186,30 @@ function settingsPanel() {
 		saveSettings();
 		showCurrentValues();
 	});
+
+	// A hint under the gear once 3:00 has come: where to see how this was
+	// made. Shown a moment after the first quake settles (or after a while,
+	// if there's no quake), and fades away on its own, half again as late as
+	// the sound hint. Once a visit.
+	const githubHint = document.querySelector(".github-hint");
+	let hintTimer = 0;
+	let hinted = false;
+	function showGithubHint() {
+		hinted = true;
+		githubHint.hidden = false;
+		githubHint.offsetWidth; // laid out first, so it fades in
+		githubHint.classList.add("is-shown");
+		setTimeout(() => githubHint.classList.remove("is-shown"), 6750);
+	}
+	document.addEventListener("scenesettings", () => {
+		const atThree = sceneSettings.hour >= 15 - 0.001;
+		if (hinted || atThree === Boolean(hintTimer)) return;
+		clearTimeout(hintTimer);
+		hintTimer = atThree ? setTimeout(showGithubHint, 12000) : 0;
+	});
+	document.addEventListener("earthquake", ({ detail }) => {
+		if (hinted || !detail.first) return;
+		clearTimeout(hintTimer);
+		hintTimer = setTimeout(showGithubHint, detail.seconds * 1000 + 1500);
+	});
 }

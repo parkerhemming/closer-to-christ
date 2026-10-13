@@ -69,6 +69,34 @@ function teachingMarkers() {
 		layers[layer].append(marker);
 	}
 
+	// Touch screens can't come near first, so the markers light up for a
+	// while once the loading screen and motion question are gone, and for a
+	// moment after each tap, then dim again.
+	if (matchMedia("(hover: none)").matches) {
+		const root = document.documentElement;
+		let dimTimer;
+		const lightUp = (seconds) => {
+			root.dataset.markersLit = "";
+			clearTimeout(dimTimer);
+			dimTimer = setTimeout(
+				() => delete root.dataset.markersLit,
+				seconds * 1000,
+			);
+		};
+		(function whenUncovered() {
+			if (
+				document.querySelector(
+					"#loading:not(.is-done), #motion-prompt:not([hidden])",
+				)
+			)
+				setTimeout(whenUncovered, 250);
+			else lightUp(5);
+		})();
+		document.addEventListener("pointerdown", () => lightUp(3), {
+			passive: true,
+		});
+	}
+
 	card.addEventListener("toggle", (event) => {
 		if (event.newState === "closed")
 			openFor?.removeAttribute("aria-expanded");

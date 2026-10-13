@@ -1745,6 +1745,22 @@ body {
 	rotate: 45deg;
 }
 
+/* The same bubble under the gear, pointing at it, with a link to GitHub. */
+.github-hint {
+	&.is-shown {
+		pointer-events: auto;
+	}
+
+	&::before {
+		right: calc(19px - 6px);
+	}
+
+	a {
+		color: #e7b477;
+		text-underline-offset: 3px;
+	}
+}
+
 /* Top left: a pause/play button the same size as the settings gear, then
    the time in plain white text. */
 .clock-bar {
@@ -2705,10 +2721,16 @@ body {
 	opacity: 1;
 }
 
-/* Touch screens can't come near first, so they're a little brighter. */
+/* Touch screens can't come near first: they light up for a few seconds when
+   the scene first shows and after each tap, then dim (js/markers.js). */
 @media (hover: none) {
 	.marker {
-		opacity: 0.65;
+		transition: opacity 800ms ease;
+	}
+
+	:root[data-markers-lit] .marker {
+		opacity: 1;
+		transition-duration: 200ms;
 	}
 }
 
