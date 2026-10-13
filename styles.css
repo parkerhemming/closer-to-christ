@@ -2546,8 +2546,10 @@ body {
 	display: none;
 }
 
-/* Quality levels (data-quality on <html>): high is the full scene, medium is
-   the lighter phone scene, low drops the most expensive layers and glows. */
+/* Quality levels (data-quality on <html>): high is the full scene (where
+   every device starts), medium is lighter, low drops the most expensive
+   layers and glows. Lower levels come only from a slow connection or frame
+   rate, little memory, data saver, or a choice in the settings. */
 :root:not([data-quality="high"]) {
 	.storm-cloud--midband,
 	.storm-cloud--lower {

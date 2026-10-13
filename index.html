@@ -17,10 +17,6 @@
 			(() => {
 				const root = document.documentElement;
 				const phone = matchMedia("(max-width: 900px)");
-				// Only actual touch phones count; a narrow desktop window doesn't.
-				const touchPhone = matchMedia(
-					"(max-width: 900px) and (pointer: coarse)",
-				);
 				const connection = navigator.connection; // Chromium only
 				const memory = navigator.deviceMemory ?? 8; // GB; Chromium only
 				// A level picked in the settings, which sticks; otherwise a
@@ -42,9 +38,7 @@
 							? ["low", "data saver is on"]
 							: memory <= 2
 								? ["low", `${memory}GB memory`]
-								: touchPhone.matches
-									? ["medium", "phone"]
-									: ["high", "fast device and connection"];
+								: ["high", "fast enough device"];
 				root.dataset.quality = quality;
 				root.dataset.qualityReason = reason;
 				if (chosen) root.dataset.qualityChosen = "";
