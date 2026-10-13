@@ -307,14 +307,22 @@ function timelineClock() {
 		showPlaying();
 	});
 
-	// The speed button beside it steps through these multiples of clockSpeed.
+	// The speed button beside it steps through these multiples of clockSpeed;
+	// the choice is saved with the other settings.
 	const speedButton = document.querySelector(".clock-speed");
 	const speeds = [1, 1.5, 2, 5];
-	let speed = 1;
-	speedButton.addEventListener("click", () => {
-		speed = speeds[(speeds.indexOf(speed) + 1) % speeds.length];
+	if (!speeds.includes(sceneSettings.clockSpeedMultiplier)) sceneSettings.clockSpeedMultiplier = 1;
+	function showSpeed() {
+		const speed = sceneSettings.clockSpeedMultiplier;
 		speedButton.textContent = `${speed}x`;
 		speedButton.setAttribute("aria-label", `Clock speed: ${speed}x`);
+	}
+	showSpeed();
+	speedButton.addEventListener("click", () => {
+		const speed = sceneSettings.clockSpeedMultiplier;
+		sceneSettings.clockSpeedMultiplier = speeds[(speeds.indexOf(speed) + 1) % speeds.length];
+		showSpeed();
+		saveSettings();
 	});
 
 	function tick() {
@@ -334,7 +342,7 @@ function timelineClock() {
 	}
 	(function run() {
 		tick();
-		setTimeout(run, 1000 / ((sceneSettings.clockSpeed || 1.5) * speed));
+		setTimeout(run, 1000 / ((sceneSettings.clockSpeed || 1.5) * sceneSettings.clockSpeedMultiplier));
 	})();
 
 	// The arrows go a whole event back or forward, however far the clock has
