@@ -231,7 +231,7 @@ function soundscape() {
 		"gasp",
 		"panic",
 		"heartbeat",
-		"hammer-v2",
+		"hammer-v3",
 		"tear",
 	];
 	function loadRecordings() {
@@ -682,16 +682,21 @@ function soundscape() {
 		lastHour = hour;
 	}
 
-	// Hammer blows, far off, echoing off the hills.
+	// Hammer blows: two runs of the same blow on wood with a pause between,
+	// pitched down to weigh more, the second run a touch deeper and from the
+	// other side (one hand, then the other). No echo: its repeat fell
+	// between the blows and doubled each one.
 	function nails(at) {
-		if (!recordings["hammer-v2"]) return;
-		const far = filter("lowpass", 3200);
-		const place = new StereoPannerNode(audio, { pan: -0.15 });
-		chain(far, place, events.bus);
-		place.connect(events.echoes);
-		// Two runs of steady blows on wood with a pause between (one blow
-		// repeated, then another), pitched down to weigh more.
-		play(recordings["hammer-v2"], at, far, { loud: 0.35 });
+		const hammer = recordings["hammer-v3"];
+		if (!hammer) return;
+		for (const [pan, from, seconds] of [
+			[-0.6, 0, 4.6],
+			[0.6, 4.6, hammer.duration - 4.6],
+		]) {
+			const place = new StereoPannerNode(audio, { pan });
+			place.connect(events.bus);
+			play(hammer, at + from, place, { loud: 0.35, from, seconds });
+		}
 	}
 
 	// Each tremor (earthquakes() in land.js shakes the scene at the same
