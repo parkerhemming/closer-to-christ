@@ -16,11 +16,10 @@ const sceneSettings = {
 	weatherIntensity: null,
 	// Whether the scene follows the mouse or phone tilt at all.
 	parallax: true,
-	// Seconds the parallax takes to catch up to the mouse or tilt.
-	// 0 follows exactly; 0.2 is a gentle, floaty ease. With smoothing, a fast
-	// flick swings a little past where it's heading and settles back (more
-	// smoothing, bigger swing).
-	parallaxSmoothing: 0.3,
+	// How softly the parallax follows the mouse or tilt: it covers about 63% of
+	// the way in this many seconds, starting at once and slowing as it
+	// arrives. 0 follows exactly.
+	parallaxSmoothing: 0.12,
 	// The loading screen stays up at least this long so its verse can be read.
 	minimumLoadingSeconds: 4,
 };
@@ -191,10 +190,9 @@ function byTime(points) {
 // Sky colours dim toward darkLight.sky; the sunrise glows fade out.
 function skyColor(points, glow = false) {
 	const dark = darkness();
-	const [r, g, b, a] = alongCurve(points, daylight()).map((value, i) =>
+	return alongCurve(points, daylight()).map((value, i) =>
 		i < 3 ? value + (darkLight.sky[i] - value) * dark : glow ? value * (1 - dark) : value,
 	);
-	return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a.toFixed(3)})`;
 }
 
 // 9.5 -> "9:30 AM", to the minute.
@@ -213,31 +211,39 @@ function gospelHour(hour) {
 
 // Paints the sky's small canvas: the gradient from the horizon up, and the
 // sunrise glow, an ellipse as wide and tall as the sky centred low on the
-// left.
-function drawSky() {
+// left. Its colours glide between the clock's ticks.
+const skyStops = ["horizon", "low", "middle", "zenith", "glowCore", "glowMiddle", "glowEdge"];
+const glideSky = glider((values) => {
+	const [horizon, low, middle, zenith, glowCore, glowMiddle, glowEdge] = skyStops.map((_, i) => {
+		const [r, g, b, a] = values.slice(i * 4, i * 4 + 4);
+		return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a.toFixed(3)})`;
+	});
 	const canvas = document.querySelector(".sky-gradient");
 	const context = canvas.getContext("2d");
 	const { width, height } = canvas;
 	const sky = context.createLinearGradient(0, height, 0, 0);
-	sky.addColorStop(0, skyColor(skyColors.horizon));
-	sky.addColorStop(0.2, skyColor(skyColors.low));
-	sky.addColorStop(0.5, skyColor(skyColors.middle));
-	sky.addColorStop(1, skyColor(skyColors.zenith));
+	sky.addColorStop(0, horizon);
+	sky.addColorStop(0.2, low);
+	sky.addColorStop(0.5, middle);
+	sky.addColorStop(1, zenith);
 	context.fillStyle = sky;
 	context.fillRect(0, 0, width, height);
 
-	const edge = skyColor(skyColors.glowEdge, true);
 	context.save();
 	context.translate(width * 0.2, height);
 	context.scale(width, height);
 	const glow = context.createRadialGradient(0, 0, 0, 0, 0, 1);
-	glow.addColorStop(0, skyColor(skyColors.glowCore, true));
-	glow.addColorStop(0.35, skyColor(skyColors.glowMiddle, true));
-	glow.addColorStop(0.59, edge);
-	glow.addColorStop(0.75, edge.replace(/[\d.]+\)$/, "0)")); // fades out
+	glow.addColorStop(0, glowCore);
+	glow.addColorStop(0.35, glowMiddle);
+	glow.addColorStop(0.59, glowEdge);
+	glow.addColorStop(0.75, glowEdge.replace(/[\d.]+\)$/, "0)")); // fades out
 	context.fillStyle = glow;
 	context.fillRect(-0.2, -1, 1, 1);
 	context.restore();
+});
+
+function drawSky() {
+	glideSky(skyStops.flatMap((name) => skyColor(skyColors[name], name.startsWith("glow"))));
 }
 
 // Sets the light for the clock's hour as CSS variables on the land, clouds,

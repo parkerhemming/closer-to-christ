@@ -85,6 +85,10 @@ let maximumScale = 2; // canvas pixels per CSS pixel, at most
 let paused = false;
 let still = false; // no motion: draw only when something changes
 let drawPending = false;
+// The colour matrix drawn, gliding toward the conditions' (the clock changes
+// the light in steps), and when it last moved.
+let shown = null;
+let lastGlide = 0;
 let lastTime = performance.now();
 let reportedFirstFrame = false;
 
@@ -173,16 +177,42 @@ function frame(now) {
 	lastTime = now;
 	const target = conditions.wind * strength;
 	wind = wind === null ? target : wind + (target - wind) * Math.min(1, elapsed * 1.5);
+	glide(now);
 	draw(now);
 }
 
-// Still layers: one redraw on the next frame after a change.
+// Eases the drawn colour toward the conditions' (about half a second to
+// settle; the page sends a shorter time during a jump in time, which is
+// already eased). Says whether it's still on its way.
+function glide(now) {
+	const target = [...conditions.grade, ...conditions.gradeOffset];
+	const elapsed = lastGlide ? Math.min((now - lastGlide) / 1000, 0.25) : 0;
+	lastGlide = now;
+	if (!shown || paused || !conditions.settle) {
+		shown = target;
+		return false;
+	}
+	const share = 1 - Math.exp(-elapsed / (conditions.settle ?? 0.5));
+	let moving = false;
+	shown = shown.map((value, i) => {
+		if (Math.abs(target[i] - value) < 0.0005) return target[i];
+		moving = true;
+		return value + (target[i] - value) * share;
+	});
+	return moving;
+}
+
+// Still layers: a redraw on the next frame after a change, and then up to 30
+// a second while the colour glides.
 function requestDraw() {
 	if (!still || !gl || drawPending) return;
 	drawPending = true;
-	nextFrame((now) => {
+	nextFrame(function step(now) {
+		if (now - lastGlide < 31) return nextFrame(step);
 		drawPending = false;
+		const moving = glide(now);
 		if (cssSize[0]) draw(now);
+		if (moving) requestDraw();
 	});
 }
 
@@ -196,8 +226,8 @@ function draw(now) {
 	gl.uniform1i(uniforms.tiled, tile ? 1 : 0);
 	gl.uniform1f(uniforms.time, now / 1000);
 	gl.uniform1f(uniforms.wind, wind ?? 0);
-	gl.uniformMatrix3fv(uniforms.grade, false, conditions.grade);
-	gl.uniform3fv(uniforms.gradeOffset, conditions.gradeOffset);
+	gl.uniformMatrix3fv(uniforms.grade, false, shown.slice(0, 9));
+	gl.uniform3fv(uniforms.gradeOffset, shown.slice(9));
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 	if (!reportedFirstFrame) {
 		reportedFirstFrame = true;

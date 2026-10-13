@@ -268,6 +268,8 @@ function swayLayer(layer, canvasSelector, swayUrl, { light, tiled, ...motion }) 
 			wind: byWeather(weatherCurves.wind),
 			grade: [0, 1, 2].flatMap((column) => filters.rows.map((row) => row[column])),
 			gradeOffset: filters.offset,
+			// How long its colour glides to this (a jump in time is already eased).
+			settle: !glideBigCanvases ? 0 : "jumping" in document.documentElement.dataset ? 0.08 : 0.5,
 		};
 	};
 	const size = () => [canvas.offsetWidth, canvas.offsetHeight, window.devicePixelRatio];
@@ -310,10 +312,6 @@ function swayLayer(layer, canvasSelector, swayUrl, { light, tiled, ...motion }) 
 	document.addEventListener("visibilitychange", () => worker.postMessage({ hidden: document.hidden }));
 }
 
-// Set by landShadows(); parallax() calls it each frame with the mouse/tilt
-// offset so the shadows follow the layers.
-let updateLandShadows = null;
-
 // Ridges cast shadows on the land in front of them while the sun is up (it
 // rises behind them, in the east). Each column of a ridge's skyline casts
 // forward, away from the point on the horizon below the sun, as far as the
@@ -322,9 +320,9 @@ let updateLandShadows = null;
 // across the sky. Darkest near the ridge and fading toward the far end, the
 // shadow darkens the land beneath it (a multiply blend in the CSS) and keeps
 // to the receiving land's outline; it fades as clouds or the noon darkness
-// hide the sun. Its far end moves with the ridge and its near end with the
-// land, as the parallax moves them apart. Each is drawn into a small canvas
-// over the land, so a change is a quick redraw, not work for the GPU's layers.
+// hide the sun. Each is drawn into a small canvas over the land, moving with
+// it in the parallax, so a change of light is a quick redraw, not work for
+// the GPU's layers.
 function landShadows() {
 	const pairs = [
 		{
@@ -368,8 +366,6 @@ function landShadows() {
 			canvas: document.querySelector(pair.canvas),
 			ridgeShape: image(pair.ridgeShape),
 			landShape: image(pair.landShape),
-			ridgeDepth: Number(ridge.dataset.z_index),
-			landDepth: Number(land.dataset.z_index),
 			ridge,
 			land,
 		};
@@ -380,8 +376,6 @@ function landShadows() {
 	// Where the land meets the sky, as a share of the screen's height: the
 	// sun's height above it sets how long the shadows are.
 	const horizon = 0.72;
-	let lastX = 0;
-	let lastDepthScale = 0;
 
 	// Where an element sits with no parallax applied.
 	function restingRect(element) {
@@ -462,7 +456,8 @@ function landShadows() {
 		}
 	}
 
-	function draw(pair, x, depthScale) {
+	// sun: where it is across the sky and how high, as the timeCurves give.
+	function draw(pair, [sunLeft, sunTop]) {
 		const context = pair.canvas.getContext("2d");
 		context.setTransform(1, 0, 0, 1, 0, 0);
 		context.clearRect(0, 0, pair.canvas.width, pair.canvas.height);
@@ -470,12 +465,10 @@ function landShadows() {
 		const { box } = pair;
 		context.setTransform(pair.canvas.width / box.width, 0, 0, pair.canvas.width / box.width, 0, 0);
 
-		// How far the ridge has moved relative to the land (in land units).
-		const shift = (x * depthScale * (pair.ridgeDepth - pair.landDepth)) / landScale;
 		// The sun, in land units, and its height above the horizon: how long
 		// a shadow is for each unit of ridge above the land's edge.
-		const sunX = (byTime(timeCurves.sunLeft) * innerWidth - pair.landRect.left) / landScale;
-		const sunHeight = Math.max(0.025, horizon - byTime(timeCurves.sunHeight));
+		const sunX = (sunLeft * innerWidth - pair.landRect.left) / landScale;
+		const sunHeight = Math.max(0.025, horizon - sunTop);
 		const reach = Math.min(6, 0.3 / sunHeight);
 		// How far a shadow leans sideways, per unit of length, at a point one
 		// unit from below the sun: they fan out on either side of it.
@@ -486,7 +479,7 @@ function landShadows() {
 		for (let along = 0; along <= box.width; along += box.width / 200) {
 			const base = edgeAt(pair.landTops, pair.landPlace, along);
 			if (base === null) continue;
-			const top = edgeAt(pair.ridgeTops, pair.ridgePlace, along - shift);
+			const top = edgeAt(pair.ridgeTops, pair.ridgePlace, along);
 			const length = top === null ? 0 : Math.max(0, base - top) * reach;
 			const lean = clamp((along - sunX) / fan, -1.5, 1.5);
 			bases.push([along, base]);
@@ -512,21 +505,13 @@ function landShadows() {
 		context.globalCompositeOperation = "source-over";
 	}
 
-	// The parallax calls this every frame, but a shadow only moves by its
-	// ridge's offset from its land, a fraction of a pixel per frame: redraw a
-	// canvas only once that adds up to half a canvas pixel (or the light has
-	// changed, which passes force).
-	function place(x = lastX, depthScale = lastDepthScale, force = false) {
-		lastX = x;
-		lastDepthScale = depthScale;
-		for (const pair of pairs) {
-			const shift = (x * depthScale * (pair.ridgeDepth - pair.landDepth)) / landScale;
-			const halfPixel = pair.box ? (0.5 * pair.box.width) / pair.canvas.width : 0;
-			if (!force && pair.drawnShift !== undefined && Math.abs(shift - pair.drawnShift) < halfPixel) continue;
-			pair.drawnShift = shift;
-			draw(pair, x, depthScale);
-		}
+	// The shadows' angles glide with the sun between the clock's ticks.
+	let sun = [0, 0];
+	function drawAll(at = sun) {
+		sun = at;
+		for (const pair of pairs) draw(pair, sun);
 	}
+	const glideShadows = glideBigCanvases ? glider(drawAll, { fps: 20 }) : drawAll;
 
 	function applyLight() {
 		const strength =
@@ -534,22 +519,21 @@ function landShadows() {
 		for (const pair of pairs) pair.canvas.style.setProperty("--shadow-strength", strength);
 		// No sun to cast them: hide the canvases and skip drawing.
 		for (const pair of pairs) pair.canvas.hidden = strength < 0.01;
-		place(lastX, lastDepthScale, true);
+		glideShadows([byTime(timeCurves.sunLeft), byTime(timeCurves.sunHeight)]);
 	}
 
 	measure();
 	applyLight();
-	updateLandShadows = place;
 	document.addEventListener("scenesettings", applyLight);
 	window.addEventListener("resize", () => {
 		measure();
-		place(lastX, lastDepthScale, true);
+		drawAll();
 	});
 	for (const pair of pairs) {
 		for (const image of [pair.ridgeShape, pair.landShape]) {
 			image.addEventListener("load", () => {
 				measure();
-				place(lastX, lastDepthScale, true);
+				drawAll();
 			});
 		}
 	}

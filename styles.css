@@ -777,6 +777,25 @@ body {
 	opacity: var(--shadow-strength, 0);
 }
 
+/* The clock changes the light a step at a time; these glide between the
+   steps, on the GPU (the drawn layers glide in wind.js, the sky and the
+   shadows' angles in the page). A jump in time is already eased. */
+:is(.storm-cloud, .storm-tone, .land-shadow, .city-light, .city-flicker-plane) {
+	transition: opacity 1.2s linear;
+
+	:root[data-jumping] & {
+		transition-duration: 150ms;
+	}
+}
+
+/* Every canvas a worker draws (wind.js). Chrome snaps such a canvas to
+   whole pixels whenever it is only moved, so with the parallax each layer
+   stepped a pixel at a time, out of step with the others. Any rotation
+   stops the snapping; this one is far too small to see. */
+:is(.land-wind, .land-wind--city, .christ-wind, .storm-cloud__texture > canvas) {
+	rotate: 0.0001deg;
+}
+
 /* The city's drawn copy lies under its lights. */
 .land-wind--city {
 	position: absolute;
@@ -907,8 +926,6 @@ body {
 }
 
 .christ {
-	--christ-rotate-y: 0deg;
-	--christ-edge-offset: 0px;
 	image-rendering: auto;
 	pointer-events: none;
 	/* The crossbar as wide and high on screen as the old figure's. */
@@ -922,12 +939,9 @@ body {
 	   crossbar's right end higher, its upright drifting right toward the
 	   foot), so it's turned back level. Its upright is 3.6% of the width right
 	   of the crossbar's middle, so it's shifted halfway between the two. */
-	transform: translateX(-51.77%) perspective(1100px)
-		rotateY(var(--christ-rotate-y)) rotate(0.5deg);
+	transform: translateX(-51.77%) rotate(0.5deg);
 	transform-origin: center center;
-	filter: drop-shadow(var(--christ-edge-offset) 0 1px rgba(24, 14, 10, 0.42))
-		brightness(var(--figure-light, 1));
-	backface-visibility: hidden;
+	filter: drop-shadow(0 0 1px rgba(24, 14, 10, 0.42)) brightness(var(--figure-light, 1));
 }
 
 /* The figure's markers lie over it, turning and moving with it. */

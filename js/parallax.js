@@ -1,6 +1,5 @@
 function parallax() {
 	const layers = document.querySelectorAll("[data-z_index]");
-	const christ = document.querySelectorAll(".christ"); // still and moving
 	const christDepthFactor = 0.78;
 	const mobileHorizontalStrength = 70;
 	const mobileVerticalStrength = 50;
@@ -8,8 +7,6 @@ function parallax() {
 	let targetY = 0;
 	let currentX = 0;
 	let currentY = 0;
-	let velocityX = 0;
-	let velocityY = 0;
 	let animationFrame = 0;
 	let lastFrameTime = 0;
 	// The mouse drives the parallax until the gyroscope actually reports data.
@@ -23,22 +20,10 @@ function parallax() {
 
 	function moveLayers(x, y) {
 		const depthScale = tiltActive ? 0.00044 : 0.0009;
-		const horizontalRange = tiltActive
-			? 24 * mobileHorizontalStrength
-			: Math.max(window.innerWidth / 2, 1);
-
+		const vertical = 1.2; // up and down a little more than side to side
 		for (const { layer, depth } of layerSettings) {
 			const scale = depth * depthScale;
-			layer.style.translate = `${x * scale}px ${y * scale}px`;
-		}
-		updateLandShadows?.(x, depthScale);
-
-		const horizontalProgress = clamp(x / horizontalRange, -1, 1);
-
-		// A slight turn of the figure (and its edge shadow) with the view.
-		for (const figure of christ) {
-			figure.style.setProperty("--christ-rotate-y", `${horizontalProgress * 0.6}deg`);
-			figure.style.setProperty("--christ-edge-offset", `${horizontalProgress * -0.4}px`);
+			layer.style.translate = `${x * scale}px ${y * scale * vertical}px`;
 		}
 	}
 
@@ -54,30 +39,14 @@ function parallax() {
 		const goalY = sceneSettings.parallax ? targetY : 0;
 		const smoothing = sceneSettings.parallaxSmoothing;
 
-		if (smoothing > 0) {
-			// A spring pulls the scene toward the goal. It carries velocity, so
-			// a fast flick swings past the goal (further the faster it was) and
-			// eases back; a slow move barely swings. The damping allows one
-			// bounce: a fast flick overshoots ~6%, the swing back is <0.5%.
-			// Stepped in small slices so it stays stable at any frame rate.
-			const stiffness = 2.15 / smoothing; // ~63% of the way in `smoothing` seconds
-			const damping = 2 * 0.65 * stiffness;
-			for (let left = elapsed; left > 0; left -= 1 / 240) {
-				const dt = Math.min(left, 1 / 240);
-				velocityX += (stiffness ** 2 * (goalX - currentX) - damping * velocityX) * dt;
-				velocityY += (stiffness ** 2 * (goalY - currentY) - damping * velocityY) * dt;
-				currentX += velocityX * dt;
-				currentY += velocityY * dt;
-			}
-		} else {
-			currentX = goalX;
-			currentY = goalY;
-			velocityX = velocityY = 0;
-		}
+		// It moves at once, fastest at the start, and slows as it arrives, never
+		// passing the goal: ~63% of the way in `smoothing` seconds.
+		const share = smoothing > 0 ? 1 - Math.exp(-elapsed / smoothing) : 1;
+		currentX += (goalX - currentX) * share;
+		currentY += (goalY - currentY) * share;
 		moveLayers(currentX, currentY);
 
-		const moving = Math.abs(velocityX) + Math.abs(velocityY) > 0.1;
-		if (Math.abs(goalX - currentX) > 0.1 || Math.abs(goalY - currentY) > 0.1 || moving) {
+		if (Math.abs(goalX - currentX) > 0.1 || Math.abs(goalY - currentY) > 0.1) {
 			requestParallaxFrame();
 		}
 	}

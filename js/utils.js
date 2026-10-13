@@ -87,3 +87,51 @@ function colorFilter(filters, start = { rows: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
 	}
 	return { rows, offset };
 }
+
+// Safari (and so every browser on iPhone, which all use its engine) pays dearly
+// for each redraw of a big canvas: redrawing the drawn land and clouds while
+// their light glided dropped it to a few frames a second. There they change
+// light in steps, as the clock ticks; elsewhere they glide.
+const glideBigCanvases = !navigator.vendor?.startsWith("Apple");
+
+// The clock changes the light in steps (each tick, or a 1.5% change). This
+// draws the steps as a glide: given new target numbers, it eases the shown
+// ones toward them (about `seconds` to settle, quicker during a jump in time,
+// which is already eased) and calls paint(shown) at most `fps` times a second
+// until they arrive, then stops.
+function glider(paint, { seconds = 0.5, fps = 30 } = {}) {
+	let shown = null;
+	let target = null;
+	let frame = 0;
+	let last = 0;
+	function step(now) {
+		frame = 0;
+		if (last && now - last < 1000 / fps - 2) {
+			frame = requestAnimationFrame(step);
+			return;
+		}
+		const elapsed = last ? Math.min((now - last) / 1000, 0.25) : 1 / fps;
+		last = now;
+		const settle = "jumping" in document.documentElement.dataset ? 0.08 : seconds;
+		const share = 1 - Math.exp(-elapsed / settle);
+		let moving = false;
+		shown = shown.map((value, i) => {
+			const gap = target[i] - value;
+			if (Math.abs(gap) < 0.0005 * (Math.abs(target[i]) + 1)) return target[i];
+			moving = true;
+			return value + gap * share;
+		});
+		paint(shown);
+		if (moving) frame = requestAnimationFrame(step);
+		else last = 0;
+	}
+	return (values) => {
+		target = values;
+		if (!shown || document.hidden) {
+			shown = values;
+			paint(shown);
+		} else if (!frame) {
+			frame = requestAnimationFrame(step);
+		}
+	};
+}
