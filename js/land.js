@@ -297,9 +297,11 @@ function swayLayer(layer, canvasSelector, swayUrl, { light, tiled, ...motion }) 
 		if (data === "drawn") land.classList.add("is-swaying");
 	};
 	// Only once the light or wind has moved enough to see (as in setStyle),
-	// and the still layers one after another, not all in one frame: each
-	// redraw of a big layer is new work for Safari's compositor.
-	const delay = motion.still ? 40 * stillLayers++ : 0;
+	// and the still layers a few milliseconds apart, not all in one frame:
+	// each redraw of a big layer is new work for Safari's compositor. They
+	// all land within ~70ms, well inside a tick even at 5x speed; spread
+	// wider, the layers changed light at different moments and shimmered.
+	const delay = motion.still ? 8 * stillLayers++ : 0;
 	let sent = [];
 	document.addEventListener("scenesettings", () => {
 		const next = conditions();
