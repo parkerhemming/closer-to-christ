@@ -14,8 +14,15 @@ function createStorm() {
 		const canvases = layers.map((layer) =>
 			document.getElementById(layer.id),
 		);
+		// A downpour packed onto a phone's small screen reads as too dense,
+		// so there the rain beyond the original storm's grows more slowly.
+		const phone = window.matchMedia("(max-width: 600px)");
+		const amount = () => {
+			const rain = byWeather(weatherCurves.rain);
+			return phone.matches && rain > 1 ? 1 + (rain - 1) * 0.7 : rain;
+		};
 		const conditions = () => ({
-			rain: byWeather(weatherCurves.rain),
+			rain: amount(),
 			wind: byWeather(weatherCurves.wind),
 			lengthScale: byWeather(weatherCurves.rainLength),
 			brightness: byWeather(weatherCurves.rainBrightness),
