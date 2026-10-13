@@ -1,8 +1,7 @@
 // The scene's sound, with Web Audio. It plays on the browser's audio thread,
-// not the page's, so it doesn't slow the scene. It's off until the visitor
-// turns it on with the speaker button (browsers only allow sound after a
-// click anyway); the choice is saved, and it stops entirely while it's off
-// or the tab is hidden.
+// not the page's, so it doesn't slow the scene. Every visit starts muted
+// until the visitor turns it on with the speaker button, and it stops
+// entirely while it's off or the tab is hidden.
 //
 // Made here from noise, so they follow the weather exactly:
 // - Wind, always: a breeze when calm, a howl in a storm, coming in gusts.
@@ -61,18 +60,6 @@ function soundscape() {
 		switchSound();
 	});
 	document.addEventListener("visibilitychange", switchSound);
-	// Saved on, it starts with the visitor's first click or key anywhere
-	// (the button's own click switches it instead).
-	if (sceneSettings.sound) {
-		const start = (event) => {
-			if (button.contains(event.target)) return;
-			document.removeEventListener("click", start);
-			document.removeEventListener("keydown", start);
-			switchSound();
-		};
-		document.addEventListener("click", start);
-		document.addEventListener("keydown", start);
-	}
 
 	// Small helpers for building the sound.
 	function glide(param, value, seconds = 0.5) {
