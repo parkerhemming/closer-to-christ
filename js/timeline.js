@@ -252,14 +252,15 @@ function timelineClock() {
 		resizing?.cancel();
 		change();
 		const to = toggle.getBoundingClientRect().height;
-		if (reducedMotion || Math.abs(to - from) < 1) return;
-		resizing = toggle.animate(
-			[
-				{ height: `${from}px`, overflow: "hidden" },
-				{ height: `${to}px`, overflow: "hidden" },
-			],
-			{ duration: 350, easing: "cubic-bezier(0.2, 0.7, 0.3, 1)" },
-		);
+		if (!reducedMotion && Math.abs(to - from) >= 1) {
+			resizing = toggle.animate(
+				[
+					{ height: `${from}px`, overflow: "hidden" },
+					{ height: `${to}px`, overflow: "hidden" },
+				],
+				{ duration: 350, easing: "cubic-bezier(0.2, 0.7, 0.3, 1)" },
+			);
+		}
 	}
 
 	// The caption folds to one line a few seconds after each
@@ -441,8 +442,27 @@ function timelineClock() {
 		next.hasAttribute("data-restart") ? startOver() : step(1),
 	);
 
-	// The list opens upward from the caption, as far as just under the time
-	// at the top, and opens at the current event.
+	// The list opens upward from just above the caption, and opens at the
+	// current event. It reaches to a set gap under the controls at the top
+	// (the time and the buttons either side), never over them, fitted again
+	// whenever the caption changes size (every frame of its glide) or the
+	// window does.
+	const topControls = [".clock-bar", ".sound-toggle", "#settings-button"];
+	function fitList() {
+		if (list.hidden) return;
+		const controlsBottom = Math.max(
+			...topControls.map(
+				(selector) =>
+					document.querySelector(selector).getBoundingClientRect()
+						.bottom,
+			),
+		);
+		const bottom = list.getBoundingClientRect().bottom;
+		list.style.height = `${bottom - controlsBottom - 16}px`;
+	}
+	new ResizeObserver(fitList).observe(caption);
+	window.addEventListener("resize", fitList, { passive: true });
+
 	function setOpen(open, { foldNow = true } = {}) {
 		toggle.setAttribute("aria-expanded", open);
 		list.hidden = !open;
@@ -453,15 +473,14 @@ function timelineClock() {
 			return;
 		}
 		setFolded(false);
-		const above =
-			caption.getBoundingClientRect().top -
-			clock.getBoundingClientRect().bottom -
-			30;
-		list.style.maxHeight = `${above}px`;
+		fitList();
 		const current = list.querySelector("[aria-current]");
 		list.scrollTop =
 			current.offsetTop - (list.clientHeight - current.offsetHeight) / 2;
 	}
+	list.querySelector(".timeline-close").addEventListener("click", () =>
+		setOpen(false),
+	);
 	// Folded (a tap), it opens the caption; open, it opens the list of events.
 	toggle.addEventListener("click", () => {
 		if (caption.classList.contains("is-folded")) {
@@ -474,8 +493,10 @@ function timelineClock() {
 	// A click anywhere else, or Escape, closes the list and folds the caption.
 	// (touchstart too: a tap on the scene, which ignores touches, lands on
 	// the page itself, and iOS doesn't always report that as a pointer.)
+	// Only the caption's buttons and the list count as inside: the empty space
+	// its box spans beside them (by the arrows while the list is open) is out.
 	function pressOutside(event) {
-		if (caption.contains(event.target)) return;
+		if (event.target.closest?.(".caption button, #timeline")) return;
 		if (list.hidden) setFolded(true);
 		else setOpen(false);
 	}

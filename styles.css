@@ -40,10 +40,14 @@ body {
 	--text-label: 1.125rem;
 	--text-body: 0.9375rem;
 	--text-eyebrow: 0.75rem;
+	/* How far the buttons, time and caption sit from the screen's edges;
+	   on phones, the same as the caption's gap to its arrows. */
+	--edge-gap: 20px;
 }
 
 @media (max-width: 600px) {
 	:root {
+		--edge-gap: 12px;
 		--text-title: 1.9rem;
 		--text-clock: 1.6rem;
 	}
@@ -1305,8 +1309,8 @@ body {
 /* Settings: a gear in the top-right corner opens a panel of live controls. */
 .settings-button {
 	position: fixed;
-	top: max(20px, env(safe-area-inset-top));
-	right: max(20px, env(safe-area-inset-right));
+	top: max(var(--edge-gap), env(safe-area-inset-top));
+	right: max(var(--edge-gap), env(safe-area-inset-right));
 	z-index: 90;
 	display: grid;
 	place-items: center;
@@ -1352,8 +1356,8 @@ body {
    the gear and the caption visible (js/settings-panel.js keeps it above the caption). */
 .settings {
 	position: fixed;
-	inset: calc(max(20px, env(safe-area-inset-top)) + 88px)
-		max(20px, env(safe-area-inset-right)) auto auto;
+	inset: calc(max(var(--edge-gap), env(safe-area-inset-top)) + 88px)
+		max(var(--edge-gap), env(safe-area-inset-right)) auto auto;
 	z-index: 85;
 	width: min(580px, calc(100vw - 40px));
 	max-height: calc(100dvh - 140px);
@@ -1592,7 +1596,8 @@ body {
 /* Phones: the panel fills the screen. */
 @media (max-width: 600px) {
 	.settings {
-		inset: calc(max(20px, env(safe-area-inset-top)) + 48px) 12px auto;
+		inset: calc(max(var(--edge-gap), env(safe-area-inset-top)) + 48px) 12px
+			auto;
 		width: auto;
 		border-radius: 20px;
 	}
@@ -1624,8 +1629,8 @@ body {
    speed button is to pause/play. */
 .sound-toggle {
 	position: fixed;
-	top: max(20px, env(safe-area-inset-top));
-	right: calc(max(20px, env(safe-area-inset-right)) + 44px);
+	top: max(var(--edge-gap), env(safe-area-inset-top));
+	right: calc(max(var(--edge-gap), env(safe-area-inset-right)) + 44px);
 	z-index: 90;
 	display: grid;
 	place-items: center;
@@ -1657,8 +1662,8 @@ body {
    its point aimed at it, fading in and out (js/sound.js). */
 .sound-hint {
 	position: fixed;
-	top: calc(max(20px, env(safe-area-inset-top)) + 38px + 12px);
-	right: max(20px, env(safe-area-inset-right));
+	top: calc(max(var(--edge-gap), env(safe-area-inset-top)) + 38px + 12px);
+	right: max(var(--edge-gap), env(safe-area-inset-right));
 	z-index: 90;
 	max-width: 280px;
 	padding: 9px 13px;
@@ -1705,7 +1710,7 @@ body {
 .clock-bar {
 	/* The button sits as far from the corner as the gear does from its
 	   corner, and the time as far again from the button. */
-	--edge: 20px;
+	--edge: var(--edge-gap);
 	position: fixed;
 	top: max(var(--edge), env(safe-area-inset-top));
 	left: max(var(--edge), env(safe-area-inset-left));
@@ -1907,6 +1912,9 @@ body {
 		500 var(--text-body)/1.4 system-ui,
 		sans-serif;
 	text-wrap: pretty;
+	text-align: justify;
+	text-align-last: center;
+	hyphens: auto;
 }
 
 /* Round buttons of their own, beside the caption box. */
@@ -1954,7 +1962,9 @@ body {
 	left: 0;
 	width: 100%;
 	box-sizing: border-box;
-	padding: 22px 16px 16px;
+	--pad-top: 22px;
+	--pad-right: 16px;
+	padding: var(--pad-top) var(--pad-right) 16px;
 	border: 1px solid rgba(255, 255, 255, 0.18);
 	border-radius: 24px;
 	background: linear-gradient(
@@ -1972,6 +1982,8 @@ body {
 	display: none;
 }
 
+/* The list's close button (styled like the cards'), staying in the top
+   corner as the list scrolls. */
 .timeline * {
 	overflow: visible;
 }
@@ -1982,6 +1994,8 @@ body {
 	font:
 		500 var(--text-body)/1.45 system-ui,
 		sans-serif;
+	text-align: justify;
+	hyphens: auto;
 }
 
 .timeline-events {
@@ -2036,6 +2050,8 @@ body {
 	font:
 		500 var(--text-body)/1.5 system-ui,
 		sans-serif;
+	text-align: justify;
+	hyphens: auto;
 }
 
 .timeline-event-references {
@@ -2055,7 +2071,7 @@ body {
 	/* The time centred at the top, between the buttons on either side. */
 	.clock-time {
 		position: fixed;
-		top: calc(max(20px, env(safe-area-inset-top)) + 19px);
+		top: calc(max(var(--edge-gap), env(safe-area-inset-top)) + 19px);
 		left: 50%;
 		translate: -50% -50%;
 	}
@@ -2076,9 +2092,9 @@ body {
 
 	/* As far from the bottom and sides as the top buttons are from theirs. */
 	.caption {
-		bottom: max(20px, env(safe-area-inset-bottom));
+		bottom: max(var(--edge-gap), env(safe-area-inset-bottom));
 		gap: 12px; /* like the time from the pause button */
-		width: calc(100vw - 40px);
+		width: calc(100vw - 2 * var(--edge-gap));
 	}
 
 	.caption-content {
@@ -2102,7 +2118,9 @@ body {
 	}
 
 	.timeline {
-		padding: 16px 8px 8px;
+		--pad-top: 16px;
+		--pad-right: 8px;
+		padding: var(--pad-top) var(--pad-right) 8px;
 		border-radius: 20px;
 	}
 
@@ -2271,8 +2289,8 @@ body {
 	}
 
 	.settings {
-		inset: calc(max(20px, env(safe-area-inset-top)) + 48px)
-			max(20px, env(safe-area-inset-right)) auto auto;
+		inset: calc(max(var(--edge-gap), env(safe-area-inset-top)) + 48px)
+			max(var(--edge-gap), env(safe-area-inset-right)) auto auto;
 		width: min(440px, calc(100vw - 40px));
 		max-height: calc(100dvh - 88px);
 		border-radius: 12px;
@@ -2403,7 +2421,9 @@ body {
 
 	.timeline {
 		bottom: calc(100% + 5px);
-		padding: 11px 8px 8px;
+		--pad-top: 11px;
+		--pad-right: 8px;
+		padding: var(--pad-top) var(--pad-right) 8px;
 		border-radius: 12px;
 		box-shadow: 0 12px 35px rgba(0, 0, 0, 0.42);
 	}
@@ -2769,7 +2789,9 @@ body {
 /* Its contents scroll inside it. */
 .teaching-body {
 	min-height: 0;
-	padding: 18px 20px 20px;
+	--pad-top: 18px;
+	--pad-right: 20px;
+	padding: var(--pad-top) var(--pad-right) 20px;
 	overflow-y: auto;
 	overscroll-behavior: contain;
 	border-radius: inherit;
@@ -2813,7 +2835,17 @@ body {
 	place-items: center;
 	width: 32px;
 	height: 32px;
-	margin: -6px -8px 0 8px;
+	/* Centred on a card's title line (17px down), and as far in from the
+	   right, in the cards and the list alike, staying there as they scroll.
+	   Sticky is measured inside the box's padding, so that comes off. */
+	--close-top: 17px;
+	--close-right: 17px;
+	position: sticky;
+	top: calc(var(--close-top) - var(--pad-top));
+	z-index: 1;
+	/* Text beside it keeps the same gap as the button keeps from the edge. */
+	margin: calc(var(--close-top) - var(--pad-top))
+		calc(var(--close-right) - var(--pad-right)) 0 var(--close-right);
 	padding: 0;
 	border-radius: 50%;
 	color: #e7b477;
@@ -2854,7 +2886,9 @@ body {
 }
 
 .teaching-title {
-	margin: 0 0 8px;
+	/* Room under it as wide as the close button's gap above, so the button
+	   sits centred between the edge and the text. */
+	margin: 0 0 14px;
 	font:
 		500 calc(var(--text-title) * 0.72) / 1.2 Georgia,
 		"Times New Roman",
@@ -2867,6 +2901,8 @@ body {
 	font:
 		500 var(--text-body)/1.5 system-ui,
 		sans-serif;
+	text-align: justify;
+	hyphens: auto;
 }
 
 /* Each scripture like the loading screen's verse: the words, then the
@@ -2901,11 +2937,13 @@ body {
 /* Phones: across the screen, under the time. */
 @media (max-width: 600px) {
 	.teaching {
-		top: calc(max(20px, env(safe-area-inset-top)) + 54px);
+		top: calc(max(var(--edge-gap), env(safe-area-inset-top)) + 54px);
 		left: 20px;
 		width: auto;
 		right: 20px;
-		max-height: calc(100dvh - max(20px, env(safe-area-inset-top)) - 74px);
+		max-height: calc(
+			100dvh - max(var(--edge-gap), env(safe-area-inset-top)) - 74px
+		);
 		border-radius: 16px;
 	}
 
