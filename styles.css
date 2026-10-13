@@ -43,6 +43,8 @@ body {
 	/* How far the buttons, time and caption sit from the screen's edges;
 	   on phones, the same as the caption's gap to its arrows. */
 	--edge-gap: 20px;
+	/* Between neighbouring round buttons at the top. */
+	--button-gap: 6px;
 }
 
 @media (max-width: 600px) {
@@ -1630,7 +1632,10 @@ body {
 .sound-toggle {
 	position: fixed;
 	top: max(var(--edge-gap), env(safe-area-inset-top));
-	right: calc(max(var(--edge-gap), env(safe-area-inset-right)) + 44px);
+	right: calc(
+		max(var(--edge-gap), env(safe-area-inset-right)) + 38px +
+			var(--button-gap)
+	);
 	z-index: 90;
 	display: grid;
 	place-items: center;
@@ -1696,7 +1701,7 @@ body {
 	content: "";
 	position: absolute;
 	top: -6px;
-	right: calc(44px + 19px - 6px);
+	right: calc(38px + var(--button-gap) + 19px - 6px);
 	width: 10px;
 	height: 10px;
 	border-top: 1px solid rgba(231, 180, 119, 0.45);
@@ -1775,7 +1780,8 @@ body {
 
 /* Close beside pause/play: half the gap the time keeps from them. */
 .clock-speed {
-	margin-left: -6px;
+	/* --button-gap from pause/play (the bar's own gap is 12px). */
+	margin-left: calc(var(--button-gap) - 12px);
 	font:
 		600 26px/1 system-ui,
 		sans-serif;
@@ -1912,9 +1918,6 @@ body {
 		500 var(--text-body)/1.4 system-ui,
 		sans-serif;
 	text-wrap: pretty;
-	text-align: justify;
-	text-align-last: center;
-	hyphens: auto;
 }
 
 /* Round buttons of their own, beside the caption box. */
@@ -1958,7 +1961,8 @@ body {
    it. js/timeline.js sets its height to the space above. */
 .timeline {
 	position: absolute;
-	bottom: calc(100% + 10px);
+	/* As far above the caption as the controls are from the screen's edge. */
+	bottom: calc(100% + var(--edge-gap));
 	left: 0;
 	width: 100%;
 	box-sizing: border-box;
@@ -1989,6 +1993,7 @@ body {
 }
 
 .timeline-note {
+	max-width: 71%; /* ends a little short of three quarters across, well short of the events below */
 	padding: 0 18px 14px;
 	color: rgba(235, 240, 239, 0.55);
 	font:
@@ -2160,8 +2165,20 @@ body {
    it, styled as in the footer of hemm.ing (linking to the portfolio). */
 .settings-maker {
 	display: flex;
-	justify-content: center;
-	padding: 9px 0 41px;
+	flex-direction: column;
+	align-items: center;
+	gap: 14px;
+	/* 40px from the line to the mark, and from the link to the panel's
+	   bottom edge (the panel adds 21px of its own below). */
+	padding: 37px 0 19px;
+	border-top: 1px solid rgba(255, 255, 255, 0.08); /* like the groups' */
+}
+
+/* The panel's own padding below is larger on phones. */
+@media (max-width: 600px) {
+	.settings-maker {
+		padding-bottom: 13px;
+	}
 }
 
 .maker-mark {
@@ -2218,7 +2235,6 @@ body {
 
 /* The project's code and README, at the bottom of the panel. */
 .settings-link {
-	align-self: flex-start;
 	color: #e7b477;
 	font:
 		600 var(--text-body)/1.4 system-ui,
@@ -2420,7 +2436,6 @@ body {
 	}
 
 	.timeline {
-		bottom: calc(100% + 5px);
 		--pad-top: 11px;
 		--pad-right: 8px;
 		padding: var(--pad-top) var(--pad-right) 8px;
@@ -2833,13 +2848,13 @@ body {
 	float: right;
 	display: grid;
 	place-items: center;
-	width: 32px;
-	height: 32px;
-	/* Centred on a card's title line (17px down), and as far in from the
+	width: 36px;
+	height: 36px;
+	/* Centred on a card's title line (15px down), and as far in from the
 	   right, in the cards and the list alike, staying there as they scroll.
 	   Sticky is measured inside the box's padding, so that comes off. */
-	--close-top: 17px;
-	--close-right: 17px;
+	--close-top: 15px;
+	--close-right: 15px;
 	position: sticky;
 	top: calc(var(--close-top) - var(--pad-top));
 	z-index: 1;
@@ -2853,8 +2868,8 @@ body {
 }
 
 .teaching-close svg {
-	width: 18px;
-	height: 18px;
+	width: 20px;
+	height: 20px;
 	fill: none;
 	stroke: currentColor;
 	stroke-width: 2;
@@ -2886,9 +2901,10 @@ body {
 }
 
 .teaching-title {
-	/* Room under it as wide as the close button's gap above, so the button
-	   sits centred between the edge and the text. */
-	margin: 0 0 14px;
+	/* Its line is centred on the close button; the room under it sets the
+	   text low enough that the button looks centred between the edge and
+	   the text. */
+	margin: 2px 0 16px;
 	font:
 		500 calc(var(--text-title) * 0.72) / 1.2 Georgia,
 		"Times New Roman",

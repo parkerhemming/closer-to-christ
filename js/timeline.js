@@ -443,7 +443,7 @@ function timelineClock() {
 	);
 
 	// The list opens upward from just above the caption, and opens at the
-	// current event. It reaches to a set gap under the controls at the top
+	// current event. It reaches to the edge gap under the controls at the top
 	// (the time and the buttons either side), never over them, fitted again
 	// whenever the caption changes size (every frame of its glide) or the
 	// window does.
@@ -457,8 +457,14 @@ function timelineClock() {
 						.bottom,
 			),
 		);
+		// The same gap as the controls keep from the screen's edge.
+		const gap = parseFloat(
+			getComputedStyle(document.documentElement).getPropertyValue(
+				"--edge-gap",
+			),
+		);
 		const bottom = list.getBoundingClientRect().bottom;
-		list.style.height = `${bottom - controlsBottom - 16}px`;
+		list.style.height = `${bottom - controlsBottom - gap}px`;
 	}
 	new ResizeObserver(fitList).observe(caption);
 	window.addEventListener("resize", fitList, { passive: true });
