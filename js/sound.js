@@ -55,12 +55,28 @@ function soundscape() {
 		}
 	}
 	button.addEventListener("click", () => {
+		hideHint();
 		sceneSettings.sound = !sceneSettings.sound;
 		showState();
 		saveSettings();
 		switchSound();
 	});
 	document.addEventListener("visibilitychange", switchSound);
+
+	// A hint under the speaker, once a visitor has spent a while in the scene
+	// without sound: it says there's sound to hear and fades away on its own.
+	// Once a visit.
+	const hint = document.querySelector(".sound-hint");
+	function hideHint() {
+		hint.classList.remove("is-shown");
+	}
+	setTimeout(() => {
+		if (sceneSettings.sound || document.hidden) return;
+		hint.hidden = false;
+		hint.offsetWidth; // laid out first, so it fades in
+		hint.classList.add("is-shown");
+		setTimeout(hideHint, 4500);
+	}, 7500);
 
 	// Small helpers for building the sound.
 	function glide(param, value, seconds = 0.5) {

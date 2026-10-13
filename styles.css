@@ -1653,6 +1653,53 @@ body {
 	display: none;
 }
 
+/* The hint that the scene has sound: a small bubble just under the speaker,
+   its point aimed at it, fading in and out (js/sound.js). */
+.sound-hint {
+	position: fixed;
+	top: calc(max(20px, env(safe-area-inset-top)) + 38px + 12px);
+	right: max(20px, env(safe-area-inset-right));
+	z-index: 90;
+	max-width: 280px;
+	padding: 9px 13px;
+	overflow: visible; /* the page clips by default; this lets the point show */
+	border: 1px solid rgba(231, 180, 119, 0.45);
+	border-radius: 10px;
+	/* Solid, the same as its point, so the two join without a seam. */
+	background: rgb(12, 28, 37);
+	color: white;
+	font:
+		500 var(--text-body)/1.35 Georgia,
+		"Times New Roman",
+		serif;
+	text-align: left;
+	opacity: 0;
+	translate: 0 -6px;
+	pointer-events: none;
+	transition:
+		opacity 600ms ease,
+		translate 600ms ease;
+}
+
+.sound-hint.is-shown {
+	opacity: 1;
+	translate: 0 0;
+}
+
+/* The point, under the middle of the speaker button. */
+.sound-hint::before {
+	content: "";
+	position: absolute;
+	top: -6px;
+	right: calc(44px + 19px - 6px);
+	width: 10px;
+	height: 10px;
+	border-top: 1px solid rgba(231, 180, 119, 0.45);
+	border-left: 1px solid rgba(231, 180, 119, 0.45);
+	background: rgb(12, 28, 37);
+	rotate: 45deg;
+}
+
 /* Top left: a pause/play button the same size as the settings gear, then
    the time in plain white text. */
 .clock-bar {
@@ -1831,7 +1878,7 @@ body {
 }
 
 /* Folded (a few seconds after each event, or a click elsewhere): one line,
-   cut off with an ellipsis. */
+   cut off with an ellipsis only when the title doesn't fit. */
 .caption.is-folded .caption-content {
 	flex-direction: row;
 	justify-content: center;
@@ -1842,12 +1889,6 @@ body {
 	min-width: 0;
 	white-space: nowrap;
 	text-overflow: ellipsis;
-}
-
-/* Always ends in "...", even when the whole title fits (when it doesn't,
-   this is cut off and the ellipsis above shows instead). */
-.caption.is-folded .caption-title::after {
-	content: "…";
 }
 
 .caption.is-folded .caption-text {

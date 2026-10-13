@@ -237,7 +237,7 @@ function timelineClock() {
 		);
 	}
 
-	// The caption folds to one line (ending "...") a few seconds after each
+	// The caption folds to one line a few seconds after each
 	// event appears, so it covers less of the scene. With a mouse it opens while
 	// the pointer is over it; on a touchscreen a tap opens it for a while. A
 	// click or tap anywhere else folds it straight away. A new event's first
@@ -337,7 +337,7 @@ function timelineClock() {
 	// The speed button beside it steps through these multiples of clockSpeed;
 	// the choice is saved with the other settings.
 	const speedButton = document.querySelector(".clock-speed");
-	const speeds = [1, 1.5, 2, 5];
+	const speeds = [1, 1.5, 2, 5, 10];
 	if (!speeds.includes(sceneSettings.clockSpeedMultiplier))
 		sceneSettings.clockSpeedMultiplier = 1;
 	function showSpeed() {

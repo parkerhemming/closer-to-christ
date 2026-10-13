@@ -319,7 +319,7 @@
 					<path d="M3.5 3.5v5h5" />
 				</svg>
 			</button>
-			<!-- How fast the clock runs: each click steps through 1x, 1.5x, 2x, 5x. -->
+			<!-- How fast the clock runs: each click steps through 1x, 1.5x, 2x, 5x, 10x. -->
 			<button
 				class="clock-speed"
 				type="button"
@@ -394,6 +394,9 @@
 				<path class="sound-off" d="M15.5 9.5l5 5M20.5 9.5l-5 5" />
 			</svg>
 		</button>
+
+		<!-- Shown once a visitor has spent a while in the scene without sound. -->
+		<p class="sound-hint" role="status" hidden>Tap to Listen</p>
 
 		<button
 			id="settings-button"
