@@ -75,7 +75,7 @@ function soundscape() {
 		hint.hidden = false;
 		hint.offsetWidth; // laid out first, so it fades in
 		hint.classList.add("is-shown");
-		setTimeout(hideHint, 4500);
+		setTimeout(hideHint, 3500);
 	}, 7500);
 
 	// Small helpers for building the sound.

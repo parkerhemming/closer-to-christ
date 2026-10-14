@@ -92,9 +92,21 @@ function teachingMarkers() {
 				setTimeout(whenUncovered, 250);
 			else lightUp(5);
 		})();
-		document.addEventListener("pointerdown", () => lightUp(3), {
-			passive: true,
-		});
+		// Not for a tap that opens, or lands in, a big popup: the settings,
+		// the list of events (an open caption's tap) or a card. A marker's
+		// own tap still does. (touchstart: iOS doesn't always report a tap on
+		// the scene as a pointer.)
+		document.addEventListener(
+			"touchstart",
+			({ target }) => {
+				const popup = target.closest?.(
+					"#settings-button, #settings, #timeline, #teaching, .caption:not(.is-folded) #timeline-button",
+				);
+				if (popup && !target.closest(".marker")) return;
+				lightUp(3);
+			},
+			{ passive: true },
+		);
 	}
 
 	card.addEventListener("toggle", (event) => {

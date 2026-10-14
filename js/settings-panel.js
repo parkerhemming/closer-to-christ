@@ -189,8 +189,8 @@ function settingsPanel() {
 
 	// A hint under the gear once 3:00 has come: where to see how this was
 	// made. Shown a moment after the first quake settles (or after a while,
-	// if there's no quake), and fades away on its own, half again as late as
-	// the sound hint. Once a visit.
+	// if there's no quake), and fades away on its own after about 7 seconds.
+	// Once a visit.
 	const githubHint = document.querySelector(".github-hint");
 	let hintTimer = 0;
 	let hinted = false;
