@@ -61,6 +61,24 @@ async function loadScene() {
 	const loading = document.getElementById("loading");
 	const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+	// The bar fills over the screen's least time in uneven steps, like a
+	// download, keeping at most a little ahead of what has really loaded
+	// (so a cached visit doesn't fill it at once, nor a slow one stall it
+	// early). Full once everything has loaded.
+	let loadedShare = 0;
+	(function step() {
+		if (loading.classList.contains("is-done")) return;
+		const paced =
+			performance.now() /
+			1000 /
+			(sceneSettings.minimumLoadingSeconds * 0.85);
+		loading.style.setProperty(
+			"--progress",
+			Math.min(paced, loadedShare + (1 - loadedShare) * 0.2, 1),
+		);
+		setTimeout(step, randomBetween(120, 450));
+	})();
+
 	// Time a small download first. Slow (like 3G): use the small images from
 	// the start rather than waiting on large ones that would never finish.
 	const root = document.documentElement;
@@ -95,7 +113,7 @@ async function loadScene() {
 				image.onload = image.onerror = resolve;
 			});
 			loaded += 1;
-			loading.style.setProperty("--progress", loaded / urls.length);
+			loadedShare = loaded / urls.length;
 			// ...then decoded, so it can draw at once. Browsers postpone decoding
 			// in background tabs, so don't wait on it for long.
 			await Promise.race([image.decode().catch(() => {}), wait(2000)]);
@@ -109,6 +127,7 @@ async function loadScene() {
 	await wait(
 		(sceneSettings.minimumLoadingSeconds - renderStats.loadSeconds) * 1000,
 	);
+	loading.style.setProperty("--progress", 1);
 	loading.classList.add("is-done");
 	loading.addEventListener("transitionend", () => loading.remove(), {
 		once: true,

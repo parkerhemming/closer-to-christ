@@ -305,6 +305,9 @@ self.onmessage = ({ data }) => {
 			const scale = Math.min(pixelRatio, maximumScale);
 			canvas.width = Math.round(width * scale);
 			canvas.height = Math.round(height * scale);
+			// Resizing wipes the canvas: redraw it now, not next frame, or
+			// Chrome shows it empty while the window is being resized.
+			if (reportedFirstFrame) draw(performance.now());
 		}
 	}
 	if (data.size || data.conditions) requestDraw();

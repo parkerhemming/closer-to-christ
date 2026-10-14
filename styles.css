@@ -747,10 +747,10 @@ body {
 	.scene-markers--city
 ) {
 	--stack-order: 39;
-	/* As wide as the screen, but never less than about the screen's height:
+	/* As wide as the screen, but never less than a little over its height:
 	   on narrow screens (phones, a narrowed window) it stops shrinking, its
 	   ends cut off, rather than sinking behind the land in front. */
-	--city-width: max(100vw, 106dvh);
+	--city-width: max(100vw, 118dvh);
 	--width: var(--city-width);
 	/* The bigger it is beyond the screen's width, the lower it sits, so it
 	   stays on the ridge rather than floating. */
@@ -1138,8 +1138,8 @@ body {
 	letter-spacing: 0.045em;
 }
 
-/* Loading screen: a cross whose outline is traced by a moving glint while it
-   fills with light from the bottom as the scene loads (--progress, 0 to 1). */
+/* Loading screen: a softly lit cross whose outline is traced by a moving
+   glint, over a bar that fills as the scene loads (--progress, 0 to 1). */
 #loading {
 	--progress: 0;
 	z-index: 110;
@@ -1218,15 +1218,9 @@ body {
 }
 
 .loading-cross__base {
-	fill: none;
+	fill: rgba(231, 180, 119, 0.32);
 	stroke: rgba(231, 180, 119, 0.28);
 	stroke-width: 1.2;
-}
-
-.loading-cross__fill {
-	fill: rgba(231, 180, 119, 0.32);
-	transform: translateY(calc(56px * (1 - var(--progress))));
-	transition: transform 400ms ease-out;
 }
 
 .loading-cross__glint {
