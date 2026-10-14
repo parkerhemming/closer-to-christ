@@ -274,20 +274,3 @@ function createShootingStars() {
 
 	scheduleShootingStar(true);
 }
-
-// The sun glides between positions as the clock runs (see .sun), but not
-// while the page can't be seen: a page loading in a hidden tab hasn't drawn
-// the sun yet, and gliding then starts it from a corner. So the glide is off
-// while hidden and comes back two frames after the page is shown.
-function sunGlide() {
-	const root = document.documentElement;
-	function update() {
-		delete root.dataset.sceneShown;
-		if (document.hidden) return;
-		requestAnimationFrame(() =>
-			requestAnimationFrame(() => (root.dataset.sceneShown = "")),
-		);
-	}
-	update();
-	document.addEventListener("visibilitychange", update);
-}

@@ -22,8 +22,12 @@ function createStorm() {
 			return phone.matches && rain > 1 ? 1 + (rain - 1) * 0.7 : rain;
 		};
 		const conditions = () => ({
-			rain: amount(),
-			wind: byWeather(weatherCurves.wind),
+			rain:
+				amount() *
+				alongCurve(hourCurves.rainAmount, sceneSettings.hour),
+			wind:
+				byWeather(weatherCurves.wind) *
+				alongCurve(hourCurves.rainSlant, sceneSettings.hour),
 			lengthScale: byWeather(weatherCurves.rainLength),
 			brightness: byWeather(weatherCurves.rainBrightness),
 			low: getQuality() === "low",

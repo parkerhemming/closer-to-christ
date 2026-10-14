@@ -57,6 +57,15 @@ function saveSettings() {
 	document.dispatchEvent(new Event("scenesettings"));
 }
 
+// Seconds between the running clock's minutes, at the chosen speed. The sun
+// and the light glide over about this long, so they keep pace with the clock.
+function clockTickSeconds() {
+	return (
+		1 /
+		((sceneSettings.clockSpeed || 1.5) * sceneSettings.clockSpeedMultiplier)
+	);
+}
+
 // How each part of the weather follows weatherIntensity, as [weather, value]
 // points joined by straight lines. Every curve has value 1 at weather 0.7, so
 // 0.7 is exactly the original storm.
@@ -166,6 +175,22 @@ const hourCurves = {
 		[12, 0.7],
 		[14.5, 0.8],
 		[15, 1.2],
+	],
+	// The rain just before he dies, as multiples of the weather's amount of
+	// rain and of how far the wind slants it: from 2:45 to 2:59 a little
+	// lighter and falling straighter, then at 3 PM the full downpour, driven
+	// sideways (the slant swinging round from 2:55).
+	rainAmount: [
+		[14.5, 1],
+		[14.75, 0.75],
+		[14 + 59 / 60, 0.75],
+		[15, 1],
+	],
+	rainSlant: [
+		[14.5, 1],
+		[14.75, 0.55],
+		[14 + 55 / 60, 0.55],
+		[15, 1],
 	],
 };
 
@@ -389,9 +414,10 @@ function skyColor(points, glow = false) {
 	);
 }
 
-// 9.5 -> "9:30 AM", to the minute.
+// 9.5 -> "9:30 AM", in whole minutes (the running clock moves between
+// them; the same few seconds' leeway as the timeline's eventIndex).
 function clockTime(hour) {
-	const minutes = Math.round(hour * 60);
+	const minutes = Math.floor(hour * 60 + 0.06);
 	const hours = Math.floor(minutes / 60);
 	return `${((hours + 11) % 12) + 1}:${String(minutes % 60).padStart(2, "0")} ${hours < 12 ? "AM" : "PM"}`;
 }
@@ -497,9 +523,9 @@ function applyTimeOfDay() {
 	placeSun();
 }
 
-// The sun's place and brightness for the hour. As the clock runs, the CSS
-// glides it between ticks; during a jump in time goToHour places it every
-// frame, so it follows the jump's own easing.
+// The sun's place and brightness for the hour. The running clock and a
+// jump in time (js/timeline.js) place it every frame, so it moves exactly
+// with the clock.
 function placeSun() {
 	setStyle("#sky .sun", {
 		"--sun-opacity": lightFor("sunOpacity"),

@@ -189,7 +189,7 @@ function settingsPanel() {
 
 	// A hint under the gear once 3:00 has come: where to see how this was
 	// made. Shown a moment after the first quake settles (or after a while,
-	// if there's no quake), and fades away on its own after about 7 seconds.
+	// if there's no quake), and fades away on its own after a few seconds.
 	// Once a visit.
 	const githubHint = document.querySelector(".github-hint");
 	let hintTimer = 0;
@@ -199,7 +199,7 @@ function settingsPanel() {
 		githubHint.hidden = false;
 		githubHint.offsetWidth; // laid out first, so it fades in
 		githubHint.classList.add("is-shown");
-		setTimeout(() => githubHint.classList.remove("is-shown"), 6750);
+		setTimeout(() => githubHint.classList.remove("is-shown"), 5400);
 	}
 	document.addEventListener("scenesettings", () => {
 		const atThree = sceneSettings.hour >= 15 - 0.001;

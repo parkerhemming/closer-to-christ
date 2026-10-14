@@ -96,8 +96,8 @@ body {
 	   canvas, the twinkling ones tiny elements of their own. Each fades by
 	   itself as the sky lightens; fading the whole starfield as a group made
 	   the browser redraw it all every frame. The clock updates the light
-	   once a second, so each glides between (a little longer than that, so
-	   a late update never leaves a pause). */
+	   every --clock-tick, so each glides between (a little longer than
+	   that, so a late update never leaves a pause). */
 	.stars {
 		position: absolute;
 		inset: 0;
@@ -107,7 +107,7 @@ body {
 	.star-twinkle {
 		position: absolute;
 		opacity: var(--starlight, 1);
-		transition: opacity 1.2s linear;
+		transition: opacity calc(1.2 * var(--clock-tick, 1s)) linear;
 	}
 
 	.stars-canvas {
@@ -154,21 +154,8 @@ body {
 		opacity: var(--sun-opacity, 0);
 		translate: calc(var(--sun-left, 20vw) + 10vw - 50%)
 			calc(var(--sun-top, 80vh) + 10vh - 50%);
-		/* The running clock moves it once a second; glide between (a little
-		   longer than that, so a late update never leaves a pause), so it
-		   climbs smoothly. On the GPU, so it costs nothing. */
-		transition:
-			translate 1.2s linear,
-			opacity 1.2s linear;
+		/* Placed every frame by the running clock (js/timeline.js). */
 		will-change: translate, opacity;
-	}
-
-	/* The sun is just placed until the scene is up (gliding then could start
-	   it from wherever the page first put it, a corner) and during a jump in
-	   time, when goToHour in js/timeline.js places it every frame along the jump's
-	   own easing (short glides restarting 15 times a second made it pulse). */
-	:root:is(:not([data-scene-shown]), [data-jumping]) & .sun {
-		transition: none;
 	}
 
 	/* The jump is already eased; the stars' long fade only lagged behind. */
@@ -834,7 +821,7 @@ body {
 	.city-lights,
 	.city-flicker-plane
 ) {
-	transition: opacity 1.2s linear;
+	transition: opacity calc(1.2 * var(--clock-tick, 1s)) linear;
 
 	:root[data-jumping] & {
 		transition-duration: 150ms;
@@ -1367,16 +1354,6 @@ body {
 	stroke-width: 1.5;
 	stroke-linecap: round;
 	stroke-linejoin: round;
-}
-
-.settings-gear {
-	transform-origin: 50% 50%;
-	transition: rotate 500ms ease;
-}
-
-/* 45deg = one tooth, so the gear lands looking the same. */
-.settings-button:hover .settings-gear {
-	rotate: 45deg;
 }
 
 /* While the panel is open the gear becomes an x that closes it. */

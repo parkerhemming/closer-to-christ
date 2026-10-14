@@ -393,12 +393,13 @@ function swayLayer(
 			// He gives up the ghost at "It is finished" (2:55): the figure
 			// stops breathing (wind.js).
 			alive: sceneSettings.hour < 14 + 55 / 60,
-			// How long its colour glides to this (a jump in time is already eased).
+			// How long its colour glides to this: keeping pace with the clock,
+			// at most half a second (a jump in time is already eased).
 			settle: !glideBigCanvases
 				? 0
 				: "jumping" in document.documentElement.dataset
 					? 0.08
-					: 0.5,
+					: Math.min(0.5, 0.75 * clockTickSeconds()),
 		};
 	};
 	const size = () => [

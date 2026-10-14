@@ -309,8 +309,9 @@ function timelineClock() {
 	showTime();
 	document.addEventListener("scenesettings", showTime);
 
-	// The clock runs on its own a minute at a time (clockSpeed minutes a
-	// second), with the weather following the hour, until 3 PM or a pause.
+	// The clock runs on its own (clockSpeed minutes a second, times the
+	// speed button's choice), with the weather following the hour, until
+	// 3 PM or a pause.
 	const playButton = document.querySelector(".clock-play");
 	const dayStart = timeline[0].hour;
 	const dayEnd = timeline.at(-1).hour;
@@ -370,6 +371,11 @@ function timelineClock() {
 		const speed = sceneSettings.clockSpeedMultiplier;
 		speedButton.textContent = `${speed}x`;
 		speedButton.setAttribute("aria-label", `Clock speed: ${speed}x`);
+		// The sun and the light glide between the clock's minutes (styles.css).
+		document.documentElement.style.setProperty(
+			"--clock-tick",
+			`${clockTickSeconds()}s`,
+		);
 	}
 	showSpeed();
 	speedButton.addEventListener("click", () => {
@@ -380,55 +386,67 @@ function timelineClock() {
 		saveSettings();
 	});
 
-	function tick() {
+	// The running clock: it moves every frame, the sun with it, and the rest
+	// of the scene a minute at a time. It never starts or stops at once: it
+	// eases up to speed (or to a new speed), and slows in time to stop where
+	// the caption needs it to.
+	const easeSeconds = 0.8; // about how long it takes to reach speed or stop
+	let rate = 0; // minutes of the day a second, right now
+	let lastFrame = 0;
+	let shownMinute = null;
+	function run(now) {
+		requestAnimationFrame(run);
+		const seconds = Math.min((now - lastFrame) / 1000, 0.1);
+		lastFrame = now;
 		// Not until the scene is on screen (after loading and the motion
-		// question) and everything has
-		// settled after a jump: the sun glides into place for 1.2s after the
-		// light stops changing.
-		const shown = "sceneShown" in document.documentElement.dataset;
-		if (
-			!playing ||
-			document.hidden ||
-			heading !== null ||
-			!shown ||
-			coverUp() ||
-			performance.now() < settledAt
-		)
+		// question), and not during or just after a jump in time.
+		if (!playing || heading !== null || coverUp() || now < settledAt) {
+			rate = 0;
 			return;
-		const next = Math.min(
-			dayEnd,
-			Math.round(sceneSettings.hour * 60 + 1) / 60,
-		);
-		// The caption keeps up with the clock, even at the faster speeds: the
-		// clock stays on an event's minute until its words have faded in, and
-		// events only minutes apart (2:45, 2:55 and 3:00), which would flash
-		// past, wait to be reached until the caption before has been up a few
-		// seconds.
+		}
+		// Where it must stop: right here while the caption catches up with
+		// the event it has reached; otherwise at the next event, and just
+		// short of it until this caption has been up a few seconds (events
+		// only minutes apart, 2:45, 2:55 and 3:00, would flash past).
 		const index = eventIndex(sceneSettings.hour);
-		if (
-			timeline[index] !== captionEvent ||
-			(eventIndex(next) !== index &&
-				performance.now() < captionShownAt + 4000)
-		)
+		const next = timeline[index + 1];
+		const stopAt =
+			timeline[index] !== captionEvent
+				? sceneSettings.hour
+				: !next
+					? dayEnd
+					: now < captionShownAt + 4000
+						? next.hour - 0.0011 // just short of eventIndex's reach
+						: next.hour;
+		const left = Math.max(0, (stopAt - sceneSettings.hour) * 60); // minutes
+		if (left === 0) {
+			rate = 0;
 			return;
-		sceneSettings.hour = next;
-		sceneSettings.weatherIntensity = weatherForHour(sceneSettings.hour);
-		document.dispatchEvent(new Event("scenesettings"));
+		}
+		// Gaining or losing speed at a steady pace (faster at higher speeds),
+		// up to the chosen speed, but never so fast it can't stop in time.
+		const speed = 1 / clockTickSeconds();
+		const ease = Math.max(speed, rate) / easeSeconds;
+		const goal = Math.min(speed, Math.sqrt(2 * ease * left));
+		rate = clamp(goal, rate - ease * seconds, rate + ease * seconds);
+		sceneSettings.hour = Math.min(
+			stopAt,
+			sceneSettings.hour + (rate * seconds) / 60,
+		);
+		placeSun();
+		const minute = Math.floor(sceneSettings.hour * 60 + 0.06);
+		if (minute !== shownMinute) {
+			shownMinute = minute;
+			sceneSettings.weatherIntensity = weatherForHour(sceneSettings.hour);
+			document.dispatchEvent(new Event("scenesettings"));
+		}
 		if (sceneSettings.hour >= dayEnd) {
 			playing = false;
 			dayOver = true;
 			showPlaying();
 		}
 	}
-	(function run() {
-		tick();
-		setTimeout(
-			run,
-			1000 /
-				((sceneSettings.clockSpeed || 1.5) *
-					sceneSettings.clockSpeedMultiplier),
-		);
-	})();
+	requestAnimationFrame(run);
 
 	// The arrows go a whole event back or forward, however far the clock has
 	// run into the current one.
@@ -561,7 +579,7 @@ function timelineClock() {
 			if (along < 1) {
 				easing = requestAnimationFrame(frame);
 			} else {
-				// The sun's usual glide again, once its last step has started.
+				// The scene's usual glides again, once its last step has started.
 				requestAnimationFrame(() => {
 					if (heading === null)
 						delete document.documentElement.dataset.jumping;
