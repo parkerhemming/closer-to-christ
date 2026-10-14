@@ -1841,6 +1841,14 @@ body {
 	stroke-width: 2.2;
 }
 
+/* The caption's restart the same size as the clock's (its arrows are
+   larger). */
+.caption-step .caption-step__restart {
+	width: 18px;
+	height: 18px;
+	stroke-width: 2.2;
+}
+
 /* The caption, bottom centre: what is happening, like a film subtitle, with
    arrows to step between events; clicking it opens the list of them all
    upward. It folds to one line a few seconds after each event and opens
