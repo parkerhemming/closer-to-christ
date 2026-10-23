@@ -10,8 +10,9 @@ const sceneSettings = {
 	// day per real second (1.5 = the 9 hours pass in 6 minutes). 0 starts it
 	// paused. It stops at 3 PM; the button by the time pauses and plays it.
 	clockSpeed: 1.5,
-	// The speed button's multiple of clockSpeed: 1, 1.5, 2, 5 or 10.
-	clockSpeedMultiplier: 1,
+	// The speed button's multiple of clockSpeed: 1, 1.5, 2, 5 or 10 (5 at first;
+	// a visitor's own choice is saved).
+	clockSpeedMultiplier: 5,
 	// 0 is a clear sky, 1 a full storm; 0.7 is the original storm.
 	// Rain, lightning, clouds and wind all follow it (see weatherCurves).
 	// null picks a random weather that follows the hour (see weatherForHour).

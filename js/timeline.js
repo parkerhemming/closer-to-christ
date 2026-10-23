@@ -366,7 +366,7 @@ function timelineClock() {
 	const speedButton = document.querySelector(".clock-speed");
 	const speeds = [1, 1.5, 2, 5, 10];
 	if (!speeds.includes(sceneSettings.clockSpeedMultiplier))
-		sceneSettings.clockSpeedMultiplier = 1;
+		sceneSettings.clockSpeedMultiplier = 5;
 	function showSpeed() {
 		const speed = sceneSettings.clockSpeedMultiplier;
 		speedButton.textContent = `${speed}x`;
